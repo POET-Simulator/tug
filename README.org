@@ -8,7 +8,7 @@ With this readme I will document all my steps I've done and will do.
 - $\alpha$ - diffusion coefficient (dependent on species and direction(?))
 - $h=1/M$ : with $M^2 = [0,1]^2$ - grid divided into parts between 0 and 1
   (/spatial step/)
-- $k=T/N$ : with $N = [0,T]$ - time steps per iteration (/time step/)
+- $k=T/N$ : with $N = [0,T]$ - time step size
 - coefficients of the given equation from the paper are:
   - $\alpha_xk/h^2$ in x direction
   - $\alpha_yk/h^2$ in y direction
@@ -23,3 +23,12 @@ parallelize but I will keep parallelization in mind.
 Regarding the borders: I'm not quite sure what to do. Maybe it might be a good
 idea to use a simple gaussian kernel here to smooth those two columns and two
 lines.
+
+* Implementation
+
+So currently I consider to implement the following methods for the module:
+
+- +decompose matrix A into L and U+
+- better use a library like Eigen here:
+  - using =SparseMatrix= to represent matrix $A$
+  - =SparseLU= to solve
