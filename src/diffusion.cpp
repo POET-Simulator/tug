@@ -16,29 +16,47 @@ void BTCS2D(int x, int y, std::vector<double> &c, std::vector<double> &alpha,
   double dx = 1. / x;
   double dy = 1. / y;
 
-  int size = x * y;
+  int size = (x - 2) * (y - 2);
+
+  int local_x = x - 2;
 
   Eigen::VectorXd b = Eigen::VectorXd::Constant(size, 0);
   Eigen::VectorXd x_out(size);
   std::vector<T> tripletList;
-  tripletList.reserve(((x - 1) * (y - 1) * 5));
+  tripletList.reserve(size * 5);
 
-  for (int i = 1; i < y - 1; i++) {
-    for (int j = 1; j < x - 1; j++) {
-      double sx = (alpha[i * y + j] * timestep) / (dx * dx);
-      double sy = (alpha[i * y + j] * timestep) / (dy * dy);
+  for (int i = 0; i < (size-local_x); i++) {
+    int current = local_x + i;
+    double sx = (alpha[current] * timestep) / (dx * dx);
+    double sy = (alpha[current] * timestep) / (dy * dy);
 
-      tripletList.push_back(T((i * x) + j, (i * x) + j, (1 + 2 * sx + 2 * sy)));
-      tripletList.push_back(T((i * x) + j, ((i * x) + j) + x, sy));
-      tripletList.push_back(T((i * x) + j, ((i * x) + j) - x, sy));
-      tripletList.push_back(T((i * x) + j, ((i * x) + j) + 1, sx));
-      tripletList.push_back(T((i * x) + j, ((i * x) + j) - 1, sx));
+    tripletList.push_back(T(i, current, (1 + 2 * sx + 2 * sy)));
+    tripletList.push_back(T(i, current + local_x, sy));
+    tripletList.push_back(T(i, current - local_x, sy));
+    tripletList.push_back(T(i, current + 1, sx));
+    tripletList.push_back(T(i, current - 1, sx));
 
-      b[(i * x) + j] = -c[(i * x) + j];
-    }
+    std::cout << current << std::endl;
+
+    b[i] = -c[x+i];
   }
 
-  Eigen::SparseMatrix<double> A(size, size);
+  // for (int i = 0; i < y; i++) {
+  //   for (int j = 0; j < x; j++) {
+  //     double sx = (alpha[i * y + j] * timestep) / (dx * dx);
+  //     double sy = (alpha[i * y + j] * timestep) / (dy * dy);
+
+  //     tripletList.push_back(T((i * x) + j, (i * x) + j, (1 + 2 * sx + 2 *
+  //     sy))); tripletList.push_back(T((i * x) + j, ((i * x) + j) + x, sy));
+  //     tripletList.push_back(T((i * x) + j, ((i * x) + j) - x, sy));
+  //     tripletList.push_back(T((i * x) + j, ((i * x) + j) + 1, sx));
+  //     tripletList.push_back(T((i * x) + j, ((i * x) + j) - 1, sx));
+
+  //     b[(i * x) + j] = -c[(i * x) + j];
+  //   }
+  // }
+
+  Eigen::SparseMatrix<double> A(size, (x*y)-4);
   A.setFromTriplets(tripletList.begin(), tripletList.end());
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
