@@ -13,6 +13,7 @@
 #include <Eigen/src/SparseLU/SparseLU.h>
 #include <Eigen/src/SparseQR/SparseQR.h>
 #include <iostream>
+#include <ostream>
 
 void BTCS2D(int x, int y, std::vector<double> &c, std::vector<double> &alpha,
             double timestep) {
@@ -34,7 +35,10 @@ void BTCS2D(int x, int y, std::vector<double> &c, std::vector<double> &alpha,
       double sx = (alpha[i * x + j] * timestep) / (dx * dx);
       double sy = (alpha[i * x + j] * timestep) / (dy * dy);
 
-      tripletList.push_back(T(A_line, i * x + j, (1 + 2 * sx + 2 * sy)));
+      tripletList.push_back(T(A_line, i * x + j, (1. + 2. * sx + 2. * sy)));
+
+      std::cout << sx << std::endl;
+
       tripletList.push_back(T(A_line, (i - 1) * x + j, sy));
       tripletList.push_back(T(A_line, (i + 1) * x + j, sy));
       tripletList.push_back(T(A_line, i * x + (j + 1), sx));
@@ -47,7 +51,7 @@ void BTCS2D(int x, int y, std::vector<double> &c, std::vector<double> &alpha,
 
   std::cout << b << std::endl;
 
-  Eigen::SparseMatrix<double> A(size, (x * y) - 4);
+  Eigen::SparseMatrix<double> A(size, x*y);
   A.setFromTriplets(tripletList.begin(), tripletList.end());
 
   Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
