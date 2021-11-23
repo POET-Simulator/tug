@@ -46,7 +46,8 @@ void BTCS1D(int x, std::vector<double> &c, std::vector<double> &alpha,
 
   A_line++;
   tripletList.push_back(T(A_line, size-1, 1));
-  b[A_line] = bc[1];
+  // b[A_line] = bc[1];
+  b[A_line] = c[c.size()-1];
 
   // std::cout << b << std::endl;
 
