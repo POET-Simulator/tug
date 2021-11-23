@@ -75,7 +75,7 @@ void BTCSDiffusion::simulate(std::vector<double> &c, std::vector<double> &alpha,
   A_line++;
   tripletList.push_back(T(A_line, size - 1, 1));
   // b[A_line] = bc[1];
-  if (bc[0] == -1)
+  if (bc[1] == -1)
     b[A_line] = c[c.size() - 1];
   else
     b[A_line] = this->bc[1];

@@ -2,7 +2,7 @@
 #define BTCSDIFFUSION_H_
 
 #include <vector>
-#include <Eigen/SparseCore>
+#include <Eigen/Sparse>
 
 typedef int BCSide;
 typedef Eigen::Triplet<double> T;

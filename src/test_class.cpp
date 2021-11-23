@@ -1,5 +1,4 @@
 #include "BTCSDiffusion.hpp"
-#include "diffusion.hpp"
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -15,7 +14,7 @@ int main(int argc, char *argv[]) {
   std::vector<double> bc_left, bc_right;
 
   bc_left.push_back(5. * std::pow(10, -6));
-  bc_right.push_back(1. * std::pow(10, -6));
+  bc_right.push_back(-1);
   // input[x + 2] = 5.5556554 * std::pow(10, -6);
   // input[x + 3] = 5.234564213 * std::pow(10, -6);
 
