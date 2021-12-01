@@ -83,11 +83,8 @@ void BTCSDiffusion::simulate(std::vector<double> &c, std::vector<double> &alpha,
   Eigen::SparseMatrix<double> A(size, size);
   A.setFromTriplets(tripletList.begin(), tripletList.end());
 
-  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
+  Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
-
-  // Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
-  //     solver;
   solver.analyzePattern(A);
 
   solver.factorize(A);
