@@ -15,8 +15,6 @@ int main(int argc, char *argv[]) {
 
   bc_left.push_back(5. * std::pow(10, -6));
   bc_right.push_back(-1);
-  // input[x + 2] = 5.5556554 * std::pow(10, -6);
-  // input[x + 3] = 5.234564213 * std::pow(10, -6);
 
   BTCSDiffusion diffu(x);
 
@@ -25,7 +23,6 @@ int main(int argc, char *argv[]) {
 
   for (int i = 0; i < 100; i++) {
     diffu.simulate(input, alpha, 1.);
-    // BTCS1D(x, input, alpha, 1., bc);
   }
 
   return 0;

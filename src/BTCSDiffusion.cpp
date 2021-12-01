@@ -80,12 +80,9 @@ void BTCSDiffusion::simulate(std::vector<double> &c, std::vector<double> &alpha,
   else
     b[A_line] = this->bc[1];
 
-  // std::cout << b << std::endl;
-
   Eigen::SparseMatrix<double> A(size, size);
   A.setFromTriplets(tripletList.begin(), tripletList.end());
 
-  // std::cout << A << std::endl;
   Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
 
