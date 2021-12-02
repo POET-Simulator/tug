@@ -19,7 +19,9 @@ int main(int argc, char *argv[]) {
   BTCSDiffusion diffu(x);
 
   diffu.setBoundaryCondition(bc_left, BTCSDiffusion::LEFT);
-  diffu.setBoundaryCondition(bc_right, BTCSDiffusion::RIGHT);
+  // we don't need this since Neumann condition with gradient of 0 is set per
+  // default
+  // diffu.setBoundaryCondition(bc_right, BTCSDiffusion::RIGHT);
 
   for (int i = 0; i < 100; i++) {
     diffu.simulate(input, alpha, 1.);
