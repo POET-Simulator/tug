@@ -50,7 +50,7 @@ void BTCSDiffusion::setBoundaryCondition(std::vector<double> input,
 void BTCSDiffusion::simulate(std::vector<double> &c, std::vector<double> &alpha,
                              double timestep) {
   // calculate dx
-  double dx = 1. / this->dim_x;
+  double dx = 1. / (this->dim_x - 1);
 
   // calculate size needed for A matrix and b,x vectors
   int size = this->dim_x + 2;
