@@ -1,4 +1,4 @@
-#include "diffusion.hpp"
+#include "BTCSDiffusion.hpp"
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -7,16 +7,25 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  int x = 5;
-  int y = 5;
+  int x = 20;
 
-  std::vector<double> alpha(x * y, -1.5 * pow(10, -2));
-  std::vector<double> input(x * y, 0);
-  input[x + 1] = 5.55 * std::pow(10, -6);
-  input[x + 2] = 5.5556554 * std::pow(10, -6);
-  input[x + 3] = 5.234564213 * std::pow(10, -6);
+  std::vector<double> alpha(x, 1 * pow(10, -1));
+  std::vector<double> input(x, 1 * std::pow(10, -6));
+  std::vector<double> bc_left, bc_right;
 
-  BTCS2D(x, y, input, alpha, 10.);
+  bc_left.push_back(5. * std::pow(10, -6));
+  bc_right.push_back(-1);
+
+  BTCSDiffusion diffu(x);
+
+  diffu.setBoundaryCondition(bc_left, BTCSDiffusion::LEFT);
+  // we don't need this since Neumann condition with gradient of 0 is set per
+  // default
+  // diffu.setBoundaryCondition(bc_right, BTCSDiffusion::RIGHT);
+
+  for (int i = 0; i < 100; i++) {
+    diffu.simulate(input, alpha, 1.);
+  }
 
   return 0;
 }
