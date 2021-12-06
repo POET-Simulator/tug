@@ -3,32 +3,15 @@
 This is the according repository to the diffusion module we discussed earlier.
 With this readme I will document all my steps I've done and will do.
 
-* Theory
+* Current State
 
-- $\alpha$ - diffusion coefficient (dependent on species and direction(?))
-- $h=1/M$ : with $M^2 = [0,1]^2$ - grid divided into parts between 0 and 1
-  (/spatial step/)
-- $k=T/N$ : with $N = [0,T]$ - time step size
-- coefficients of the given equation from the paper are:
-  - $\alpha_xk/h^2$ in x direction
-  - $\alpha_yk/h^2$ in y direction
-  - $1+2*(\alpha_xk/h^2) + 2*(\alpha_xk/h^2)$ for the same grid cell with n+1
-    time step
+- 1D diffusion is possible by setting bc at left/right end by hand or use the
+  default value (Neumann with gradient 0)
+- Always set concentrations/diffusion coefficients by using std::vector
+- simple datastructure, which is currently just a class called *BTCSDiffusion*
 
-So as a conclusion: We get a system of equations to solve for $u$. Maybe use
-LU-Decomposition here. It is easy to implement, deterministic and also
-performant. Since each $u_j$ is dependent on $u_{j-1}$ this will be hard to
-parallelize but I will keep parallelization in mind.
+* ToDos
 
-Regarding the borders: I'm not quite sure what to do. Maybe it might be a good
-idea to use a simple gaussian kernel here to smooth those two columns and two
-lines.
-
-* Implementation
-
-So currently I consider to implement the following methods for the module:
-
-- +decompose matrix A into L and U+
-- better use a library like Eigen here:
-  - using =SparseMatrix= to represent matrix $A$
-  - =SparseLU= to solve
+- [ ] keep sparse matrix in memory
+- [ ] allow different boundary conditions at the ends and also inside the grid
+- [ ] implement 2D diffusion
