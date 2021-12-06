@@ -2,6 +2,7 @@
 #define BTCSDIFFUSION_H_
 
 #include <Eigen/Sparse>
+#include <Eigen/src/SparseCore/SparseMatrixBase.h>
 #include <tuple>
 #include <vector>
 
@@ -11,7 +12,7 @@
  */
 typedef Eigen::Triplet<double> T;
 
-typedef std::vector<std::tuple<int,double>> boundary_condition;
+typedef std::vector<std::tuple<int, double>> boundary_condition;
 
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -20,9 +21,8 @@ typedef std::vector<std::tuple<int,double>> boundary_condition;
 class BTCSDiffusion {
 
 public:
-
-    static const int BC_NEUMANN;
-    static const int BC_DIRICHLET;
+  static const int BC_NEUMANN;
+  static const int BC_DIRICHLET;
 
   /*!
    * Create 1D-diffusion module.
@@ -56,12 +56,27 @@ public:
    * @param alpha Vector of diffusioncoefficients for each grid element.
    * @param timestep Time (in seconds ?) to simulate.
    */
-  void simulate(std::vector<double> &c, std::vector<double> &alpha,
-                double timestep);
+  void simulate(std::vector<double> &c, std::vector<double> &alpha);
+
+  void setTimestep(double time_step);
+
+  void setBoundaryCondition(int index, double val, int type);
 
 private:
+  void simulate1D(std::vector<double> &c, double bc_left, double bc_right,
+                  std::vector<double> &alpha);
+  void simulate2D(std::vector<double> &c);
+  void simulate3D(std::vector<double> &c);
+
+  double getBCFromTuple(int index);
 
   boundary_condition bc;
+
+  Eigen::SparseMatrix<double> A_matrix;
+  Eigen::VectorXd b_vector;
+  Eigen::VectorXd x_vector;
+
+  double time_step;
 
   int grid_dim;
   int dim_x;
