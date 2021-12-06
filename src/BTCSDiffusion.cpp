@@ -106,8 +106,11 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   A_matrix.resize(size, size);
   A_matrix.reserve(Eigen::VectorXi::Constant(size, 3));
 
-  A_matrix.insert(0, 0) = bc_left;
-  A_matrix.insert(size - 1, size - 1) = bc_right;
+  A_matrix.insert(0, 0) = 1;
+  A_matrix.insert(size - 1, size - 1) = 1;
+
+  b_vector[0] = bc_left;
+  b_vector[size-1] = bc_right;
 
   for (int i = 1; i < this->dim_x + 1; i++) {
     double sx = (alpha[i - 1] * time_step) / (dx * dx);
