@@ -8,9 +8,11 @@
 #include <Eigen/src/OrderingMethods/Ordering.h>
 
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <tuple>
+#include <vector>
 
 const int BTCSDiffusion::BC_NEUMANN = 0;
 const int BTCSDiffusion::BC_DIRICHLET = 1;
@@ -125,6 +127,8 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
     // A_line++;
   }
 
+  std::cout << A_matrix << std::endl;
+
   // Eigen::SparseMatrix<double> A(size, size);
   // A.setFromTriplets(tripletList.begin(), tripletList.end());
 
@@ -152,15 +156,17 @@ void BTCSDiffusion::setTimestep(double time_step) {
 void BTCSDiffusion::simulate(std::vector<double> &c,
                              std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
-    double bc_left = getBCFromTuple(0);
-    double bc_right = getBCFromTuple(1);
+    // double bc_left = getBCFromTuple(0);
+    // double bc_right = getBCFromTuple(1);
+    double bc_left = 5. * std::pow(10,-6);
+    double bc_right = c[this->dim_x -1];
 
     simulate1D(c, bc_left, bc_right, alpha);
   }
 }
 
-double BTCSDiffusion::getBCFromTuple(int index) {
-  double val = std::get<1>(bc[index]);
+double BTCSDiffusion::getBCFromTuple(int index, std::vector<double> &c) {
+  double val = std::get<0>(bc[index]);
 
   return val;
 }

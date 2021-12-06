@@ -68,7 +68,7 @@ private:
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
 
-  double getBCFromTuple(int index);
+  double getBCFromTuple(int index, std::vector<double> &c);
 
   boundary_condition bc;
 
