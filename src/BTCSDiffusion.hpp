@@ -2,18 +2,16 @@
 #define BTCSDIFFUSION_H_
 
 #include <Eigen/Sparse>
+#include <tuple>
 #include <vector>
-
-/*!
- * Type defining the side of given boundary condition.
- */
-typedef int BCSide;
 
 /*!
  * Datatype to fill the sparse matrix which is used to solve the equation
  * system.
  */
 typedef Eigen::Triplet<double> T;
+
+typedef std::vector<std::tuple<int,double>> boundary_condition;
 
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -22,15 +20,9 @@ typedef Eigen::Triplet<double> T;
 class BTCSDiffusion {
 
 public:
-  /*!
-   * Set left boundary condition.
-   */
-  static const BCSide LEFT;
 
-  /*!
-   * Set right boundary condition.
-   */
-  static const BCSide RIGHT;
+    static const int BC_NEUMANN;
+    static const int BC_DIRICHLET;
 
   /*!
    * Create 1D-diffusion module.
@@ -57,17 +49,6 @@ public:
   BTCSDiffusion(int x, int y, int z);
 
   /*!
-   * Sets internal boundary condition at the end of the grid/ghost zones.
-   * Currently only implemented for 1D diffusion.
-   *
-   * @param input Vector containing all the values to initialize the ghost
-   * zones.
-   * @param side Sets the side of the boundary condition. See BCSide for more
-   * information.
-   */
-  void setBoundaryCondition(std::vector<double> input, BCSide side);
-
-  /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
    *
    * @param c Vector describing the concentration of one solution of the grid as
@@ -79,7 +60,9 @@ public:
                 double timestep);
 
 private:
-  std::vector<double> bc;
+
+  boundary_condition bc;
+
   int grid_dim;
   int dim_x;
   int dim_y;

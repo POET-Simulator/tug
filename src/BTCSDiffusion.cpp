@@ -16,37 +16,32 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <tuple>
 
-const BCSide BTCSDiffusion::LEFT = 0;
-const BCSide BTCSDiffusion::RIGHT = 1;
+const int BTCSDiffusion::BC_NEUMANN = 0;
+const int BTCSDiffusion::BC_DIRICHLET = 1;
 
 BTCSDiffusion::BTCSDiffusion(int x) : dim_x(x) {
   this->grid_dim = 1;
 
   // per default use Neumann condition with gradient of 0 at the end of the grid
-  this->bc.resize(2, -1);
+  this->bc.resize(2, std::tuple<int, double>(0,0.));
 }
 BTCSDiffusion::BTCSDiffusion(int x, int y) : dim_x(x), dim_y(y) {
 
-  this->grid_dim = 2;
+  // this->grid_dim = 2;
 
-  this->bc.reserve(x * 2 + y * 2);
-  // per default use Neumann condition with gradient of 0 at the end of the grid
-  std::fill(this->bc.begin(), this->bc.end(), -1);
+  // this->bc.reserve(x * 2 + y * 2);
+  // // per default use Neumann condition with gradient of 0 at the end of the grid
+  // std::fill(this->bc.begin(), this->bc.end(), -1);
 }
 BTCSDiffusion::BTCSDiffusion(int x, int y, int z)
     : dim_x(x), dim_y(y), dim_z(z) {
 
-  this->grid_dim = 3;
+  // this->grid_dim = 3;
   // TODO: reserve memory for boundary conditions
 }
 
-void BTCSDiffusion::setBoundaryCondition(std::vector<double> input,
-                                         BCSide side) {
-  if (this->grid_dim == 1) {
-    bc[side] = input[0];
-  }
-}
 void BTCSDiffusion::simulate(std::vector<double> &c, std::vector<double> &alpha,
                              double timestep) {
   // calculate dx
