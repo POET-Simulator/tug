@@ -5,13 +5,16 @@ With this readme I will document all my steps I've done and will do.
 
 * Current State
 
-- 1D diffusion is possible by setting bc at left/right end by hand or use the
+- 1D diffusion is possible by setting bc at left/right end +by hand+ by =setBoundaryCondition()= or use the
   default value (Neumann with gradient 0)
-- Always set concentrations/diffusion coefficients by using std::vector
+- +Always set concentrations/diffusion coefficients by using std::vecto+
+- Set concentrations of ghost zones by defining them via a list tuples.
+  + index 0 points to the left ghost zone
+  + index 1 to the right ghost zone
 - simple datastructure, which is currently just a class called *BTCSDiffusion*
 
 * ToDos
 
-- [ ] keep sparse matrix in memory
-- [ ] allow different boundary conditions at the ends and also inside the grid
+- [X] keep sparse matrix in memory
+- [-] allow different boundary conditions at the ends and also inside the grid
 - [ ] implement 2D diffusion
