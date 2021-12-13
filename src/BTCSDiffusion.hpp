@@ -2,7 +2,6 @@
 #define BTCSDIFFUSION_H_
 
 #include <Eigen/Sparse>
-#include <Eigen/src/SparseCore/SparseMatrixBase.h>
 #include <tuple>
 #include <vector>
 

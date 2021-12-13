@@ -1,14 +1,8 @@
 #include "BTCSDiffusion.hpp"
 
-#include <Eigen/SparseCholesky>
 #include <Eigen/SparseLU>
-#include <Eigen/SparseQR>
-#include <Eigen/src/Core/Matrix.h>
-#include <Eigen/src/Core/util/Constants.h>
-#include <Eigen/src/OrderingMethods/Ordering.h>
 
 #include <algorithm>
-#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <tuple>

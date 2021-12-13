@@ -1,8 +1,7 @@
-#include "BTCSDiffusion.hpp"
-#include <cmath>
-#include <iostream>
-#include <vector>
-
+#include "BTCSDiffusion.hpp" // for BTCSDiffusion, BTCSDiffusion::BC_DIRICHLET
+#include <algorithm>         // for copy, max
+#include <iostream>          // for std
+#include <vector>            // for vector
 using namespace std;
 
 int main(int argc, char *argv[]) {
@@ -18,7 +17,8 @@ int main(int argc, char *argv[]) {
 
   BTCSDiffusion diffu(x);
 
-  diffu.setBoundaryCondition(0, 5. * std::pow(10, -6), BTCSDiffusion::BC_DIRICHLET);
+  diffu.setBoundaryCondition(0, 5. * std::pow(10, -6),
+                             BTCSDiffusion::BC_DIRICHLET);
   diffu.setTimestep(1.);
 
   // diffu.setBoundaryCondition(bc_left, BTCSDiffusion::LEFT);
