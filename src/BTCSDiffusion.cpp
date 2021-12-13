@@ -113,7 +113,7 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
 }
 
 double BTCSDiffusion::getBCFromTuple(int index, double nearest_value) {
-  double val;
+  double val = -1;
   int type = std::get<0>(bc[index]);
 
   if (type == BTCSDiffusion::BC_NEUMANN) {
@@ -122,7 +122,7 @@ double BTCSDiffusion::getBCFromTuple(int index, double nearest_value) {
   } else if (type == BTCSDiffusion::BC_DIRICHLET) {
     val = std::get<1>(bc[index]);
   } else {
-    // some error handling here. Type was set to wrong value.
+    // TODO: implement error handling here. Type was set to wrong value.
   }
 
   return val;
