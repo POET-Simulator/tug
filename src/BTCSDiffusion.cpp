@@ -50,52 +50,6 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   b_vector.resize(size);
   x_vector.resize(size);
 
-  // Eigen::VectorXd b = Eigen::VectorXd::Constant(size, 0);
-  // Eigen::VectorXd x_out(size);
-
-  /*
-   * Initalization of matrix A
-   * This is done by triplets. See:
-   * https://eigen.tuxfamily.org/dox/group__TutorialSparse.html
-   */
-
-  // std::vector<T> tripletList;
-  // tripletList.reserve(c.size() * 3 + bc.size());
-
-  // int A_line = 0;
-
-  // // For all concentrations create one row in matrix A
-  // for (int i = 1; i < this->dim_x + 1; i++) {
-  //   double sx = (alpha[i - 1] * timestep) / (dx * dx);
-
-  //   tripletList.push_back(T(A_line, i, (-1. - 2. * sx)));
-
-  //   tripletList.push_back(T(A_line, i - 1, sx));
-  //   tripletList.push_back(T(A_line, i + 1, sx));
-
-  //   b[A_line] = -c[i - 1];
-  //   A_line++;
-  // }
-
-  // // append left and right boundary conditions/ghost zones
-  // tripletList.push_back(T(A_line, 0, 1));
-
-  // // if value is -1 apply Neumann condition with given gradient
-  // // TODO: set specific gradient
-  // if (bc[0] == -1)
-  //   b[A_line] = c[0];
-  // // else apply given Dirichlet condition
-  // else
-  //   b[A_line] = this->bc[0];
-
-  // A_line++;
-  // tripletList.push_back(T(A_line, size - 1, 1));
-  // // b[A_line] = bc[1];
-  // if (bc[1] == -1)
-  //   b[A_line] = c[c.size() - 1];
-  // else
-  //   b[A_line] = this->bc[1];
-
   /*
    * Begin to solve the equation system using LU solver of Eigen.
    *
@@ -123,19 +77,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
 
     b_vector[i] = -c[i - 1];
 
-    // tripletList.push_back(T(A_line, i, (-1. - 2. * sx)));
-
-    // tripletList.push_back(T(A_line, i - 1, sx));
-    // tripletList.push_back(T(A_line, i + 1, sx));
-
-    // b[A_line] = -c[i - 1];
-    // A_line++;
   }
-
-  // std::cout << A_matrix << std::endl;
-
-  // Eigen::SparseMatrix<double> A(size, size);
-  // A.setFromTriplets(tripletList.begin(), tripletList.end());
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
