@@ -21,7 +21,7 @@ BTCSDiffusion::BTCSDiffusion(int x) : dim_x(x) {
   this->grid_dim = 1;
 
   // per default use Neumann condition with gradient of 0 at the end of the grid
-  this->bc.resize(2, std::tuple<int, double>(0, 0.));
+  this->bc.resize(2, std::tuple<bctype, double>(0, 0.));
 }
 BTCSDiffusion::BTCSDiffusion(int x, int y) : dim_x(x), dim_y(y) {
 
