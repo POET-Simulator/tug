@@ -48,7 +48,7 @@ public:
    *
    * @param x Count of cells in x direction.
    */
-  BTCSDiffusion(int x);
+  explicit BTCSDiffusion(int x);
 
   /*!
    * Currently not implemented: Create 2D-diffusion module.
@@ -56,7 +56,7 @@ public:
    * @param x Count of cells in x direction.
    * @param y Count of cells in y direction.
    */
-  BTCSDiffusion(int x, int y);
+  explicit BTCSDiffusion(int x, int y);
 
   /*!
    * Currently not implemented: Create 3D-diffusion module.
@@ -65,7 +65,7 @@ public:
    * @param y Count of cells in y direction.
    * @param z Count of cells in z direction.
    */
-  BTCSDiffusion(int x, int y, int z);
+  explicit BTCSDiffusion(int x, int y, int z);
 
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
@@ -74,7 +74,7 @@ public:
    * continious memory (Row-wise).
    * @param alpha Vector of diffusioncoefficients for each grid element.
    */
-  void simulate(std::vector<double> &c, std::vector<double> &alpha);
+  void simulate(std::vector<double> &c, const std::vector<double> &alpha);
 
   /*!
    * Set the timestep of the simulation
@@ -97,11 +97,11 @@ public:
 
 private:
   void simulate1D(std::vector<double> &c, double bc_left, double bc_right,
-                  std::vector<double> &alpha);
+                  const std::vector<double> &alpha, double dx, int size);
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
 
-  double getBCFromTuple(int index, double nearest_value);
+  double getBCFromTuple(int index, double nearest_value, double neighbor_alpha);
 
   boundary_condition bc;
 
@@ -112,9 +112,12 @@ private:
   double time_step;
 
   int grid_dim;
-  int dim_x;
-  int dim_y;
-  int dim_z;
+  int n_x;
+  double dx;
+  int n_y;
+  double dy;
+  int n_z;
+  double dz;
 };
 
 #endif // BTCSDIFFUSION_H_
