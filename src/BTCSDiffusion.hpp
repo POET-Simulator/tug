@@ -12,7 +12,20 @@
  */
 typedef Eigen::Triplet<double> T;
 
+/*!
+ * Defines both types of boundary condition as a datatype.
+ */
 typedef int bctype;
+
+/*!
+ * A boundary condition consists of two features. A type and the according
+ * value. Here we can differentiate between:
+ *
+ * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
+ * gradient
+ * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
+ * the boundary condition
+ */
 typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 
 /*!
@@ -22,7 +35,13 @@ typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 class BTCSDiffusion {
 
 public:
+  /*!
+   * Defines a Neumann boundary condition.
+   */
   static const int BC_NEUMANN;
+  /*!
+   * Defines a Dirichlet boundary condition.
+   */
   static const int BC_DIRICHLET;
 
   /*!
@@ -55,12 +74,26 @@ public:
    * @param c Vector describing the concentration of one solution of the grid as
    * continious memory (Row-wise).
    * @param alpha Vector of diffusioncoefficients for each grid element.
-   * @param timestep Time (in seconds ?) to simulate.
    */
   void simulate(std::vector<double> &c, std::vector<double> &alpha);
 
+  /*!
+   * Set the timestep of the simulation
+   *
+   * @param time_step Time step (in seconds ???)
+   */
   void setTimestep(double time_step);
 
+  /*!
+   * Set the boundary condition of the given grid. This is done by defining an
+   * index (exact order still to be determined), the type of the boundary
+   * condition and the according value.
+   *
+   * @param index Index of the boundary condition vector.
+   * @param val Value of the boundary condition (gradient for Neumann, exact
+   * value for Dirichlet).
+   * @param Type of the grid cell.
+   */
   void setBoundaryCondition(int index, double val, bctype type);
 
 private:
