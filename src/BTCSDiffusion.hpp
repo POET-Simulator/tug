@@ -12,7 +12,8 @@
  */
 typedef Eigen::Triplet<double> T;
 
-typedef std::vector<std::tuple<int, double>> boundary_condition;
+typedef int bctype;
+typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -60,7 +61,7 @@ public:
 
   void setTimestep(double time_step);
 
-  void setBoundaryCondition(int index, double val, int type);
+  void setBoundaryCondition(int index, double val, bctype type);
 
 private:
   void simulate1D(std::vector<double> &c, double bc_left, double bc_right,
@@ -68,7 +69,7 @@ private:
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
 
-  double getBCFromTuple(int index, std::vector<double> &c);
+  double getBCFromTuple(int index, double nearest_value);
 
   boundary_condition bc;
 

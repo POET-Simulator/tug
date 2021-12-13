@@ -97,7 +97,9 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   //   b[A_line] = this->bc[1];
 
   /*
-   * Begin to solve the equation system
+   * Begin to solve the equation system using LU solver of Eigen.
+   *
+   * But first fill the A matrix and b vector.
    *
    * At this point there is some debugging output in the code.
    * TODO: remove output
@@ -110,7 +112,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   A_matrix.insert(size - 1, size - 1) = 1;
 
   b_vector[0] = bc_left;
-  b_vector[size-1] = bc_right;
+  b_vector[size - 1] = bc_right;
 
   for (int i = 1; i < this->dim_x + 1; i++) {
     double sx = (alpha[i - 1] * time_step) / (dx * dx);
@@ -130,7 +132,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
     // A_line++;
   }
 
-  std::cout << A_matrix << std::endl;
+  // std::cout << A_matrix << std::endl;
 
   // Eigen::SparseMatrix<double> A(size, size);
   // A.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -159,22 +161,32 @@ void BTCSDiffusion::setTimestep(double time_step) {
 void BTCSDiffusion::simulate(std::vector<double> &c,
                              std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
-    // double bc_left = getBCFromTuple(0);
-    // double bc_right = getBCFromTuple(1);
-    double bc_left = 5. * std::pow(10,-6);
-    double bc_right = c[this->dim_x -1];
+    double bc_left = getBCFromTuple(0, c[0]);
+    double bc_right = getBCFromTuple(1, c[c.size() - 1]);
+    // double bc_left = 5. * std::pow(10,-6);
+    // double bc_right = c[this->dim_x -1];
 
     simulate1D(c, bc_left, bc_right, alpha);
   }
 }
 
-double BTCSDiffusion::getBCFromTuple(int index, std::vector<double> &c) {
-  double val = std::get<0>(bc[index]);
+double BTCSDiffusion::getBCFromTuple(int index, double nearest_value) {
+  double val;
+  int type = std::get<0>(bc[index]);
+
+  if (type == BTCSDiffusion::BC_NEUMANN) {
+    // TODO implement gradient here
+    val = nearest_value;
+  } else if (type == BTCSDiffusion::BC_DIRICHLET) {
+    val = std::get<1>(bc[index]);
+  } else {
+    // some error handling here. Type was set to wrong value.
+  }
 
   return val;
 }
 
-void BTCSDiffusion::setBoundaryCondition(int index, double val, int type) {
-  std::get<0>(bc[index]) = val;
-  std::get<1>(bc[index]) = type;
+void BTCSDiffusion::setBoundaryCondition(int index, double val, bctype type) {
+  std::get<0>(bc[index]) = type;
+  std::get<1>(bc[index]) = val;
 }
