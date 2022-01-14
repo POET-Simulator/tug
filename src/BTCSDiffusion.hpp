@@ -35,13 +35,19 @@ class BTCSDiffusion {
 
 public:
   /*!
-   * Defines a Neumann boundary condition.
+   * Defines a constant/Dirichlet boundary condition.
    */
-  static const int BC_NEUMANN;
+  static const int BC_CONSTANT;
+
   /*!
-   * Defines a Dirichlet boundary condition.
+   * Defines a closed/Neumann boundary condition.
    */
-  static const int BC_DIRICHLET;
+    static const int BC_CLOSED;
+
+    /*!
+     * Defines a flux/Cauchy boundary condition.
+     */
+    static const int BC_FLUX;
 
   /*!
    * Create 1D-diffusion module.

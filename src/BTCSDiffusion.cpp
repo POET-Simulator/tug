@@ -8,15 +8,16 @@
 #include <tuple>
 #include <vector>
 
-const int BTCSDiffusion::BC_NEUMANN = 0;
-const int BTCSDiffusion::BC_DIRICHLET = 1;
+const int BTCSDiffusion::BC_CONSTANT = 0;
+const int BTCSDiffusion::BC_CLOSED = 1;
+const int BTCSDiffusion::BC_FLUX = 2;
 
 BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
   this->grid_dim = 1;
   this->dx = 1. / (x - 1);
 
   // per default use Neumann condition with gradient of 0 at the end of the grid
-  this->bc.resize(2, std::tuple<bctype, double>(BTCSDiffusion::BC_NEUMANN, 0.));
+  this->bc.resize(2, std::tuple<bctype, double>(BTCSDiffusion::BC_CONSTANT, 0.));
 }
 BTCSDiffusion::BTCSDiffusion(int x, int y) : n_x(x), n_y(y) {
 
@@ -109,10 +110,10 @@ double BTCSDiffusion::getBCFromTuple(int index, double neighbor_c,
   double val = -1;
   int type = std::get<0>(bc[index]);
 
-  if (type == BTCSDiffusion::BC_NEUMANN) {
+  if (type == BTCSDiffusion::BC_CONSTANT) {
     val = neighbor_c + (this->time_step / (dx * dx)) * neighbor_alpha *
                            std::get<1>(bc[index]);
-  } else if (type == BTCSDiffusion::BC_DIRICHLET) {
+  } else if (type == BTCSDiffusion::BC_CLOSED) {
     val = std::get<1>(bc[index]);
   } else {
     // TODO: implement error handling here. Type was set to wrong value.
