@@ -75,8 +75,8 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   size = size + 2;
 
   // set sizes of private and yet allocated vectors
-  b_vector.resize(size);
-  x_vector.resize(size);
+  b_vector.resize(size + 2);
+  x_vector.resize(size + 2);
 
   /*
    * Begin to solve the equation system using LU solver of Eigen.
@@ -87,23 +87,23 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
    * TODO: remove output
    */
 
-  A_matrix.resize(size, size);
-  A_matrix.reserve(Eigen::VectorXi::Constant(size, 3));
+  A_matrix.resize(size + 2, size + 2);
+  A_matrix.reserve(Eigen::VectorXi::Constant(size + 2, 3));
 
   A_matrix.insert(0, 0) = 1;
-  A_matrix.insert(size - 1, size - 1) = 1;
+  A_matrix.insert(1, 1) = 1;
 
   b_vector[0] = bc_left;
-  b_vector[size - 1] = bc_right;
+  b_vector[1] = bc_right;
 
-  for (int i = 1; i < this->n_x + 1; i++) {
-    double sx = (alpha[i - 1] * time_step) / (dx * dx);
+  for (int i = 2; i < size + 2; i++) {
+    double sx = (alpha[(i - 2) - 1] * time_step) / (dx * dx);
 
     A_matrix.insert(i, i) = -1. - 2. * sx;
     A_matrix.insert(i, i - 1) = sx;
     A_matrix.insert(i, i + 1) = sx;
 
-    b_vector[i] = -c[i - 1];
+    b_vector[i] = -c[(i - 2)];
   }
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
@@ -119,7 +119,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   std::cout << std::setprecision(10) << x_vector << std::endl << std::endl;
 
   for (int i = 0; i < c.size(); i++) {
-    c[i] = x_vector[i + 1];
+    c[i] = x_vector[i + 2];
   }
 }
 
@@ -134,7 +134,8 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
     double bc_right =
         getBCFromTuple(1, c[c.size() - 1], alpha[alpha.size() - 1]);
 
-    simulate1D(c, bc_left, bc_right, alpha, this->dx, this->n_x);
+    simulate1D(c, bc_left, bc_right, alpha, this->deltas[0],
+               this->grid_cells[0]);
   }
 }
 
@@ -144,8 +145,8 @@ double BTCSDiffusion::getBCFromTuple(int index, double neighbor_c,
   int type = std::get<0>(bc[index]);
 
   if (type == BTCSDiffusion::BC_CONSTANT) {
-    val = neighbor_c + (this->time_step / (dx * dx)) * neighbor_alpha *
-                           std::get<1>(bc[index]);
+    val = neighbor_c + (this->time_step / (this->deltas[0] * this->deltas[0])) *
+                           neighbor_alpha * std::get<1>(bc[index]);
   } else if (type == BTCSDiffusion::BC_CLOSED) {
     val = std::get<1>(bc[index]);
   } else {

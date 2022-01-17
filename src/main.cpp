@@ -6,19 +6,28 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  // count of grid cells
-  int x = 20;
+  // dimension of grid
+  int dim = 1;
+
+  int n = 20;
 
   // create input + diffusion coefficients for each grid cell
-  std::vector<double> alpha(x, 1 * pow(10, -1));
-  std::vector<double> input(x, 1 * std::pow(10, -6));
+  std::vector<double> alpha(n, 1 * pow(10, -1));
+  std::vector<double> input(n, 1 * std::pow(10, -6));
 
   // create instance of diffusion module
-  BTCSDiffusion diffu(x);
+  BTCSDiffusion diffu(dim);
+
+  std::vector<int> vec_n = diffu.getNumberOfGridCells();
+
+
+  vec_n[0] = n;
+
+  diffu.setNumberOfGridCells(vec_n);
 
   // set the boundary condition for the left ghost cell to dirichlet
   diffu.setBoundaryCondition(0, 5. * std::pow(10, -6),
-                             BTCSDiffusion::BC_DIRICHLET);
+                             BTCSDiffusion::BC_CONSTANT);
 
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);
