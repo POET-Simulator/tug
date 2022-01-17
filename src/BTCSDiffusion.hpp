@@ -42,36 +42,41 @@ public:
   /*!
    * Defines a closed/Neumann boundary condition.
    */
-    static const int BC_CLOSED;
+  static const int BC_CLOSED;
 
-    /*!
-     * Defines a flux/Cauchy boundary condition.
-     */
-    static const int BC_FLUX;
+  /*!
+   * Defines a flux/Cauchy boundary condition.
+   */
+  static const int BC_FLUX;
 
   /*!
    * Create 1D-diffusion module.
    *
    * @param x Count of cells in x direction.
    */
-  explicit BTCSDiffusion(int x);
+  BTCSDiffusion(unsigned int dim);
 
-  /*!
-   * Currently not implemented: Create 2D-diffusion module.
-   *
-   * @param x Count of cells in x direction.
-   * @param y Count of cells in y direction.
-   */
-  explicit BTCSDiffusion(int x, int y);
+  std::vector<int> getNumberOfGridCells();
+  std::vector<int> getSpatialDiscretization();
+  void setNumberOfGridCells(std::vector<int> &n_grid);
+  void setSpatialDiscretization(std::vector<int> &s_grid);
 
-  /*!
-   * Currently not implemented: Create 3D-diffusion module.
-   *
-   * @param x Count of cells in x direction.
-   * @param y Count of cells in y direction.
-   * @param z Count of cells in z direction.
-   */
-  explicit BTCSDiffusion(int x, int y, int z);
+  // /*!
+  //  * Currently not implemented: Create 2D-diffusion module.
+  //  *
+  //  * @param x Count of cells in x direction.
+  //  * @param y Count of cells in y direction.
+  //  */
+  // explicit BTCSDiffusion(int x, int y);
+
+  // /*!
+  //  * Currently not implemented: Create 3D-diffusion module.
+  //  *
+  //  * @param x Count of cells in x direction.
+  //  * @param y Count of cells in y direction.
+  //  * @param z Count of cells in z direction.
+  //  */
+  // explicit BTCSDiffusion(int x, int y, int z);
 
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
@@ -109,6 +114,8 @@ private:
 
   double getBCFromTuple(int index, double nearest_value, double neighbor_alpha);
 
+  void updateDeltas();
+
   boundary_condition bc;
 
   Eigen::SparseMatrix<double> A_matrix;
@@ -118,12 +125,9 @@ private:
   double time_step;
 
   int grid_dim;
-  int n_x;
-  double dx;
-  int n_y;
-  double dy;
-  int n_z;
-  double dz;
+  std::vector<int> grid_cells;
+  std::vector<int> spatial_discretization;
+  std::vector<double> deltas;
 };
 
 #endif // BTCSDIFFUSION_H_

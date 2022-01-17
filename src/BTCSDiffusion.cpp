@@ -3,6 +3,7 @@
 #include <Eigen/SparseLU>
 
 #include <algorithm>
+#include <cassert>
 #include <iomanip>
 #include <iostream>
 #include <tuple>
@@ -12,26 +13,58 @@ const int BTCSDiffusion::BC_CONSTANT = 0;
 const int BTCSDiffusion::BC_CLOSED = 1;
 const int BTCSDiffusion::BC_FLUX = 2;
 
-BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
-  this->grid_dim = 1;
-  this->dx = 1. / (x - 1);
+BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
+  assert(dim <= 3);
 
-  // per default use Neumann condition with gradient of 0 at the end of the grid
-  this->bc.resize(2, std::tuple<bctype, double>(BTCSDiffusion::BC_CONSTANT, 0.));
+  grid_cells.resize(dim, 1);
+  spatial_discretization.resize(dim, 1);
+  deltas.resize(dim, 1);
 }
-BTCSDiffusion::BTCSDiffusion(int x, int y) : n_x(x), n_y(y) {
 
-  // this->grid_dim = 2;
-
-  // this->bc.reserve(x * 2 + y * 2);
-  // // per default use Neumann condition with gradient of 0 at the end of the
-  // grid std::fill(this->bc.begin(), this->bc.end(), -1);
+std::vector<int> BTCSDiffusion::getNumberOfGridCells() {
+  return this->grid_cells;
 }
-BTCSDiffusion::BTCSDiffusion(int x, int y, int z) : n_x(x), n_y(y), n_z(z) {
-
-  // this->grid_dim = 3;
-  // TODO: reserve memory for boundary conditions
+std::vector<int> BTCSDiffusion::getSpatialDiscretization() {
+  return this->spatial_discretization;
 }
+void BTCSDiffusion::setNumberOfGridCells(std::vector<int> &n_grid) {
+  grid_cells = n_grid;
+  assert(grid_cells.size() == grid_dim);
+  updateDeltas();
+}
+void BTCSDiffusion::setSpatialDiscretization(std::vector<int> &s_grid) {
+  spatial_discretization = s_grid;
+  assert(spatial_discretization.size() == grid_dim);
+  updateDeltas();
+}
+
+void BTCSDiffusion::updateDeltas() {
+  for (int i = 0; i < grid_dim; i++) {
+    deltas[i] = (double)spatial_discretization[i] / grid_cells[i];
+  }
+}
+// BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
+//   this->grid_dim = 1;
+//   this->dx = 1. / (x - 1);
+
+//   // per default use Neumann condition with gradient of 0 at the end of the
+//   grid this->bc.resize(2, std::tuple<bctype,
+//   double>(BTCSDiffusion::BC_CONSTANT, 0.));
+// }
+// BTCSDiffusion::BTCSDiffusion(int x, int y) : n_x(x), n_y(y) {
+
+//   // this->grid_dim = 2;
+
+//   // this->bc.reserve(x * 2 + y * 2);
+//   // // per default use Neumann condition with gradient of 0 at the end of
+//   the
+//   // grid std::fill(this->bc.begin(), this->bc.end(), -1);
+// }
+// BTCSDiffusion::BTCSDiffusion(int x, int y, int z) : n_x(x), n_y(y), n_z(z) {
+
+//   // this->grid_dim = 3;
+//   // TODO: reserve memory for boundary conditions
+// }
 
 void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
                                double bc_right,
