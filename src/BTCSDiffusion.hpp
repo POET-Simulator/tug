@@ -114,7 +114,7 @@ private:
 
   double getBCFromTuple(int index, double nearest_value, double neighbor_alpha);
 
-  void updateDeltas();
+  void updateInternals();
 
   boundary_condition bc;
 

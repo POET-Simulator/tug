@@ -30,17 +30,29 @@ std::vector<int> BTCSDiffusion::getSpatialDiscretization() {
 void BTCSDiffusion::setNumberOfGridCells(std::vector<int> &n_grid) {
   grid_cells = n_grid;
   assert(grid_cells.size() == grid_dim);
-  updateDeltas();
+  updateInternals();
 }
 void BTCSDiffusion::setSpatialDiscretization(std::vector<int> &s_grid) {
   spatial_discretization = s_grid;
   assert(spatial_discretization.size() == grid_dim);
-  updateDeltas();
+  updateInternals();
 }
 
-void BTCSDiffusion::updateDeltas() {
+void BTCSDiffusion::updateInternals() {
   for (int i = 0; i < grid_dim; i++) {
     deltas[i] = (double)spatial_discretization[i] / grid_cells[i];
+  }
+
+  switch (grid_dim) {
+  case 1:
+    bc.resize(2, std::tuple<bctype, double>(BTCSDiffusion::BC_CLOSED, 0.));
+    break;
+  case 2:
+    bc.resize(2 * grid_cells[0] + 2 * grid_cells[1], std::tuple<bctype, double>(BTCSDiffusion::BC_CLOSED, 0.));
+    break;
+  case 3:
+    // TODO
+    break;
   }
 }
 // BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
@@ -72,7 +84,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
                                int size) {
 
   // we need 2 more grid cells for ghost cells
-  size = size + 2;
+  // size = size + 2;
 
   // set sizes of private and yet allocated vectors
   b_vector.resize(size + 2);
@@ -91,19 +103,19 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   A_matrix.reserve(Eigen::VectorXi::Constant(size + 2, 3));
 
   A_matrix.insert(0, 0) = 1;
-  A_matrix.insert(1, 1) = 1;
+  A_matrix.insert(size + 1, size + 1) = 1;
 
   b_vector[0] = bc_left;
-  b_vector[1] = bc_right;
+  b_vector[size + 1] = bc_right;
 
-  for (int i = 2; i < size + 2; i++) {
-    double sx = (alpha[(i - 2) - 1] * time_step) / (dx * dx);
+  for (int i = 1; i < size + 1; i++) {
+    double sx = (alpha[i - 1] * time_step) / (dx * dx);
 
     A_matrix.insert(i, i) = -1. - 2. * sx;
     A_matrix.insert(i, i - 1) = sx;
     A_matrix.insert(i, i + 1) = sx;
 
-    b_vector[i] = -c[(i - 2)];
+    b_vector[i] = -c[i - 1];
   }
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
@@ -119,7 +131,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   std::cout << std::setprecision(10) << x_vector << std::endl << std::endl;
 
   for (int i = 0; i < c.size(); i++) {
-    c[i] = x_vector[i + 2];
+    c[i] = x_vector[i + 1];
   }
 }
 
@@ -144,10 +156,11 @@ double BTCSDiffusion::getBCFromTuple(int index, double neighbor_c,
   double val = -1;
   int type = std::get<0>(bc[index]);
 
-  if (type == BTCSDiffusion::BC_CONSTANT) {
-    val = neighbor_c + (this->time_step / (this->deltas[0] * this->deltas[0])) *
-                           neighbor_alpha * std::get<1>(bc[index]);
-  } else if (type == BTCSDiffusion::BC_CLOSED) {
+  if (type == BTCSDiffusion::BC_CLOSED) {
+    val = neighbor_c;
+    // val = neighbor_c + (this->time_step / (this->deltas[0] * this->deltas[0])) *
+    //                        neighbor_alpha * std::get<1>(bc[index]);
+  } else if (type == BTCSDiffusion::BC_CONSTANT){
     val = std::get<1>(bc[index]);
   } else {
     // TODO: implement error handling here. Type was set to wrong value.

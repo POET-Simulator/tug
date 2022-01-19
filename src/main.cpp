@@ -20,7 +20,6 @@ int main(int argc, char *argv[]) {
 
   std::vector<int> vec_n = diffu.getNumberOfGridCells();
 
-
   vec_n[0] = n;
 
   diffu.setNumberOfGridCells(vec_n);
