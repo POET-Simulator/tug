@@ -141,7 +141,7 @@ private:
 
   int grid_dim;
   std::vector<int> grid_cells;
-  std::vector<int> spatial_discretization;
+  std::vector<int> domain_size;
   std::vector<double> deltas;
 };
 

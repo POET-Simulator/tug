@@ -17,7 +17,7 @@ BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   assert(dim <= 3);
 
   grid_cells.resize(dim, 1);
-  spatial_discretization.resize(dim, 1);
+  domain_size.resize(dim, 1);
   deltas.resize(dim, 1);
 }
 
@@ -25,7 +25,7 @@ std::vector<int> BTCSDiffusion::getNumberOfGridCells() {
   return this->grid_cells;
 }
 std::vector<int> BTCSDiffusion::getSpatialDiscretization() {
-  return this->spatial_discretization;
+  return this->domain_size;
 }
 void BTCSDiffusion::setNumberOfGridCells(std::vector<int> &n_grid) {
   grid_cells = n_grid;
@@ -33,14 +33,14 @@ void BTCSDiffusion::setNumberOfGridCells(std::vector<int> &n_grid) {
   updateInternals();
 }
 void BTCSDiffusion::setSpatialDiscretization(std::vector<int> &s_grid) {
-  spatial_discretization = s_grid;
-  assert(spatial_discretization.size() == grid_dim);
+  domain_size = s_grid;
+  assert(domain_size.size() == grid_dim);
   updateInternals();
 }
 
 void BTCSDiffusion::updateInternals() {
   for (int i = 0; i < grid_dim; i++) {
-    deltas[i] = (double)spatial_discretization[i] / grid_cells[i];
+    deltas[i] = (double)domain_size[i] / grid_cells[i];
   }
 
   switch (grid_dim) {
