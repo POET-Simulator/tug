@@ -5,27 +5,11 @@
 #include <tuple>
 #include <vector>
 
-/*!
- * Datatype to fill the sparse matrix which is used to solve the equation
- * system.
- */
-typedef Eigen::Triplet<double> T;
 
 /*!
  * Defines both types of boundary condition as a datatype.
  */
 typedef int bctype;
-
-/*!
- * A boundary condition consists of two features. A type and the according
- * value. Here we can differentiate between:
- *
- * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
- * gradient
- * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
- * the boundary condition
- */
-typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -48,6 +32,23 @@ public:
    * Defines a flux/Cauchy boundary condition.
    */
   static const int BC_FLUX;
+
+  /*!
+   * A boundary condition consists of two features. A type and the according
+   * value. Here we can differentiate between:
+   *
+   * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
+   * gradient
+   * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
+   * the boundary condition
+   */
+  typedef std::vector<std::tuple<bctype, double>> boundary_condition;
+
+/*!
+ * Datatype to fill the sparse matrix which is used to solve the equation
+ * system.
+ */
+    typedef Eigen::Triplet<double> T;
 
   /*!
    * Create 1D-diffusion module.
