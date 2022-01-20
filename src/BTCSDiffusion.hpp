@@ -42,7 +42,21 @@ public:
    * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
    * the boundary condition
    */
-  typedef std::vector<std::tuple<bctype, double>> boundary_condition;
+    typedef struct boundary_condition {
+      bctype type;
+      double value;
+    } boundary_condition;
+
+  /*!
+   * A boundary condition consists of two features. A type and the according
+   * value. Here we can differentiate between:
+   *
+   * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
+   * gradient
+   * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
+   * the boundary condition
+   */
+  // typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 
 /*!
  * Datatype to fill the sparse matrix which is used to solve the equation
@@ -117,7 +131,7 @@ private:
 
   void updateInternals();
 
-  boundary_condition bc;
+  std::vector<boundary_condition> bc;
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;

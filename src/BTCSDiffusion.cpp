@@ -45,10 +45,11 @@ void BTCSDiffusion::updateInternals() {
 
   switch (grid_dim) {
   case 1:
-    bc.resize(2, std::tuple<bctype, double>(BTCSDiffusion::BC_CLOSED, 0.));
+    bc.resize(2, {BTCSDiffusion::BC_CLOSED, 0});
     break;
   case 2:
-    bc.resize(2 * grid_cells[0] + 2 * grid_cells[1], std::tuple<bctype, double>(BTCSDiffusion::BC_CLOSED, 0.));
+    bc.resize(2 * grid_cells[0] + 2 * grid_cells[1],
+              {BTCSDiffusion::BC_CLOSED, 0});
     break;
   case 3:
     // TODO
@@ -154,14 +155,15 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
 double BTCSDiffusion::getBCFromTuple(int index, double neighbor_c,
                                      double neighbor_alpha) {
   double val = -1;
-  int type = std::get<0>(bc[index]);
+  int type = bc[index].type;
 
   if (type == BTCSDiffusion::BC_CLOSED) {
     val = neighbor_c;
-    // val = neighbor_c + (this->time_step / (this->deltas[0] * this->deltas[0])) *
+    // val = neighbor_c + (this->time_step / (this->deltas[0] *
+    // this->deltas[0])) *
     //                        neighbor_alpha * std::get<1>(bc[index]);
-  } else if (type == BTCSDiffusion::BC_CONSTANT){
-    val = std::get<1>(bc[index]);
+  } else if (type == BTCSDiffusion::BC_CONSTANT) {
+    val = bc[index].value;
   } else {
     // TODO: implement error handling here. Type was set to wrong value.
   }
@@ -170,6 +172,10 @@ double BTCSDiffusion::getBCFromTuple(int index, double neighbor_c,
 }
 
 void BTCSDiffusion::setBoundaryCondition(int index, double val, bctype type) {
-  std::get<0>(bc[index]) = type;
-  std::get<1>(bc[index]) = val;
+
+  bc[index].type = type;
+  bc[index].value = val;
+
+  // std::get<0>(bc[index]) = type;
+  // std::get<1>(bc[index]) = val;
 }
