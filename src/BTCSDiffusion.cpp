@@ -79,17 +79,24 @@ void BTCSDiffusion::updateInternals() {
 //   // TODO: reserve memory for boundary conditions
 // }
 
-void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
-                               double bc_right,
+void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
+                               boundary_condition right,
                                const std::vector<double> &alpha, double dx,
                                int size) {
+
+  bool left_is_constant = (left.type == BTCSDiffusion::BC_CONSTANT);
+  bool right_is_constant = (right.type == BTCSDiffusion::BC_CONSTANT);
+  int loop_end = size + !right_is_constant;
 
   // we need 2 more grid cells for ghost cells
   // size = size + 2;
 
+  int bc_offset = !left_is_constant + !right_is_constant;
+  ;
+
   // set sizes of private and yet allocated vectors
-  b_vector.resize(size + 2);
-  x_vector.resize(size + 2);
+  b_vector.resize(size + bc_offset);
+  x_vector.resize(size + bc_offset);
 
   /*
    * Begin to solve the equation system using LU solver of Eigen.
@@ -100,23 +107,27 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
    * TODO: remove output
    */
 
-  A_matrix.resize(size + 2, size + 2);
-  A_matrix.reserve(Eigen::VectorXi::Constant(size + 2, 3));
+  A_matrix.resize(size + bc_offset, size + bc_offset);
+  A_matrix.reserve(Eigen::VectorXi::Constant(size + bc_offset, 3));
 
   A_matrix.insert(0, 0) = 1;
-  A_matrix.insert(size + 1, size + 1) = 1;
+  b_vector[0] = (left_is_constant ? c[0] : getBCFromFlux(left, c[0], alpha[0]));
 
-  b_vector[0] = bc_left;
-  b_vector[size + 1] = bc_right;
+  A_matrix.insert((size + bc_offset) - 1, (size + bc_offset) - 1) = 1;
+  b_vector[size + bc_offset - 1] =
+    (right_is_constant ? c[size - 1] : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
 
-  for (int i = 1; i < size + 1; i++) {
-    double sx = (alpha[i - 1] * time_step) / (dx * dx);
+  // A_matrix.insert(0, 0) = 1;
+  // A_matrix.insert(size + 1, size + 1) = 1;
+
+  for (int i = 1; i < size - right_is_constant; i++) {
+    double sx = (alpha[i - !(left_is_constant)] * time_step) / (dx * dx);
 
     A_matrix.insert(i, i) = -1. - 2. * sx;
     A_matrix.insert(i, i - 1) = sx;
     A_matrix.insert(i, i + 1) = sx;
 
-    b_vector[i] = -c[i - 1];
+    b_vector[i] = -c[i - !(left_is_constant)];
   }
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
@@ -132,7 +143,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, double bc_left,
   std::cout << std::setprecision(10) << x_vector << std::endl << std::endl;
 
   for (int i = 0; i < c.size(); i++) {
-    c[i] = x_vector[i + 1];
+    c[i] = x_vector[i + !left_is_constant];
   }
 }
 
@@ -143,27 +154,24 @@ void BTCSDiffusion::setTimestep(double time_step) {
 void BTCSDiffusion::simulate(std::vector<double> &c,
                              const std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
-    double bc_left = getBCFromTuple(0, c[0], alpha[0]);
-    double bc_right =
-        getBCFromTuple(1, c[c.size() - 1], alpha[alpha.size() - 1]);
+    // double bc_left = getBCFromTuple(0, c[0], alpha[0]);
+    // double bc_right =
+    //     getBCFromTuple(1, c[c.size() - 1], alpha[alpha.size() - 1]);
 
-    simulate1D(c, bc_left, bc_right, alpha, this->deltas[0],
-               this->grid_cells[0]);
+    simulate1D(c, bc[0], bc[1], alpha, this->deltas[0], this->grid_cells[0]);
   }
 }
 
-double BTCSDiffusion::getBCFromTuple(int index, double neighbor_c,
-                                     double neighbor_alpha) {
-  double val = -1;
-  int type = bc[index].type;
+inline double BTCSDiffusion::getBCFromFlux(boundary_condition bc, double neighbor_c,
+                                    double neighbor_alpha) {
 
-  if (type == BTCSDiffusion::BC_CLOSED) {
+  double val;
+
+  if (bc.type == BTCSDiffusion::BC_CLOSED) {
     val = neighbor_c;
-    // val = neighbor_c + (this->time_step / (this->deltas[0] *
-    // this->deltas[0])) *
-    //                        neighbor_alpha * std::get<1>(bc[index]);
-  } else if (type == BTCSDiffusion::BC_CONSTANT) {
-    val = bc[index].value;
+  } else if (bc.type == BTCSDiffusion::BC_FLUX) {
+    //TODO
+    // val = bc[index].value;
   } else {
     // TODO: implement error handling here. Type was set to wrong value.
   }

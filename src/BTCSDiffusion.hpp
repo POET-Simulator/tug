@@ -5,7 +5,6 @@
 #include <tuple>
 #include <vector>
 
-
 /*!
  * Defines both types of boundary condition as a datatype.
  */
@@ -42,10 +41,10 @@ public:
    * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
    * the boundary condition
    */
-    typedef struct boundary_condition {
-      bctype type;
-      double value;
-    } boundary_condition;
+  typedef struct boundary_condition {
+    bctype type;
+    double value;
+  } boundary_condition;
 
   /*!
    * A boundary condition consists of two features. A type and the according
@@ -58,11 +57,11 @@ public:
    */
   // typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 
-/*!
- * Datatype to fill the sparse matrix which is used to solve the equation
- * system.
- */
-    typedef Eigen::Triplet<double> T;
+  /*!
+   * Datatype to fill the sparse matrix which is used to solve the equation
+   * system.
+   */
+  typedef Eigen::Triplet<double> T;
 
   /*!
    * Create 1D-diffusion module.
@@ -122,12 +121,13 @@ public:
   void setBoundaryCondition(int index, double val, bctype type);
 
 private:
-  void simulate1D(std::vector<double> &c, double bc_left, double bc_right,
-                  const std::vector<double> &alpha, double dx, int size);
+  void simulate1D(std::vector<double> &c, boundary_condition left,
+                  boundary_condition right, const std::vector<double> &alpha,
+                  double dx, int size);
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
 
-  double getBCFromTuple(int index, double nearest_value, double neighbor_alpha);
+  inline double getBCFromFlux(boundary_condition bc, double nearest_value, double neighbor_alpha);
 
   void updateInternals();
 
