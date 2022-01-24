@@ -6,6 +6,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <ostream>
 #include <tuple>
 #include <vector>
 
@@ -111,24 +112,26 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
   A_matrix.reserve(Eigen::VectorXi::Constant(size + bc_offset, 3));
 
   A_matrix.insert(0, 0) = 1;
-  b_vector[0] = (left_is_constant ? c[0] : getBCFromFlux(left, c[0], alpha[0]));
+  b_vector[0] = (left_is_constant ? left.value : getBCFromFlux(left, c[0], alpha[0]));
 
   A_matrix.insert((size + bc_offset) - 1, (size + bc_offset) - 1) = 1;
   b_vector[size + bc_offset - 1] =
-    (right_is_constant ? c[size - 1] : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
+    (right_is_constant ? right.value : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
 
   // A_matrix.insert(0, 0) = 1;
   // A_matrix.insert(size + 1, size + 1) = 1;
 
   for (int i = 1; i < size - right_is_constant; i++) {
-    double sx = (alpha[i - !(left_is_constant)] * time_step) / (dx * dx);
+    double sx = (alpha[i + !(left_is_constant)] * time_step) / (dx * dx);
 
     A_matrix.insert(i, i) = -1. - 2. * sx;
     A_matrix.insert(i, i - 1) = sx;
     A_matrix.insert(i, i + 1) = sx;
 
-    b_vector[i] = -c[i - !(left_is_constant)];
+    b_vector[i] = -c[i + !(left_is_constant)];
   }
+
+std::cout << b_vector << "\n" << A_matrix << std::endl;
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
@@ -138,7 +141,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
 
   std::cout << solver.lastErrorMessage() << std::endl;
 
-  x_vector = solver.solve(b_vector);
+  // x_vector = solver.solve(b_vector);
 
   std::cout << std::setprecision(10) << x_vector << std::endl << std::endl;
 
