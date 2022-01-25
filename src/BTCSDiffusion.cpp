@@ -112,11 +112,13 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
   A_matrix.reserve(Eigen::VectorXi::Constant(size + bc_offset, 3));
 
   A_matrix.insert(0, 0) = 1;
-  b_vector[0] = (left_is_constant ? left.value : getBCFromFlux(left, c[0], alpha[0]));
+  b_vector[0] =
+      (left_is_constant ? left.value : getBCFromFlux(left, c[0], alpha[0]));
 
   A_matrix.insert((size + bc_offset) - 1, (size + bc_offset) - 1) = 1;
   b_vector[size + bc_offset - 1] =
-    (right_is_constant ? right.value : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
+      (right_is_constant ? right.value
+                         : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
 
   // A_matrix.insert(0, 0) = 1;
   // A_matrix.insert(size + 1, size + 1) = 1;
@@ -131,7 +133,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
     b_vector[i] = -c[i + !(left_is_constant)];
   }
 
-std::cout << b_vector << "\n" << A_matrix << std::endl;
+  std::cout << b_vector << "\n" << A_matrix << std::endl;
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
@@ -141,7 +143,7 @@ std::cout << b_vector << "\n" << A_matrix << std::endl;
 
   std::cout << solver.lastErrorMessage() << std::endl;
 
-  // x_vector = solver.solve(b_vector);
+  x_vector = solver.solve(b_vector);
 
   std::cout << std::setprecision(10) << x_vector << std::endl << std::endl;
 
@@ -165,16 +167,17 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
   }
 }
 
-inline double BTCSDiffusion::getBCFromFlux(boundary_condition bc, double neighbor_c,
-                                    double neighbor_alpha) {
+inline double BTCSDiffusion::getBCFromFlux(boundary_condition bc,
+                                           double neighbor_c,
+                                           double neighbor_alpha) {
 
   double val;
 
   if (bc.type == BTCSDiffusion::BC_CLOSED) {
     val = neighbor_c;
   } else if (bc.type == BTCSDiffusion::BC_FLUX) {
-    //TODO
-    // val = bc[index].value;
+    // TODO
+    //  val = bc[index].value;
   } else {
     // TODO: implement error handling here. Type was set to wrong value.
   }
