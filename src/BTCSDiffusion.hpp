@@ -6,26 +6,9 @@
 #include <vector>
 
 /*!
- * Datatype to fill the sparse matrix which is used to solve the equation
- * system.
- */
-typedef Eigen::Triplet<double> T;
-
-/*!
  * Defines both types of boundary condition as a datatype.
  */
 typedef int bctype;
-
-/*!
- * A boundary condition consists of two features. A type and the according
- * value. Here we can differentiate between:
- *
- * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
- * gradient
- * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
- * the boundary condition
- */
-typedef std::vector<std::tuple<bctype, double>> boundary_condition;
 
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -35,37 +18,79 @@ class BTCSDiffusion {
 
 public:
   /*!
-   * Defines a Neumann boundary condition.
+   * Defines a constant/Dirichlet boundary condition.
    */
-  static const int BC_NEUMANN;
+  static const int BC_CONSTANT;
+
   /*!
-   * Defines a Dirichlet boundary condition.
+   * Defines a closed/Neumann boundary condition.
    */
-  static const int BC_DIRICHLET;
+  static const int BC_CLOSED;
+
+  /*!
+   * Defines a flux/Cauchy boundary condition.
+   */
+  static const int BC_FLUX;
+
+  /*!
+   * A boundary condition consists of two features. A type and the according
+   * value. Here we can differentiate between:
+   *
+   * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
+   * gradient
+   * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
+   * the boundary condition
+   */
+  typedef struct boundary_condition {
+    bctype type;
+    double value;
+  } boundary_condition;
+
+  /*!
+   * A boundary condition consists of two features. A type and the according
+   * value. Here we can differentiate between:
+   *
+   * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
+   * gradient
+   * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
+   * the boundary condition
+   */
+  // typedef std::vector<std::tuple<bctype, double>> boundary_condition;
+
+  /*!
+   * Datatype to fill the sparse matrix which is used to solve the equation
+   * system.
+   */
+  typedef Eigen::Triplet<double> T;
 
   /*!
    * Create 1D-diffusion module.
    *
    * @param x Count of cells in x direction.
    */
-  explicit BTCSDiffusion(int x);
+  BTCSDiffusion(unsigned int dim);
 
-  /*!
-   * Currently not implemented: Create 2D-diffusion module.
-   *
-   * @param x Count of cells in x direction.
-   * @param y Count of cells in y direction.
-   */
-  explicit BTCSDiffusion(int x, int y);
+  std::vector<int> getNumberOfGridCells();
+  std::vector<int> getSpatialDiscretization();
+  void setNumberOfGridCells(std::vector<int> &n_grid);
+  void setSpatialDiscretization(std::vector<int> &s_grid);
 
-  /*!
-   * Currently not implemented: Create 3D-diffusion module.
-   *
-   * @param x Count of cells in x direction.
-   * @param y Count of cells in y direction.
-   * @param z Count of cells in z direction.
-   */
-  explicit BTCSDiffusion(int x, int y, int z);
+  // /*!
+  //  * Currently not implemented: Create 2D-diffusion module.
+  //  *
+  //  * @param x Count of cells in x direction.
+  //  * @param y Count of cells in y direction.
+  //  */
+  // explicit BTCSDiffusion(int x, int y);
+
+  // /*!
+  //  * Currently not implemented: Create 3D-diffusion module.
+  //  *
+  //  * @param x Count of cells in x direction.
+  //  * @param y Count of cells in y direction.
+  //  * @param z Count of cells in z direction.
+  //  */
+  // explicit BTCSDiffusion(int x, int y, int z);
 
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
@@ -96,14 +121,17 @@ public:
   void setBoundaryCondition(int index, double val, bctype type);
 
 private:
-  void simulate1D(std::vector<double> &c, double bc_left, double bc_right,
-                  const std::vector<double> &alpha, double dx, int size);
+  void simulate1D(std::vector<double> &c, boundary_condition left,
+                  boundary_condition right, const std::vector<double> &alpha,
+                  double dx, int size);
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
 
-  double getBCFromTuple(int index, double nearest_value, double neighbor_alpha);
+  inline double getBCFromFlux(boundary_condition bc, double nearest_value, double neighbor_alpha);
 
-  boundary_condition bc;
+  void updateInternals();
+
+  std::vector<boundary_condition> bc;
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
@@ -112,12 +140,9 @@ private:
   double time_step;
 
   int grid_dim;
-  int n_x;
-  double dx;
-  int n_y;
-  double dy;
-  int n_z;
-  double dz;
+  std::vector<int> grid_cells;
+  std::vector<int> domain_size;
+  std::vector<double> deltas;
 };
 
 #endif // BTCSDIFFUSION_H_
