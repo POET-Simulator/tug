@@ -22,22 +22,39 @@ BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   deltas.resize(dim, 1);
 }
 
-std::vector<int> BTCSDiffusion::getNumberOfGridCells() {
-  return this->grid_cells;
-}
-std::vector<int> BTCSDiffusion::getSpatialDiscretization() {
-  return this->domain_size;
-}
-void BTCSDiffusion::setNumberOfGridCells(std::vector<int> &n_grid) {
-  grid_cells = n_grid;
-  assert(grid_cells.size() == grid_dim);
+void BTCSDiffusion::setXDimensions(unsigned int domain_size,
+                                   unsigned int n_grid_cells) {
+  assert(this->grid_dim > 0);
+  this->domain_size[0] = domain_size;
+  this->grid_cells[0] = n_grid_cells;
+
   updateInternals();
 }
-void BTCSDiffusion::setSpatialDiscretization(std::vector<int> &s_grid) {
-  domain_size = s_grid;
-  assert(domain_size.size() == grid_dim);
+
+void BTCSDiffusion::setYDimensions(unsigned int domain_size,
+                                   unsigned int n_grid_cells) {
+  assert(this->grid_dim > 1);
+  this->domain_size[1] = domain_size;
+  this->grid_cells[1] = n_grid_cells;
+
   updateInternals();
 }
+
+void BTCSDiffusion::setZDimensions(unsigned int domain_size,
+                                   unsigned int n_grid_cells) {
+  assert(this->grid_dim > 2);
+  this->domain_size[2] = domain_size;
+  this->grid_cells[2] = n_grid_cells;
+
+  updateInternals();
+}
+
+unsigned int BTCSDiffusion::getXGridCellsN() { return this->grid_cells[0]; }
+unsigned int BTCSDiffusion::getYGridCellsN() { return this->grid_cells[1]; }
+unsigned int BTCSDiffusion::getZGridCellsN() { return this->grid_cells[2]; }
+unsigned int BTCSDiffusion::getXDomainSize() { return this->domain_size[0]; }
+unsigned int BTCSDiffusion::getYDomainSize() { return this->domain_size[1]; }
+unsigned int BTCSDiffusion::getZDomainSize() { return this->domain_size[2]; }
 
 void BTCSDiffusion::updateInternals() {
   for (int i = 0; i < grid_dim; i++) {
@@ -50,7 +67,7 @@ void BTCSDiffusion::updateInternals() {
     cells *= (grid_cells[i] + 2);
   }
 
-  bc.resize(cells, {BTCSDiffusion::BC_CLOSED,0});
+  bc.resize(cells, {BTCSDiffusion::BC_CLOSED, 0});
 }
 // BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
 //   this->grid_dim = 1;

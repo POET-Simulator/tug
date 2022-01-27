@@ -3,6 +3,7 @@
 
 #include <Eigen/Sparse>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 /*!
@@ -70,11 +71,16 @@ public:
    */
   BTCSDiffusion(unsigned int dim);
 
-  std::vector<int> getNumberOfGridCells();
-  std::vector<int> getSpatialDiscretization();
-  void setNumberOfGridCells(std::vector<int> &n_grid);
-  void setSpatialDiscretization(std::vector<int> &s_grid);
+  void setXDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setYDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setZDimensions(unsigned int domain_size, unsigned int n_grid_cells);
 
+  unsigned int getXGridCellsN();
+  unsigned int getYGridCellsN();
+  unsigned int getZGridCellsN();
+  unsigned int getXDomainSize();
+  unsigned int getYDomainSize();
+  unsigned int getZDomainSize();
   // /*!
   //  * Currently not implemented: Create 2D-diffusion module.
   //  *
@@ -127,7 +133,8 @@ private:
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
 
-  inline double getBCFromFlux(boundary_condition bc, double nearest_value, double neighbor_alpha);
+  inline double getBCFromFlux(boundary_condition bc, double nearest_value,
+                              double neighbor_alpha);
 
   void updateInternals();
 
@@ -140,8 +147,8 @@ private:
   double time_step;
 
   int grid_dim;
-  std::vector<int> grid_cells;
-  std::vector<int> domain_size;
+  std::vector<unsigned int> grid_cells;
+  std::vector<unsigned int> domain_size;
   std::vector<double> deltas;
 };
 

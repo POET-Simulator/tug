@@ -18,11 +18,7 @@ int main(int argc, char *argv[]) {
   // create instance of diffusion module
   BTCSDiffusion diffu(dim);
 
-  std::vector<int> vec_n = diffu.getNumberOfGridCells();
-
-  vec_n[0] = n;
-
-  diffu.setNumberOfGridCells(vec_n);
+  diffu.setXDimensions(1, n);
 
   // set the boundary condition for the left ghost cell to dirichlet
   diffu.setBoundaryCondition(0, 5. * std::pow(10, -6),
