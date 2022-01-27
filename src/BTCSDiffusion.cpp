@@ -44,18 +44,13 @@ void BTCSDiffusion::updateInternals() {
     deltas[i] = (double)domain_size[i] / grid_cells[i];
   }
 
-  switch (grid_dim) {
-  case 1:
-    bc.resize(grid_cells[0] + 2, {BTCSDiffusion::BC_CLOSED, 0});
-    break;
-  case 2:
-    bc.resize((grid_cells[0] + 2) * (grid_cells[1] + 2),
-              {BTCSDiffusion::BC_CLOSED, 0});
-    break;
-  case 3:
-    // TODO
-    break;
+  int cells = 1;
+
+  for (int i = 0; i < grid_dim; i++) {
+    cells *= (grid_cells[i] + 2);
   }
+
+  bc.resize(cells, {BTCSDiffusion::BC_CLOSED,0});
 }
 // BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
 //   this->grid_dim = 1;
