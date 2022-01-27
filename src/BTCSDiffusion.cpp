@@ -5,8 +5,6 @@
 #include <algorithm>
 #include <cassert>
 #include <iomanip>
-#include <iostream>
-#include <ostream>
 #include <tuple>
 #include <vector>
 
@@ -145,19 +143,13 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
     b_vector[i] = -c[i + !(left_is_constant)];
   }
 
-  std::cout << b_vector << "\n" << A_matrix << std::endl;
-
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
   solver.analyzePattern(A_matrix);
 
   solver.factorize(A_matrix);
 
-  std::cout << solver.lastErrorMessage() << std::endl;
-
   x_vector = solver.solve(b_vector);
-
-  std::cout << std::setprecision(10) << x_vector << std::endl << std::endl;
 
   for (int i = 0; i < c.size(); i++) {
     c[i] = x_vector[i + !left_is_constant];
