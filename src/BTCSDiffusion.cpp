@@ -46,10 +46,10 @@ void BTCSDiffusion::updateInternals() {
 
   switch (grid_dim) {
   case 1:
-    bc.resize(2, {BTCSDiffusion::BC_CLOSED, 0});
+    bc.resize(grid_cells[0] + 2, {BTCSDiffusion::BC_CLOSED, 0});
     break;
   case 2:
-    bc.resize(2 * grid_cells[0] + 2 * grid_cells[1],
+    bc.resize((grid_cells[0] + 2) * (grid_cells[1] + 2),
               {BTCSDiffusion::BC_CLOSED, 0});
     break;
   case 3:
@@ -163,7 +163,8 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
     // double bc_right =
     //     getBCFromTuple(1, c[c.size() - 1], alpha[alpha.size() - 1]);
 
-    simulate1D(c, bc[0], bc[1], alpha, this->deltas[0], this->grid_cells[0]);
+    simulate1D(c, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
+               this->grid_cells[0]);
   }
 }
 
