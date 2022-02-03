@@ -134,6 +134,13 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
   // A_matrix.insert(size + 1, size + 1) = 1;
 
   for (int i = 1; i < size - right_is_constant; i++) {
+    if (bc[i + !(left_is_constant)].type == BTCSDiffusion::BC_CONSTANT) {
+      A_matrix.insert(i,i) = 1;
+      b_vector[i] = bc[i + !(left_is_constant)].value;
+      continue;
+    }
+
+
     double sx = (alpha[i + !(left_is_constant)] * time_step) / (dx * dx);
 
     A_matrix.insert(i, i) = -1. - 2. * sx;
