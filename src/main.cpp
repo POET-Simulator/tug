@@ -1,9 +1,8 @@
 #include "BTCSDiffusion.hpp" // for BTCSDiffusion, BTCSDiffusion::BC_DIRICHLET
-#include <Eigen/src/Core/arch/SSE/PacketMath.h>
-#include <algorithm>         // for copy, max
+#include <algorithm> // for copy, max
 #include <iomanip>
-#include <iostream>          // for std
-#include <vector>            // for vector
+#include <iostream> // for std
+#include <vector>   // for vector
 using namespace std;
 
 int main(int argc, char *argv[]) {
@@ -23,8 +22,8 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
 
   // set the boundary condition for the left ghost cell to dirichlet
-  diffu.setBoundaryCondition(0, 5. * std::pow(10, -6),
-                             BTCSDiffusion::BC_CONSTANT);
+  diffu.setBoundaryCondition(0, BTCSDiffusion::BC_CONSTANT,
+                             5. * std::pow(10, -6));
 
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);

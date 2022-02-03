@@ -34,76 +34,76 @@ public:
   static const int BC_FLUX;
 
   /*!
-   * A boundary condition consists of two features. A type and the according
-   * value. Here we can differentiate between:
+   * Creates a diffusion module.
    *
-   * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
-   * gradient
-   * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
-   * the boundary condition
-   */
-  typedef struct boundary_condition {
-    bctype type;
-    double value;
-  } boundary_condition;
-
-  /*!
-   * A boundary condition consists of two features. A type and the according
-   * value. Here we can differentiate between:
-   *
-   * - Neumann boundary conditon: type BC_NEUMANN with the value defining the
-   * gradient
-   * - Dirichlet boundary condition: type BC_DIRICHLET with the actual value of
-   * the boundary condition
-   */
-  // typedef std::vector<std::tuple<bctype, double>> boundary_condition;
-
-  /*!
-   * Datatype to fill the sparse matrix which is used to solve the equation
-   * system.
-   */
-  typedef Eigen::Triplet<double> T;
-
-  /*!
-   * Create 1D-diffusion module.
-   *
-   * @param x Count of cells in x direction.
+   * @param dim Number of dimensions. Should not be greater than 3 and not less
+   * than 1.
    */
   BTCSDiffusion(unsigned int dim);
 
+  /*!
+   * Define the grid in x direction.
+   *
+   * @param domain_size Size of the domain in x direction.
+   * @param n_grid_cells Number of grid cells in x direction the domain is
+   * divided to.
+   */
   void setXDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+
+  /*!
+   * Define the grid in y direction.
+   *
+   * Throws an error if the module wasn't initialized at least as a 2D model.
+   *
+   * @param domain_size Size of the domain in y direction.
+   * @param n_grid_cells Number of grid cells in y direction the domain is
+   * divided to.
+   */
   void setYDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+
+  /*!
+   * Define the grid in z direction.
+   *
+   * Throws an error if the module wasn't initialized at least as a 3D model.
+   *
+   * @param domain_size Size of the domain in z direction.
+   * @param n_grid_cells Number of grid cells in z direction the domain is
+   * divided to.
+   */
   void setZDimensions(unsigned int domain_size, unsigned int n_grid_cells);
 
+  /*!
+   * Returns the number of grid cells in x direction.
+   */
   unsigned int getXGridCellsN();
+  /*!
+   * Returns the number of grid cells in y direction.
+   */
   unsigned int getYGridCellsN();
+  /*!
+   * Returns the number of grid cells in z direction.
+   */
   unsigned int getZGridCellsN();
-  unsigned int getXDomainSize();
-  unsigned int getYDomainSize();
-  unsigned int getZDomainSize();
-  // /*!
-  //  * Currently not implemented: Create 2D-diffusion module.
-  //  *
-  //  * @param x Count of cells in x direction.
-  //  * @param y Count of cells in y direction.
-  //  */
-  // explicit BTCSDiffusion(int x, int y);
 
-  // /*!
-  //  * Currently not implemented: Create 3D-diffusion module.
-  //  *
-  //  * @param x Count of cells in x direction.
-  //  * @param y Count of cells in y direction.
-  //  * @param z Count of cells in z direction.
-  //  */
-  // explicit BTCSDiffusion(int x, int y, int z);
+  /*!
+   * Returns the domain size in x direction.
+   */
+  unsigned int getXDomainSize();
+  /*!
+   * Returns the domain size in y direction.
+   */
+  unsigned int getYDomainSize();
+  /*!
+   * Returns the domain size in z direction.
+   */
+  unsigned int getZDomainSize();
 
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
    *
    * @param c Vector describing the concentration of one solution of the grid as
-   * continious memory (Row-wise).
-   * @param alpha Vector of diffusioncoefficients for each grid element.
+   * continious memory (row major).
+   * @param alpha Vector of diffusion coefficients for each grid element.
    */
   void simulate(std::vector<double> &c, const std::vector<double> &alpha);
 
@@ -119,23 +119,29 @@ public:
    * index (exact order still to be determined), the type of the boundary
    * condition and the according value.
    *
-   * @param index Index of the boundary condition vector.
-   * @param val Value of the boundary condition (gradient for Neumann, exact
-   * value for Dirichlet).
-   * @param Type of the grid cell.
+   * @param index Index of the grid cell the boundary condition is applied to.
+   * @param type Type of the boundary condition. Must be constant, closed or
+   * flux.
+   * @param value For constant boundary conditions this value is set
+   * during solving. For flux value refers to a gradient of change for this grid
+   * cell. For closed this value has no effect since a gradient of 0 is used.
    */
-  void setBoundaryCondition(int index, double val, bctype type);
+  void setBoundaryCondition(int index, bctype type, double value);
 
 private:
+  typedef struct boundary_condition {
+    bctype type;
+    double value;
+  } boundary_condition;
+  typedef Eigen::Triplet<double> T;
+
   void simulate1D(std::vector<double> &c, boundary_condition left,
                   boundary_condition right, const std::vector<double> &alpha,
                   double dx, int size);
   void simulate2D(std::vector<double> &c);
   void simulate3D(std::vector<double> &c);
-
   inline double getBCFromFlux(boundary_condition bc, double nearest_value,
                               double neighbor_alpha);
-
   void updateInternals();
 
   std::vector<boundary_condition> bc;
@@ -145,8 +151,8 @@ private:
   Eigen::VectorXd x_vector;
 
   double time_step;
-
   int grid_dim;
+
   std::vector<unsigned int> grid_cells;
   std::vector<unsigned int> domain_size;
   std::vector<double> deltas;

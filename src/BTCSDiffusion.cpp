@@ -67,28 +67,6 @@ void BTCSDiffusion::updateInternals() {
 
   bc.resize(cells, {BTCSDiffusion::BC_CLOSED, 0});
 }
-// BTCSDiffusion::BTCSDiffusion(int x) : n_x(x) {
-//   this->grid_dim = 1;
-//   this->dx = 1. / (x - 1);
-
-//   // per default use Neumann condition with gradient of 0 at the end of the
-//   grid this->bc.resize(2, std::tuple<bctype,
-//   double>(BTCSDiffusion::BC_CONSTANT, 0.));
-// }
-// BTCSDiffusion::BTCSDiffusion(int x, int y) : n_x(x), n_y(y) {
-
-//   // this->grid_dim = 2;
-
-//   // this->bc.reserve(x * 2 + y * 2);
-//   // // per default use Neumann condition with gradient of 0 at the end of
-//   the
-//   // grid std::fill(this->bc.begin(), this->bc.end(), -1);
-// }
-// BTCSDiffusion::BTCSDiffusion(int x, int y, int z) : n_x(x), n_y(y), n_z(z) {
-
-//   // this->grid_dim = 3;
-//   // TODO: reserve memory for boundary conditions
-// }
 
 void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
                                boundary_condition right,
@@ -97,11 +75,11 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
 
   bool left_is_constant = (left.type == BTCSDiffusion::BC_CONSTANT);
   bool right_is_constant = (right.type == BTCSDiffusion::BC_CONSTANT);
-  int loop_end = size + !right_is_constant;
 
-  // we need 2 more grid cells for ghost cells
-  // size = size + 2;
-
+  //The sizes for matrix and vectors of the equation system is defined by the
+  //actual size of the input vector and if the system is (partially) closed.
+  //Then we will need ghost nodes. So this variable will give the count of ghost
+  //nodes.
   int bc_offset = !left_is_constant + !right_is_constant;
   ;
 
@@ -113,11 +91,10 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
    * Begin to solve the equation system using LU solver of Eigen.
    *
    * But first fill the A matrix and b vector.
-   *
-   * At this point there is some debugging output in the code.
-   * TODO: remove output
    */
 
+  // Set boundary condition for ghost nodes (for closed or flux system) or outer
+  // inlet nodes (constant boundary condition)
   A_matrix.resize(size + bc_offset, size + bc_offset);
   A_matrix.reserve(Eigen::VectorXi::Constant(size + bc_offset, 3));
 
@@ -130,11 +107,13 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
       (right_is_constant ? right.value
                          : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
 
-  // A_matrix.insert(0, 0) = 1;
-  // A_matrix.insert(size + 1, size + 1) = 1;
-
+  // Start filling the A matrix
+  // =i= is used for equation system matrix and vector indexing
+  // and =j= for indexing of c,alpha and bc
   for (int i = 1, j = i + !(left_is_constant); i < size - right_is_constant;
        i++, j++) {
+
+    // if current grid cell is considered as constant boundary conditon
     if (bc[j].type == BTCSDiffusion::BC_CONSTANT) {
       A_matrix.insert(i, i) = 1;
       b_vector[i] = bc[j].value;
@@ -150,6 +129,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
     b_vector[i] = -c[j];
   }
 
+  // start to solve
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
   solver.analyzePattern(A_matrix);
@@ -158,7 +138,8 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
 
   x_vector = solver.solve(b_vector);
 
-  for (int i = 0; i < c.size(); i++) {
+  //fill solution back in place into =c= vector
+  for (int i = 0, j = i + !left_is_constant; i < c.size(); i++, j++) {
     c[i] = x_vector[i + !left_is_constant];
   }
 }
@@ -170,10 +151,6 @@ void BTCSDiffusion::setTimestep(double time_step) {
 void BTCSDiffusion::simulate(std::vector<double> &c,
                              const std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
-    // double bc_left = getBCFromTuple(0, c[0], alpha[0]);
-    // double bc_right =
-    //     getBCFromTuple(1, c[c.size() - 1], alpha[alpha.size() - 1]);
-
     simulate1D(c, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
                this->grid_cells[0]);
   }
@@ -197,11 +174,8 @@ inline double BTCSDiffusion::getBCFromFlux(boundary_condition bc,
   return val;
 }
 
-void BTCSDiffusion::setBoundaryCondition(int index, double val, bctype type) {
+void BTCSDiffusion::setBoundaryCondition(int index, bctype type, double value) {
 
   bc[index].type = type;
-  bc[index].value = val;
-
-  // std::get<0>(bc[index]) = type;
-  // std::get<1>(bc[index]) = val;
+  bc[index].value = value;
 }
