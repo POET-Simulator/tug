@@ -129,14 +129,7 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
     b_vector[i] = -c[j];
   }
 
-  // start to solve
-  Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
-      solver;
-  solver.analyzePattern(A_matrix);
-
-  solver.factorize(A_matrix);
-
-  x_vector = solver.solve(b_vector);
+  solveLES();
 
   //fill solution back in place into =c= vector
   for (int i = 0, j = i + !left_is_constant; i < c.size(); i++, j++) {
@@ -153,6 +146,9 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
   if (this->grid_dim == 1) {
     simulate1D(c, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
                this->grid_cells[0]);
+  }
+  if (this->grid_dim == 2) {
+
   }
 }
 
@@ -178,4 +174,15 @@ void BTCSDiffusion::setBoundaryCondition(int index, bctype type, double value) {
 
   bc[index].type = type;
   bc[index].value = value;
+}
+
+inline void BTCSDiffusion::solveLES() {
+  // start to solve
+  Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
+      solver;
+  solver.analyzePattern(A_matrix);
+
+  solver.factorize(A_matrix);
+
+  x_vector = solver.solve(b_vector);
 }

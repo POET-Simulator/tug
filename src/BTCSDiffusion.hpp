@@ -142,6 +142,7 @@ private:
   void simulate3D(std::vector<double> &c);
   inline double getBCFromFlux(boundary_condition bc, double nearest_value,
                               double neighbor_alpha);
+    inline void solveLES();
   void updateInternals();
 
   std::vector<boundary_condition> bc;
