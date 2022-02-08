@@ -2,6 +2,8 @@
 #define BTCSDIFFUSION_H_
 
 #include <Eigen/Sparse>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/Matrix.h>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -135,7 +137,7 @@ private:
   } boundary_condition;
   typedef Eigen::Triplet<double> T;
 
-  void simulate1D(std::vector<double> &c, boundary_condition left,
+  void simulate1D(Eigen::Map<Eigen::VectorXd> &c, boundary_condition left,
                   boundary_condition right, const std::vector<double> &alpha,
                   double dx, int size);
   void simulate2D(std::vector<double> &c);

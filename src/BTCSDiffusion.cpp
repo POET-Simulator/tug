@@ -2,6 +2,8 @@
 
 #include <Eigen/SparseLU>
 
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/Matrix.h>
 #include <algorithm>
 #include <cassert>
 #include <iomanip>
@@ -68,7 +70,8 @@ void BTCSDiffusion::updateInternals() {
   bc.resize(cells, {BTCSDiffusion::BC_CLOSED, 0});
 }
 
-void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
+void BTCSDiffusion::simulate1D(Eigen::Map<Eigen::VectorXd> &c,
+                               boundary_condition left,
                                boundary_condition right,
                                const std::vector<double> &alpha, double dx,
                                int size) {
@@ -76,10 +79,10 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
   bool left_is_constant = (left.type == BTCSDiffusion::BC_CONSTANT);
   bool right_is_constant = (right.type == BTCSDiffusion::BC_CONSTANT);
 
-  //The sizes for matrix and vectors of the equation system is defined by the
-  //actual size of the input vector and if the system is (partially) closed.
-  //Then we will need ghost nodes. So this variable will give the count of ghost
-  //nodes.
+  // The sizes for matrix and vectors of the equation system is defined by the
+  // actual size of the input vector and if the system is (partially) closed.
+  // Then we will need ghost nodes. So this variable will give the count of
+  // ghost nodes.
   int bc_offset = !left_is_constant + !right_is_constant;
   ;
 
@@ -131,10 +134,8 @@ void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
 
   solveLES();
 
-  //fill solution back in place into =c= vector
-  for (int i = 0, j = i + !left_is_constant; i < c.size(); i++, j++) {
-    c[i] = x_vector[i + !left_is_constant];
-  }
+  // write back result to input/output vector
+  c = x_vector.segment(!left_is_constant, c.size());
 }
 
 void BTCSDiffusion::setTimestep(double time_step) {
@@ -144,7 +145,9 @@ void BTCSDiffusion::setTimestep(double time_step) {
 void BTCSDiffusion::simulate(std::vector<double> &c,
                              const std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
-    simulate1D(c, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
+    assert(c.size() == grid_cells[0]);
+    Eigen::Map<Eigen::VectorXd> c_in(c.data(), this->grid_cells[0]);
+    simulate1D(c_in, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
                this->grid_cells[0]);
   }
   if (this->grid_dim == 2) {
