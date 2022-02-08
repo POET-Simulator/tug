@@ -2,6 +2,8 @@
 
 #include <Eigen/SparseLU>
 
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/Matrix.h>
 #include <algorithm>
 #include <cassert>
 #include <iomanip>
@@ -68,7 +70,7 @@ void BTCSDiffusion::updateInternals() {
   bc.resize(cells, {BTCSDiffusion::BC_CLOSED, 0});
 }
 
-void BTCSDiffusion::simulate1D(std::vector<double> &c, boundary_condition left,
+void BTCSDiffusion::simulate1D(Eigen::Map<Eigen::VectorXd> &c, boundary_condition left,
                                boundary_condition right,
                                const std::vector<double> &alpha, double dx,
                                int size) {
@@ -151,7 +153,9 @@ void BTCSDiffusion::setTimestep(double time_step) {
 void BTCSDiffusion::simulate(std::vector<double> &c,
                              const std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
-    simulate1D(c, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
+    assert(c.size() == grid_cells[0]);
+    Eigen::Map<Eigen::VectorXd> c_in(c.data(), this->grid_cells[0]);
+    simulate1D(c_in, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
                this->grid_cells[0]);
   }
 }
