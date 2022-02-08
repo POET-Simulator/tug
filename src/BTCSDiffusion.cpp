@@ -138,6 +138,50 @@ void BTCSDiffusion::simulate1D(Eigen::Map<Eigen::VectorXd> &c,
   c = x_vector.segment(!left_is_constant, c.size());
 }
 
+void BTCSDiffusion::simulate2D(Eigen::Map<Eigen::MatrixXd> &c,
+                               Eigen::Map<const Eigen::MatrixXd> &alpha) {
+
+  int n_cols = c.cols();
+  unsigned int size = (this->grid_cells[0] + 2) * (this->grid_cells[1]);
+
+  A_matrix.resize(size, size);
+  A_matrix.reserve(Eigen::VectorXi::Constant(size, 3));
+
+  for (int i = 0; i < c.rows(); i++) {
+    bool left = bc[i*n_cols].type == BTCSDiffusion::BC_CONSTANT;
+    bool right = bc[((i+1)*n_cols)-1].type == BTCSDiffusion::BC_CONSTANT;
+    fillMatrixFromRow(alpha, i, left, right, domain_size[0]);
+  }
+}
+
+inline void
+BTCSDiffusion::fillMatrixFromRow(Eigen::Map<const Eigen::MatrixXd> &alpha,
+                                 int row, bool left_constant,
+                                 bool right_constant, int delta) {
+
+  int n_cols = A_matrix.cols();
+  int offset = n_cols * row;
+
+  A_matrix.insert(offset, offset) = !left_constant;
+
+  if (left_constant)
+    A_matrix.insert(offset + 1, offset + 1) = 1;
+
+  A_matrix.insert(offset + (n_cols - 1), offset + (n_cols - 1)) =
+      !right_constant;
+
+  if (right_constant)
+    A_matrix.insert(offset + (n_cols - 2), offset + (n_cols - 2)) = 1;
+
+  for (int j = 1 + left_constant; j < offset - (1 - right_constant); j++) {
+    double sx = (alpha(row, j) * this->time_step) / (delta * delta);
+
+    A_matrix.insert(offset + j, offset + j) = -1. - 2. * sx;
+    A_matrix.insert(offset + j, offset + (j - 1)) = sx;
+    A_matrix.insert(offset + j, offset + (j + 1)) = sx;
+  }
+}
+
 void BTCSDiffusion::setTimestep(double time_step) {
   this->time_step = time_step;
 }
@@ -151,7 +195,12 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
                this->grid_cells[0]);
   }
   if (this->grid_dim == 2) {
+    assert(c.size() == grid_cells[0] * grid_cells[1]);
+    Eigen::Map<Eigen::MatrixXd> c_in(c.data(), this->grid_cells[1],
+                                     this->grid_cells[0]);
 
+    Eigen::Map<const Eigen::MatrixXd> alpha_in(
+        alpha.data(), this->grid_cells[1], this->grid_cells[0]);
   }
 }
 

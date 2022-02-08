@@ -140,11 +140,17 @@ private:
   void simulate1D(Eigen::Map<Eigen::VectorXd> &c, boundary_condition left,
                   boundary_condition right, const std::vector<double> &alpha,
                   double dx, int size);
-  void simulate2D(std::vector<double> &c);
+  void simulate2D(Eigen::Map<Eigen::MatrixXd> &c,
+                  Eigen::Map<const Eigen::MatrixXd> &alpha);
+
+  inline void fillMatrixFromRow(Eigen::Map<const Eigen::MatrixXd> &alpha,
+                                int row, bool left_constant,
+                                bool right_constant, int delta);
+
   void simulate3D(std::vector<double> &c);
   inline double getBCFromFlux(boundary_condition bc, double nearest_value,
                               double neighbor_alpha);
-    inline void solveLES();
+  inline void solveLES();
   void updateInternals();
 
   std::vector<boundary_condition> bc;
