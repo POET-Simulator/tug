@@ -8,6 +8,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iterator>
+#include <ostream>
 #include <tuple>
 #include <vector>
 
@@ -166,11 +167,22 @@ void BTCSDiffusion::simulate2D(Eigen::Map<Eigen::MatrixXd> &c,
 
   solveLES();
 
-  x_vector.conservativeResize(c.rows(), c.cols() + 2);
+  Eigen::MatrixXd test = x_vector;
 
-  // std::cout << x_vector << std::endl;
+  std::cout << test << std::endl;
 
-  c = x_vector.block(0, 1, c.rows(), c.cols());
+  test.transposeInPlace();
+  test.conservativeResize(c.rows(), c.cols() + 2);
+
+  std::cout << test << std::endl;
+
+  Eigen::Map<Eigen::MatrixXd> tmp(test.data(), c.rows(), c.cols() +2);
+
+  std::cout << x_vector << std::endl;
+  std::cout << tmp << std::endl;
+
+
+  c = tmp.block(0, 1, c.rows(), c.cols());
 }
 
 void BTCSDiffusion::fillMatrixFromRow(const Eigen::VectorXd &alpha, int n_cols,
@@ -181,13 +193,13 @@ void BTCSDiffusion::fillMatrixFromRow(const Eigen::VectorXd &alpha, int n_cols,
   n_cols += 2;
   int offset = n_cols * row;
 
-  A_matrix.insert(offset, offset) = !left_constant;
+  A_matrix.insert(offset, offset) = 1;
 
   if (left_constant)
     A_matrix.insert(offset + 1, offset + 1) = 1;
 
   A_matrix.insert(offset + (n_cols - 1), offset + (n_cols - 1)) =
-      !right_constant;
+      1;
 
   if (right_constant)
     A_matrix.insert(offset + (n_cols - 2), offset + (n_cols - 2)) = 1;
