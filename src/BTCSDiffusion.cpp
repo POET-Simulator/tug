@@ -299,17 +299,12 @@ void BTCSDiffusion::setBoundaryCondition(int index, bctype type, double value) {
 }
 
 inline void BTCSDiffusion::solveLES() {
-
-  std::cout << A_matrix << std::endl;
-
   // start to solve
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
   solver.analyzePattern(A_matrix);
 
-
   solver.factorize(A_matrix);
 
-  std::cout << solver.lastErrorMessage() << " HHHHH" << std::endl;
   x_vector = solver.solve(b_vector);
 }
