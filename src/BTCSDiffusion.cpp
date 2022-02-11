@@ -229,10 +229,11 @@ void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
   if (right_constant)
     A_matrix.insert(offset + (n_cols - 2), offset + (n_cols - 2)) = 1;
 
-  for (int j = 1 + left_constant; j < n_cols - (1 - right_constant); j++) {
+  for (int j = 1 + left_constant, k = j - 1; j < n_cols - (1 - right_constant);
+       j++, k++) {
     double sx = (alpha[j - 1] * time_step) / (delta * delta);
 
-    if (this->bc[row * (n_cols - 2) + j].type == BTCSDiffusion::BC_CONSTANT) {
+    if (this->bc[row * (n_cols - 2) + k].type == BTCSDiffusion::BC_CONSTANT) {
       A_matrix.insert(offset + j, offset + j) = 1;
       continue;
     }
