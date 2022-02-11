@@ -74,7 +74,7 @@ void BTCSDiffusion::updateInternals() {
   bc.resize(cells, {BTCSDiffusion::BC_CLOSED, 0});
 }
 
-void BTCSDiffusion::simulate1D(Eigen::Map<Eigen::VectorXd> &c,
+void BTCSDiffusion::simulate1D(Eigen::Map<DVectorRowMajor> &c,
                                boundary_condition left,
                                boundary_condition right,
                                const std::vector<double> &alpha, double dx,
@@ -142,8 +142,10 @@ void BTCSDiffusion::simulate1D(Eigen::Map<Eigen::VectorXd> &c,
   c = x_vector.segment(!left_is_constant, c.size());
 }
 
-void BTCSDiffusion::simulate2D(Eigen::Map<Eigen::MatrixXd> &c,
-                               Eigen::Map<const Eigen::MatrixXd> &alpha) {
+void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
+                               Eigen::Map<const DMatrixRowMajor> &alpha) {
+
+  DMatrixRowMajor tmp_vector = x_vector;
 
   int n_cols = c.cols();
   unsigned int size = (this->grid_cells[0] + 2) * (this->grid_cells[1]);
@@ -167,25 +169,15 @@ void BTCSDiffusion::simulate2D(Eigen::Map<Eigen::MatrixXd> &c,
 
   solveLES();
 
-  Eigen::MatrixXd test = x_vector;
+  tmp_vector.transposeInPlace();
+  tmp_vector.conservativeResize(c.rows(), c.cols() + 2);
 
-  std::cout << test << std::endl;
+  Eigen::Map<Eigen::MatrixXd> tmp(tmp_vector.data(), c.rows(), c.cols() + 2);
 
-  test.transposeInPlace();
-  test.conservativeResize(c.rows(), c.cols() + 2);
-
-  std::cout << test << std::endl;
-
-  Eigen::Map<Eigen::MatrixXd> tmp(test.data(), c.rows(), c.cols() +2);
-
-  std::cout << x_vector << std::endl;
-  std::cout << tmp << std::endl;
-
-
-  c = tmp.block(0, 1, c.rows(), c.cols());
+  c = tmp_vector.block(0, 1, c.rows(), c.cols());
 }
 
-void BTCSDiffusion::fillMatrixFromRow(const Eigen::VectorXd &alpha, int n_cols,
+void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
                                       int row, bool left_constant,
                                       bool right_constant, double delta,
                                       double time_step) {
@@ -198,14 +190,13 @@ void BTCSDiffusion::fillMatrixFromRow(const Eigen::VectorXd &alpha, int n_cols,
   if (left_constant)
     A_matrix.insert(offset + 1, offset + 1) = 1;
 
-  A_matrix.insert(offset + (n_cols - 1), offset + (n_cols - 1)) =
-      1;
+  A_matrix.insert(offset + (n_cols - 1), offset + (n_cols - 1)) = 1;
 
   if (right_constant)
     A_matrix.insert(offset + (n_cols - 2), offset + (n_cols - 2)) = 1;
 
   for (int j = 1 + left_constant; j < n_cols - (1 - right_constant); j++) {
-    double sx = (alpha[j-1] * time_step) / (delta * delta);
+    double sx = (alpha[j - 1] * time_step) / (delta * delta);
 
     if (this->bc[row * (n_cols - 2) + j].type == BTCSDiffusion::BC_CONSTANT) {
       A_matrix.insert(offset + j, offset + j) = 1;
@@ -218,7 +209,7 @@ void BTCSDiffusion::fillMatrixFromRow(const Eigen::VectorXd &alpha, int n_cols,
   }
 }
 
-void BTCSDiffusion::fillVectorFromRow2D(Eigen::Map<Eigen::MatrixXd> &c,
+void BTCSDiffusion::fillVectorFromRow2D(Eigen::Map<DMatrixRowMajor> &c,
                                         const Eigen::VectorXd alpha, int row,
                                         double delta, boundary_condition left,
                                         boundary_condition right) {
@@ -270,16 +261,16 @@ void BTCSDiffusion::simulate(std::vector<double> &c,
                              const std::vector<double> &alpha) {
   if (this->grid_dim == 1) {
     assert(c.size() == grid_cells[0]);
-    Eigen::Map<Eigen::VectorXd> c_in(c.data(), this->grid_cells[0]);
+    Eigen::Map<DVectorRowMajor> c_in(c.data(), this->grid_cells[0]);
     simulate1D(c_in, bc[0], bc[grid_cells[0] + 1], alpha, this->deltas[0],
                this->grid_cells[0]);
   }
   if (this->grid_dim == 2) {
     assert(c.size() == grid_cells[0] * grid_cells[1]);
-    Eigen::Map<Eigen::MatrixXd> c_in(c.data(), this->grid_cells[1],
+    Eigen::Map<DMatrixRowMajor> c_in(c.data(), this->grid_cells[1],
                                      this->grid_cells[0]);
 
-    Eigen::Map<const Eigen::MatrixXd> alpha_in(
+    Eigen::Map<const DMatrixRowMajor> alpha_in(
         alpha.data(), this->grid_cells[1], this->grid_cells[0]);
 
     simulate2D(c_in, alpha_in);

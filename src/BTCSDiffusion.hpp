@@ -4,6 +4,7 @@
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -137,16 +138,21 @@ private:
   } boundary_condition;
   typedef Eigen::Triplet<double> T;
 
-  void simulate1D(Eigen::Map<Eigen::VectorXd> &c, boundary_condition left,
+  typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      DMatrixRowMajor;
+  typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
+      DVectorRowMajor;
+
+  void simulate1D(Eigen::Map<DVectorRowMajor> &c, boundary_condition left,
                   boundary_condition right, const std::vector<double> &alpha,
                   double dx, int size);
-  void simulate2D(Eigen::Map<Eigen::MatrixXd> &c,
-                  Eigen::Map<const Eigen::MatrixXd> &alpha);
+  void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
+                  Eigen::Map<const DMatrixRowMajor> &alpha);
 
-  inline void fillMatrixFromRow(const Eigen::VectorXd &alpha, int n_cols, int row,
-                                bool left_constant, bool right_constant,
-                                double delta, double time_step);
-  void fillVectorFromRow2D(Eigen::Map<Eigen::MatrixXd> &c,
+  void fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols, int row,
+                         bool left_constant, bool right_constant, double delta,
+                         double time_step);
+  void fillVectorFromRow2D(Eigen::Map<DMatrixRowMajor> &c,
                            const Eigen::VectorXd alpha, int row, double delta,
                            boundary_condition left, boundary_condition right);
   void simulate3D(std::vector<double> &c);
