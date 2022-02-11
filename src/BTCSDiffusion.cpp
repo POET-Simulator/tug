@@ -269,22 +269,22 @@ void BTCSDiffusion::fillVectorFromRow2D(Eigen::Map<DMatrixRowMajor> &c,
 
     if (tmp_bc.type == BTCSDiffusion::BC_CONSTANT) {
       b_vector[offset * row + j] = tmp_bc.value;
-    } else {
+      continue;
+    }
 
-      double y_values[3];
-      y_values[0] =
-          (row != 0 ? c(row - 1, j - 1)
-                    : getBCFromFlux(tmp_bc, c(row, j - 1), alpha[j - 1]));
-      y_values[1] = c(row, j - 1);
-      y_values[2] = (row != nrow - 1
-                         ? c(row + 1, j - 1)
+    double y_values[3];
+    y_values[0] =
+        (row != 0 ? c(row - 1, j - 1)
+                  : getBCFromFlux(tmp_bc, c(row, j - 1), alpha[j - 1]));
+    y_values[1] = c(row, j - 1);
+    y_values[2] =
+        (row != nrow - 1 ? c(row + 1, j - 1)
                          : getBCFromFlux(tmp_bc, c(row, j - 1), alpha[j - 1]));
 
-      double t0_c =
-          alpha[j - 1] *
-          ((y_values[0] - 2 * y_values[1] + y_values[2]) / (delta * delta));
-      b_vector[offset * row + j] = -c(row, j - 1) - t0_c;
-    }
+    double t0_c =
+        alpha[j - 1] *
+        ((y_values[0] - 2 * y_values[1] + y_values[2]) / (delta * delta));
+    b_vector[offset * row + j] = -c(row, j - 1) - t0_c;
   }
 }
 
