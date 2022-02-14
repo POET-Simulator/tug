@@ -129,7 +129,7 @@ public:
    * during solving. For flux value refers to a gradient of change for this grid
    * cell. For closed this value has no effect since a gradient of 0 is used.
    */
-  void setBoundaryCondition(int index, bctype type, double value);
+  void setBoundaryCondition(int row, int column, bctype type, double value);
 
 private:
   typedef struct boundary_condition {
@@ -161,7 +161,8 @@ private:
   void solveLES();
   void updateInternals();
 
-  std::vector<boundary_condition> bc;
+  // std::vector<boundary_condition> bc;
+  Eigen::Matrix<boundary_condition, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> bc;
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;

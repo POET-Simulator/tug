@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
 
   // set the boundary condition for the left ghost cell to dirichlet
-  diffu.setBoundaryCondition(0, BTCSDiffusion::BC_CONSTANT,
+  diffu.setBoundaryCondition(1, 0, BTCSDiffusion::BC_CONSTANT,
                              5. * std::pow(10, -6));
 
   // set timestep for simulation to 1 second
