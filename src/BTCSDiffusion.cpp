@@ -239,9 +239,10 @@ void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
 }
 
 void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
-                                        const Eigen::VectorXd alpha, int row,
-                                        double delta, boundary_condition left,
-                                        boundary_condition right) {
+                                         const Eigen::VectorXd alpha, int row,
+                                         double delta, boundary_condition left,
+                                         boundary_condition right,
+                                         double time_step) {
 
   int ncol = c.cols();
   int nrow = c.rows();
