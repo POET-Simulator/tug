@@ -51,7 +51,7 @@ public:
    * @param n_grid_cells Number of grid cells in x direction the domain is
    * divided to.
    */
-  void setXDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setXDimensions(double domain_size, unsigned int n_grid_cells);
 
   /*!
    * Define the grid in y direction.
@@ -62,7 +62,7 @@ public:
    * @param n_grid_cells Number of grid cells in y direction the domain is
    * divided to.
    */
-  void setYDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setYDimensions(double domain_size, unsigned int n_grid_cells);
 
   /*!
    * Define the grid in z direction.
@@ -73,7 +73,7 @@ public:
    * @param n_grid_cells Number of grid cells in z direction the domain is
    * divided to.
    */
-  void setZDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setZDimensions(double domain_size, unsigned int n_grid_cells);
 
   /*!
    * Returns the number of grid cells in x direction.
@@ -152,7 +152,7 @@ private:
   void fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols, int row,
                          bool left_constant, bool right_constant, double delta,
                          double time_step);
-  void fillVectorFromRow2D(Eigen::Map<DMatrixRowMajor> &c,
+  void fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
                            const Eigen::VectorXd alpha, int row, double delta,
                            boundary_condition left, boundary_condition right);
   void simulate3D(std::vector<double> &c);
@@ -172,7 +172,7 @@ private:
   int grid_dim;
 
   std::vector<unsigned int> grid_cells;
-  std::vector<unsigned int> domain_size;
+  std::vector<double> domain_size;
   std::vector<double> deltas;
 };
 

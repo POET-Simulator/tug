@@ -26,7 +26,7 @@ BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   deltas.resize(dim, 1);
 }
 
-void BTCSDiffusion::setXDimensions(unsigned int domain_size,
+void BTCSDiffusion::setXDimensions(double domain_size,
                                    unsigned int n_grid_cells) {
   assert(this->grid_dim > 0);
   this->domain_size[0] = domain_size;
@@ -35,7 +35,7 @@ void BTCSDiffusion::setXDimensions(unsigned int domain_size,
   updateInternals();
 }
 
-void BTCSDiffusion::setYDimensions(unsigned int domain_size,
+void BTCSDiffusion::setYDimensions(double domain_size,
                                    unsigned int n_grid_cells) {
   assert(this->grid_dim > 1);
   this->domain_size[1] = domain_size;
@@ -44,7 +44,7 @@ void BTCSDiffusion::setYDimensions(unsigned int domain_size,
   updateInternals();
 }
 
-void BTCSDiffusion::setZDimensions(unsigned int domain_size,
+void BTCSDiffusion::setZDimensions(double domain_size,
                                    unsigned int n_grid_cells) {
   assert(this->grid_dim > 2);
   this->domain_size[2] = domain_size;
@@ -158,7 +158,7 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
     fillMatrixFromRow(alpha.row(i), n_cols, i, left_constant, right_constant,
                       deltas[0], this->time_step / 2);
-    fillVectorFromRow2D(c, alpha.row(i), i, deltas[0], left, right);
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right);
   }
 
   solveLES();
@@ -190,7 +190,7 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
     fillMatrixFromRow(alpha.col(i), n_cols, i, left_constant, right_constant,
                       deltas[1], this->time_step / 2);
-    fillVectorFromRow2D(c, alpha.row(i), i, deltas[1], left, right);
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right);
   }
 
   solveLES();
@@ -237,7 +237,7 @@ void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
   }
 }
 
-void BTCSDiffusion::fillVectorFromRow2D(Eigen::Map<DMatrixRowMajor> &c,
+void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
                                         const Eigen::VectorXd alpha, int row,
                                         double delta, boundary_condition left,
                                         boundary_condition right) {
