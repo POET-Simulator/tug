@@ -139,6 +139,7 @@ void BTCSDiffusion::simulate1D(Eigen::Map<DVectorRowMajor> &c,
 void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                                Eigen::Map<const DMatrixRowMajor> &alpha) {
 
+  double local_dt = this->time_step/ 2.;
   DMatrixRowMajor tmp_vector;
 
   int n_cols = c.cols();
@@ -158,7 +159,7 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
     fillMatrixFromRow(alpha.row(i), n_cols, i, left_constant, right_constant,
                       deltas[0], this->time_step / 2);
-    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right);
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right, local_dt);
   }
 
   solveLES();
@@ -190,7 +191,7 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
     fillMatrixFromRow(alpha.col(i), n_cols, i, left_constant, right_constant,
                       deltas[1], this->time_step / 2);
-    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right);
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right, local_dt);
   }
 
   solveLES();
@@ -274,9 +275,9 @@ void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
                          : getBCFromFlux(tmp_bc, c(row, j), alpha[j]));
 
     double t0_c =
-        alpha[j] *
+        time_step * alpha[j] *
         ((y_values[0] - 2 * y_values[1] + y_values[2]) / (delta * delta));
-    b_vector[offset * row + (j + 1)] = -c(row, j) - t0_c;
+    b_vector[offset * row + (j + 1)] = -c(row, j) - (t0_c);
   }
 }
 

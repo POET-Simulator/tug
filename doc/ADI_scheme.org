@@ -93,7 +93,7 @@ c(i,N-1) & \text{else}
 
 *** Inlet
 
-$p(i,j) = \alpha(i,j)\frac{c(i-1,j) - 2\cdot c(i,j) + c(i+1,j)}{\Delta x^2}$[fn:1]
+$p(i,j) = \frac{\Delta t}{2}\alpha(i,j)\frac{c(i-1,j) - 2\cdot c(i,j) + c(i+1,j)}{\Delta x^2}$[fn:1]
 
 $b(i,j) = \begin{cases}
 bc(i,j).\text{value} & \text{if } bc(i,N-1) = \text{constant} \\
