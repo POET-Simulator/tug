@@ -1,4 +1,7 @@
-#+TITLE: Adi Scheme
+#+TITLE: Adi 2D Scheme
+#+LaTeX_CLASS_OPTIONS: [a4paper,10pt]
+#+LATEX_HEADER: \usepackage{fullpage}
+#+OPTIONS: toc:nil
 
 * Input
 
