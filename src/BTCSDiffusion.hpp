@@ -153,8 +153,9 @@ private:
                          bool left_constant, bool right_constant, double delta,
                          double time_step);
   void fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
-                           const Eigen::VectorXd alpha, int row, double delta,
-                           boundary_condition left, boundary_condition right);
+                            const Eigen::VectorXd alpha, int row, double delta,
+                            boundary_condition left, boundary_condition right,
+                            double time_step);
   void simulate3D(std::vector<double> &c);
   inline double getBCFromFlux(boundary_condition bc, double nearest_value,
                               double neighbor_alpha);

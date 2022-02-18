@@ -139,6 +139,7 @@ void BTCSDiffusion::simulate1D(Eigen::Map<DVectorRowMajor> &c,
 void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                                Eigen::Map<const DMatrixRowMajor> &alpha) {
 
+  double local_dt = this->time_step/ 2.;
   DMatrixRowMajor tmp_vector;
 
   int n_cols = c.cols();
@@ -158,7 +159,7 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
     fillMatrixFromRow(alpha.row(i), n_cols, i, left_constant, right_constant,
                       deltas[0], this->time_step / 2);
-    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right);
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right, local_dt);
   }
 
   solveLES();
@@ -190,7 +191,7 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
     fillMatrixFromRow(alpha.col(i), n_cols, i, left_constant, right_constant,
                       deltas[1], this->time_step / 2);
-    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right);
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right, local_dt);
   }
 
   solveLES();
@@ -238,9 +239,10 @@ void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
 }
 
 void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
-                                        const Eigen::VectorXd alpha, int row,
-                                        double delta, boundary_condition left,
-                                        boundary_condition right) {
+                                         const Eigen::VectorXd alpha, int row,
+                                         double delta, boundary_condition left,
+                                         boundary_condition right,
+                                         double time_step) {
 
   int ncol = c.cols();
   int nrow = c.rows();
@@ -257,27 +259,26 @@ void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
         getBCFromFlux(right, c(row, ncol - 1), alpha[ncol - 1]);
   }
 
-  for (int j = 1; j < offset - 1; j++) {
-    boundary_condition tmp_bc = this->bc(row, j-1);
+  for (int j = 0; j < ncol; j++) {
+    boundary_condition tmp_bc = this->bc(row, j);
 
     if (tmp_bc.type == BTCSDiffusion::BC_CONSTANT) {
-      b_vector[offset * row + j] = tmp_bc.value;
+      b_vector[offset * row + (j+1)] = tmp_bc.value;
       continue;
     }
 
     double y_values[3];
     y_values[0] =
-        (row != 0 ? c(row - 1, j - 1)
-                  : getBCFromFlux(tmp_bc, c(row, j - 1), alpha[j - 1]));
-    y_values[1] = c(row, j - 1);
+        (row != 0 ? c(row - 1, j) : getBCFromFlux(tmp_bc, c(row, j), alpha[j]));
+    y_values[1] = c(row, j);
     y_values[2] =
-        (row != nrow - 1 ? c(row + 1, j - 1)
-                         : getBCFromFlux(tmp_bc, c(row, j - 1), alpha[j - 1]));
+        (row != nrow - 1 ? c(row + 1, j)
+                         : getBCFromFlux(tmp_bc, c(row, j), alpha[j]));
 
     double t0_c =
-        alpha[j - 1] *
+        time_step * alpha[j] *
         ((y_values[0] - 2 * y_values[1] + y_values[2]) / (delta * delta));
-    b_vector[offset * row + j] = -c(row, j - 1) - t0_c;
+    b_vector[offset * row + (j + 1)] = -c(row, j) - (t0_c);
   }
 }
 
