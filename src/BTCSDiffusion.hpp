@@ -48,7 +48,7 @@ public:
    * @param n_grid_cells Number of grid cells in x direction the domain is
    * divided to.
    */
-  void setXDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setXDimensions(double domain_size, unsigned int n_grid_cells);
 
   /*!
    * Define the grid in y direction.
@@ -59,7 +59,7 @@ public:
    * @param n_grid_cells Number of grid cells in y direction the domain is
    * divided to.
    */
-  void setYDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setYDimensions(double domain_size, unsigned int n_grid_cells);
 
   /*!
    * Define the grid in z direction.
@@ -70,7 +70,7 @@ public:
    * @param n_grid_cells Number of grid cells in z direction the domain is
    * divided to.
    */
-  void setZDimensions(unsigned int domain_size, unsigned int n_grid_cells);
+  void setZDimensions(double domain_size, unsigned int n_grid_cells);
 
   /*!
    * Returns the number of grid cells in x direction.
