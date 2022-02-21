@@ -20,7 +20,7 @@ BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   deltas.resize(dim, 1);
 }
 
-void BTCSDiffusion::setXDimensions(unsigned int domain_size,
+void BTCSDiffusion::setXDimensions(double domain_size,
                                    unsigned int n_grid_cells) {
   assert(this->grid_dim > 0);
   this->domain_size[0] = domain_size;
@@ -29,7 +29,7 @@ void BTCSDiffusion::setXDimensions(unsigned int domain_size,
   updateInternals();
 }
 
-void BTCSDiffusion::setYDimensions(unsigned int domain_size,
+void BTCSDiffusion::setYDimensions(double domain_size,
                                    unsigned int n_grid_cells) {
   assert(this->grid_dim > 1);
   this->domain_size[1] = domain_size;
@@ -38,7 +38,7 @@ void BTCSDiffusion::setYDimensions(unsigned int domain_size,
   updateInternals();
 }
 
-void BTCSDiffusion::setZDimensions(unsigned int domain_size,
+void BTCSDiffusion::setZDimensions(double domain_size,
                                    unsigned int n_grid_cells) {
   assert(this->grid_dim > 2);
   this->domain_size[2] = domain_size;
