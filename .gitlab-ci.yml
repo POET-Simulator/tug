@@ -11,8 +11,9 @@ before_script:
 build:
     stage: build
     artifacts:
-        - build/src/test
-        - build/src/2D
+        paths:
+            - build/src/test
+            - build/src/2D
     script:
         - mkdir build && cd build
         - cmake ..
@@ -30,7 +31,7 @@ run_2D:
     dependencies: 
        - build
     script:
-    - ./build/src/2D
+        - ./build/src/2D
 
 lint:
     stage: analysis
