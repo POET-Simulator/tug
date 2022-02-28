@@ -14,11 +14,7 @@
 
 #include <iostream>
 
-const int BTCSDiffusion::BC_CLOSED = 0;
-const int BTCSDiffusion::BC_FLUX = 1;
-const int BTCSDiffusion::BC_CONSTANT = 2;
-
-BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
+Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   assert(dim <= 3);
 
   grid_cells.resize(dim, 1);
@@ -26,8 +22,8 @@ BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   deltas.resize(dim, 1);
 }
 
-void BTCSDiffusion::setXDimensions(double domain_size,
-                                   unsigned int n_grid_cells) {
+void Diffusion::BTCSDiffusion::setXDimensions(double domain_size,
+                                              unsigned int n_grid_cells) {
   assert(this->grid_dim > 0);
   this->domain_size[0] = domain_size;
   this->grid_cells[0] = n_grid_cells;
@@ -35,8 +31,8 @@ void BTCSDiffusion::setXDimensions(double domain_size,
   updateInternals();
 }
 
-void BTCSDiffusion::setYDimensions(double domain_size,
-                                   unsigned int n_grid_cells) {
+void Diffusion::BTCSDiffusion::setYDimensions(double domain_size,
+                                              unsigned int n_grid_cells) {
   assert(this->grid_dim > 1);
   this->domain_size[1] = domain_size;
   this->grid_cells[1] = n_grid_cells;
@@ -44,8 +40,8 @@ void BTCSDiffusion::setYDimensions(double domain_size,
   updateInternals();
 }
 
-void BTCSDiffusion::setZDimensions(double domain_size,
-                                   unsigned int n_grid_cells) {
+void Diffusion::BTCSDiffusion::setZDimensions(double domain_size,
+                                              unsigned int n_grid_cells) {
   assert(this->grid_dim > 2);
   this->domain_size[2] = domain_size;
   this->grid_cells[2] = n_grid_cells;
@@ -53,29 +49,38 @@ void BTCSDiffusion::setZDimensions(double domain_size,
   updateInternals();
 }
 
-unsigned int BTCSDiffusion::getXGridCellsN() { return this->grid_cells[0]; }
-unsigned int BTCSDiffusion::getYGridCellsN() { return this->grid_cells[1]; }
-unsigned int BTCSDiffusion::getZGridCellsN() { return this->grid_cells[2]; }
-unsigned int BTCSDiffusion::getXDomainSize() { return this->domain_size[0]; }
-unsigned int BTCSDiffusion::getYDomainSize() { return this->domain_size[1]; }
-unsigned int BTCSDiffusion::getZDomainSize() { return this->domain_size[2]; }
+unsigned int Diffusion::BTCSDiffusion::getXGridCellsN() {
+  return this->grid_cells[0];
+}
+unsigned int Diffusion::BTCSDiffusion::getYGridCellsN() {
+  return this->grid_cells[1];
+}
+unsigned int Diffusion::BTCSDiffusion::getZGridCellsN() {
+  return this->grid_cells[2];
+}
+unsigned int Diffusion::BTCSDiffusion::getXDomainSize() {
+  return this->domain_size[0];
+}
+unsigned int Diffusion::BTCSDiffusion::getYDomainSize() {
+  return this->domain_size[1];
+}
+unsigned int Diffusion::BTCSDiffusion::getZDomainSize() {
+  return this->domain_size[2];
+}
 
-void BTCSDiffusion::updateInternals() {
+void Diffusion::BTCSDiffusion::updateInternals() {
   for (int i = 0; i < grid_dim; i++) {
     deltas[i] = (double)domain_size[i] / grid_cells[i];
   }
-
-  bc.resize((grid_dim > 1 ? grid_cells[1] : 1), grid_cells[0]);
 }
 
-void BTCSDiffusion::simulate1D(Eigen::Map<DVectorRowMajor> &c,
-                               boundary_condition left,
-                               boundary_condition right,
-                               const std::vector<double> &alpha, double dx,
-                               int size) {
+void Diffusion::BTCSDiffusion::simulate1D(
+    Eigen::Map<DVectorRowMajor> &c, Diffusion::boundary_condition left,
+    Diffusion::boundary_condition right, Eigen::Map<const BCVectorRowMajor> &bc,
+    Eigen::Map<const DVectorRowMajor> &alpha, double dx, int size) {
 
-  bool left_is_constant = (left.type == BTCSDiffusion::BC_CONSTANT);
-  bool right_is_constant = (right.type == BTCSDiffusion::BC_CONSTANT);
+  bool left_is_constant = (left.type == Diffusion::BC_CONSTANT);
+  bool right_is_constant = (right.type == Diffusion::BC_CONSTANT);
 
   // The sizes for matrix and vectors of the equation system is defined by the
   // actual size of the input vector and if the system is (partially) closed.
@@ -115,9 +120,9 @@ void BTCSDiffusion::simulate1D(Eigen::Map<DVectorRowMajor> &c,
        i++, j++) {
 
     // if current grid cell is considered as constant boundary conditon
-    if (bc(1,j).type == BTCSDiffusion::BC_CONSTANT) {
+    if (bc[j].type == Diffusion::BC_CONSTANT) {
       A_matrix.insert(i, i) = 1;
-      b_vector[i] = bc(1,j).value;
+      b_vector[i] = bc[j].value;
       continue;
     }
 
@@ -136,10 +141,11 @@ void BTCSDiffusion::simulate1D(Eigen::Map<DVectorRowMajor> &c,
   c = x_vector.segment(!left_is_constant, c.size());
 }
 
-void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
-                               Eigen::Map<const DMatrixRowMajor> &alpha) {
+void Diffusion::BTCSDiffusion::simulate2D(
+    Eigen::Map<DMatrixRowMajor> &c, Eigen::Map<const DMatrixRowMajor> &alpha,
+    Eigen::Map<const BCMatrixRowMajor> &bc) {
 
-  double local_dt = this->time_step/ 2.;
+  double local_dt = this->time_step / 2.;
   DMatrixRowMajor tmp_vector;
 
   int n_cols = c.cols();
@@ -153,13 +159,13 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
 
   for (int i = 0; i < c.rows(); i++) {
     boundary_condition left = bc(i, 0);
-    bool left_constant = left.type == BTCSDiffusion::BC_CONSTANT;
+    bool left_constant = left.type == Diffusion::BC_CONSTANT;
     boundary_condition right = bc(i, n_cols - 1);
-    bool right_constant = right.type == BTCSDiffusion::BC_CONSTANT;
+    bool right_constant = right.type == Diffusion::BC_CONSTANT;
 
     fillMatrixFromRow(alpha.row(i), n_cols, i, left_constant, right_constant,
-                      deltas[0], this->time_step / 2);
-    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right, local_dt);
+                      deltas[0], this->time_step / 2, bc.row(i));
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[0], left, right, local_dt, bc.row(i));
   }
 
   solveLES();
@@ -184,14 +190,14 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
   n_cols = c.cols();
 
   for (int i = 0; i < c.rows(); i++) {
-    boundary_condition left = bc(0,i);
-    bool left_constant = left.type == BTCSDiffusion::BC_CONSTANT;
-    boundary_condition right = bc(n_cols-1,i);
-    bool right_constant = right.type == BTCSDiffusion::BC_CONSTANT;
+    boundary_condition left = bc(0, i);
+    bool left_constant = left.type == Diffusion::BC_CONSTANT;
+    boundary_condition right = bc(n_cols - 1, i);
+    bool right_constant = right.type == Diffusion::BC_CONSTANT;
 
     fillMatrixFromRow(alpha.col(i), n_cols, i, left_constant, right_constant,
-                      deltas[1], this->time_step / 2);
-    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right, local_dt);
+                      deltas[1], this->time_step / 2, bc.col(i));
+    fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right, local_dt, bc.col(i));
   }
 
   solveLES();
@@ -205,10 +211,12 @@ void BTCSDiffusion::simulate2D(Eigen::Map<DMatrixRowMajor> &c,
   c.transposeInPlace();
 }
 
-void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
-                                      int row, bool left_constant,
-                                      bool right_constant, double delta,
-                                      double time_step) {
+void Diffusion::BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha,
+                                                 int n_cols, int row,
+                                                 bool left_constant,
+                                                 bool right_constant,
+                                                 double delta, double time_step,
+                                                 const BCVectorRowMajor &bc) {
 
   n_cols += 2;
   int offset = n_cols * row;
@@ -227,7 +235,7 @@ void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
        j++, k++) {
     double sx = (alpha[j - 1] * time_step) / (delta * delta);
 
-    if (this->bc(row, k).type == BTCSDiffusion::BC_CONSTANT) {
+    if (bc[k].type == Diffusion::BC_CONSTANT) {
       A_matrix.insert(offset + j, offset + j) = 1;
       continue;
     }
@@ -238,32 +246,31 @@ void BTCSDiffusion::fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols,
   }
 }
 
-void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
-                                         const Eigen::VectorXd alpha, int row,
-                                         double delta, boundary_condition left,
-                                         boundary_condition right,
-                                         double time_step) {
+void Diffusion::BTCSDiffusion::fillVectorFromRowADI(
+    Eigen::Map<DMatrixRowMajor> &c, const Eigen::VectorXd alpha, int row,
+    double delta, boundary_condition left, boundary_condition right,
+    double time_step, const BCVectorRowMajor &bc) {
 
   int ncol = c.cols();
   int nrow = c.rows();
   int offset = ncol + 2;
 
-  if (left.type != BTCSDiffusion::BC_CONSTANT) {
+  if (left.type != Diffusion::BC_CONSTANT) {
     // this is not correct currently.We will fix this when we are able to define
     // FLUX boundary conditions
     b_vector[offset * row] = getBCFromFlux(left, c(row, 0), alpha[0]);
   }
 
-  if (right.type != BTCSDiffusion::BC_CONSTANT) {
+  if (right.type != Diffusion::BC_CONSTANT) {
     b_vector[offset * row + (offset - 1)] =
         getBCFromFlux(right, c(row, ncol - 1), alpha[ncol - 1]);
   }
 
   for (int j = 0; j < ncol; j++) {
-    boundary_condition tmp_bc = this->bc(row, j);
+    boundary_condition tmp_bc = bc[j];
 
-    if (tmp_bc.type == BTCSDiffusion::BC_CONSTANT) {
-      b_vector[offset * row + (j+1)] = tmp_bc.value;
+    if (tmp_bc.type == Diffusion::BC_CONSTANT) {
+      b_vector[offset * row + (j + 1)] = tmp_bc.value;
       continue;
     }
 
@@ -282,39 +289,43 @@ void BTCSDiffusion::fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
   }
 }
 
-void BTCSDiffusion::setTimestep(double time_step) {
+void Diffusion::BTCSDiffusion::setTimestep(double time_step) {
   this->time_step = time_step;
 }
 
-void BTCSDiffusion::simulate(std::vector<double> &c,
-                             const std::vector<double> &alpha) {
+void Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
+                                        Diffusion::boundary_condition *bc) {
   if (this->grid_dim == 1) {
-    assert(c.size() == grid_cells[0]);
-    Eigen::Map<DVectorRowMajor> c_in(c.data(), this->grid_cells[0]);
-    simulate1D(c_in, bc(1,0), bc(1,bc.cols()-1), alpha, this->deltas[0],
-               this->grid_cells[0]);
+    Eigen::Map<DVectorRowMajor> c_in(c, this->grid_cells[0]);
+    Eigen::Map<const DVectorRowMajor> alpha_in(alpha, this->grid_cells[0]);
+    Eigen::Map<const BCVectorRowMajor> bc_in(bc, this->grid_cells[0]);
+
+    simulate1D(c_in, bc[0], bc[this->grid_cells[0] - 1], bc_in, alpha_in,
+               this->deltas[0], this->grid_cells[0]);
   }
   if (this->grid_dim == 2) {
-    assert(c.size() == grid_cells[0] * grid_cells[1]);
-    Eigen::Map<DMatrixRowMajor> c_in(c.data(), this->grid_cells[1],
+    Eigen::Map<DMatrixRowMajor> c_in(c, this->grid_cells[1],
                                      this->grid_cells[0]);
 
-    Eigen::Map<const DMatrixRowMajor> alpha_in(
-        alpha.data(), this->grid_cells[1], this->grid_cells[0]);
+    Eigen::Map<const DMatrixRowMajor> alpha_in(alpha, this->grid_cells[1],
+                                               this->grid_cells[0]);
 
-    simulate2D(c_in, alpha_in);
+    Eigen::Map<const BCMatrixRowMajor> bc_in(bc, this->grid_cells[1],
+                                             this->grid_cells[0]);
+
+    simulate2D(c_in, alpha_in, bc_in);
   }
 }
 
-inline double BTCSDiffusion::getBCFromFlux(boundary_condition bc,
-                                           double neighbor_c,
-                                           double neighbor_alpha) {
+inline double Diffusion::BTCSDiffusion::getBCFromFlux(boundary_condition bc,
+                                                      double neighbor_c,
+                                                      double neighbor_alpha) {
 
   double val;
 
-  if (bc.type == BTCSDiffusion::BC_CLOSED) {
+  if (bc.type == Diffusion::BC_CLOSED) {
     val = neighbor_c;
-  } else if (bc.type == BTCSDiffusion::BC_FLUX) {
+  } else if (bc.type == Diffusion::BC_FLUX) {
     // TODO
     //  val = bc[index].value;
   } else {
@@ -324,13 +335,7 @@ inline double BTCSDiffusion::getBCFromFlux(boundary_condition bc,
   return val;
 }
 
-void BTCSDiffusion::setBoundaryCondition(int i, int j, bctype type, double value) {
-
-  bc(i,j).type = type;
-  bc(i,j).value = value;
-}
-
-inline void BTCSDiffusion::solveLES() {
+inline void Diffusion::BTCSDiffusion::solveLES() {
   // start to solve
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;

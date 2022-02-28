@@ -1,9 +1,13 @@
 #include "BTCSDiffusion.hpp" // for BTCSDiffusion, BTCSDiffusion::BC_DIRICHLET
+#include "BoundaryCondition.hpp"
 #include <algorithm>         // for copy, max
+#include <cmath>
 #include <iomanip>
 #include <iostream> // for std
 #include <vector>   // for vector
 using namespace std;
+
+using namespace Diffusion;
 
 int main(int argc, char *argv[]) {
 
@@ -16,6 +20,7 @@ int main(int argc, char *argv[]) {
   // create input + diffusion coefficients for each grid cell
   std::vector<double> alpha(n * m, 1 * pow(10, -1));
   std::vector<double> field(n * m, 1 * std::pow(10, -6));
+  std::vector<boundary_condition> bc(n*m, {0,0});
 
   // create instance of diffusion module
   BTCSDiffusion diffu(dim);
@@ -23,9 +28,8 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
   diffu.setYDimensions(1, m);
 
-  // set the boundary condition for the left ghost cell to dirichlet
-  diffu.setBoundaryCondition(2, 2, BTCSDiffusion::BC_CONSTANT,
-                             5. * std::pow(10, -6));
+  //set inlet to higher concentration without setting bc
+  field[12] = 5*std::pow(10,-3);
 
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);
@@ -33,7 +37,7 @@ int main(int argc, char *argv[]) {
   cout << setprecision(12);
 
   for (int t = 0; t < 10; t++) {
-    diffu.simulate(field, alpha);
+    diffu.simulate(field.data(), alpha.data(), bc.data());
 
     cout << "Iteration: " << t << "\n\n";
 

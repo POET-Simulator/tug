@@ -1,6 +1,8 @@
 #ifndef BTCSDIFFUSION_H_
 #define BTCSDIFFUSION_H_
 
+#include "BoundaryCondition.hpp"
+
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/Matrix.h>
@@ -9,11 +11,7 @@
 #include <type_traits>
 #include <vector>
 
-/*!
- * Defines both types of boundary condition as a datatype.
- */
-typedef int bctype;
-
+namespace Diffusion {
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
  * euler.
@@ -21,21 +19,6 @@ typedef int bctype;
 class BTCSDiffusion {
 
 public:
-  /*!
-   * Defines a constant/Dirichlet boundary condition.
-   */
-  static const int BC_CONSTANT;
-
-  /*!
-   * Defines a closed/Neumann boundary condition.
-   */
-  static const int BC_CLOSED;
-
-  /*!
-   * Defines a flux/Cauchy boundary condition.
-   */
-  static const int BC_FLUX;
-
   /*!
    * Creates a diffusion module.
    *
@@ -108,7 +91,7 @@ public:
    * continious memory (row major).
    * @param alpha Vector of diffusion coefficients for each grid element.
    */
-  void simulate(std::vector<double> &c, const std::vector<double> &alpha);
+  void simulate(double *c, double *alpha, Diffusion::boundary_condition *bc);
 
   /*!
    * Set the timestep of the simulation
@@ -117,53 +100,46 @@ public:
    */
   void setTimestep(double time_step);
 
-  /*!
-   * Set the boundary condition of the given grid. This is done by defining an
-   * index (exact order still to be determined), the type of the boundary
-   * condition and the according value.
-   *
-   * @param index Index of the grid cell the boundary condition is applied to.
-   * @param type Type of the boundary condition. Must be constant, closed or
-   * flux.
-   * @param value For constant boundary conditions this value is set
-   * during solving. For flux value refers to a gradient of change for this grid
-   * cell. For closed this value has no effect since a gradient of 0 is used.
-   */
-  void setBoundaryCondition(int row, int column, bctype type, double value);
-
 private:
-  typedef struct boundary_condition {
-    bctype type;
-    double value;
-  } boundary_condition;
-  typedef Eigen::Triplet<double> T;
-
   typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
       DMatrixRowMajor;
   typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
       DVectorRowMajor;
+  typedef Eigen::Matrix<Diffusion::boundary_condition, Eigen::Dynamic,
+                        Eigen::Dynamic, Eigen::RowMajor>
+      BCMatrixRowMajor;
+  typedef Eigen::Matrix<Diffusion::boundary_condition, 1, Eigen::Dynamic,
+                        Eigen::RowMajor>
+      BCVectorRowMajor;
 
-  void simulate1D(Eigen::Map<DVectorRowMajor> &c, boundary_condition left,
-                  boundary_condition right, const std::vector<double> &alpha,
-                  double dx, int size);
+  void simulate1D(Eigen::Map<DVectorRowMajor> &c,
+                  Diffusion::boundary_condition left,
+                  Diffusion::boundary_condition right,
+                  Eigen::Map<const BCVectorRowMajor> &bc,
+                  Eigen::Map<const DVectorRowMajor> &alpha, double dx,
+                  int size);
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
-                  Eigen::Map<const DMatrixRowMajor> &alpha);
+                  Eigen::Map<const DMatrixRowMajor> &alpha,
+                  Eigen::Map<const BCMatrixRowMajor> &bc);
 
   void fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols, int row,
                          bool left_constant, bool right_constant, double delta,
-                         double time_step);
+                         double time_step, const BCVectorRowMajor &bc);
   void fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
                             const Eigen::VectorXd alpha, int row, double delta,
-                            boundary_condition left, boundary_condition right,
-                            double time_step);
+                            Diffusion::boundary_condition left,
+                            Diffusion::boundary_condition right,
+                            double time_step, const BCVectorRowMajor &bc);
   void simulate3D(std::vector<double> &c);
-  inline double getBCFromFlux(boundary_condition bc, double nearest_value,
-                              double neighbor_alpha);
+  inline double getBCFromFlux(Diffusion::boundary_condition bc,
+                              double nearest_value, double neighbor_alpha);
   void solveLES();
   void updateInternals();
 
   // std::vector<boundary_condition> bc;
-  Eigen::Matrix<boundary_condition, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> bc;
+  // Eigen::Matrix<boundary_condition, Eigen::Dynamic, Eigen::Dynamic,
+  //               Eigen::RowMajor>
+  // bc;
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
@@ -176,5 +152,5 @@ private:
   std::vector<double> domain_size;
   std::vector<double> deltas;
 };
-
+} // namespace Diffusion
 #endif // BTCSDIFFUSION_H_
