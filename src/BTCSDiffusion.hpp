@@ -12,6 +12,8 @@
 #include <type_traits>
 #include <vector>
 
+#define BTCS_MAX_DEP_PER_CELL 3
+
 namespace Diffusion {
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -113,23 +115,30 @@ private:
                         Eigen::RowMajor>
       BCVectorRowMajor;
 
-  void simulate_base(DVectorRowMajor &c,
-                     Eigen::Map<const BCVectorRowMajor> &bc,
+  void simulate_base(DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor> &bc,
                      Eigen::Map<const DVectorRowMajor> &alpha, double dx,
                      double time_step, int size, DVectorRowMajor &t0_c);
+
+  void simulate1D(Eigen::Map<DVectorRowMajor> &c,
+                  Eigen::Map<const DVectorRowMajor> &alpha,
+                  Eigen::Map<const BCVectorRowMajor> &bc);
+
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   Eigen::Map<const BCMatrixRowMajor> &bc);
 
-  inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
-                                const BCVectorRowMajor &bc, int size, double dx,
-                                double time_step);
-  inline void fillVectorFromRowADI(DVectorRowMajor &c,
+  inline void fillMatrixFromRow(
+      const Eigen::VectorXd &alpha,
+      const Eigen::Vector<Diffusion::boundary_condition, Eigen::Dynamic> &bc,
+      int size, double dx, double time_step);
+  inline void fillVectorFromRowADI(const DVectorRowMajor &c,
                                    const Eigen::VectorXd alpha,
                                    const BCVectorRowMajor &bc,
-                                   DVectorRowMajor &t0_c, int size, double dx,
-                                   double time_step);
+                                   const DVectorRowMajor &t0_c, int size,
+                                   double dx, double time_step);
   void simulate3D(std::vector<double> &c);
+
+  inline void reserveMemory(int size, int max_count_per_line);
   inline double getBCFromFlux(Diffusion::boundary_condition bc,
                               double nearest_value, double neighbor_alpha);
   void solveLES();
