@@ -14,7 +14,7 @@ build:
         paths:
             - build/src/test
             - build/src/2D
-        expire_in: 100
+        expire_in: 100s
     script:
         - mkdir build && cd build
         - cmake ..
