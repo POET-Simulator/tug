@@ -7,6 +7,7 @@
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
 #include <vector>
@@ -112,24 +113,22 @@ private:
                         Eigen::RowMajor>
       BCVectorRowMajor;
 
-  void simulate1D(Eigen::Map<DVectorRowMajor> &c,
-                  Diffusion::boundary_condition left,
-                  Diffusion::boundary_condition right,
-                  Eigen::Map<const BCVectorRowMajor> &bc,
-                  Eigen::Map<const DVectorRowMajor> &alpha, double dx,
-                  int size);
+  void simulate_base(DVectorRowMajor &c,
+                     Eigen::Map<const BCVectorRowMajor> &bc,
+                     Eigen::Map<const DVectorRowMajor> &alpha, double dx,
+                     double time_step, int size, DVectorRowMajor &t0_c);
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   Eigen::Map<const BCMatrixRowMajor> &bc);
 
-  void fillMatrixFromRow(const DVectorRowMajor &alpha, int n_cols, int row,
-                         bool left_constant, bool right_constant, double delta,
-                         double time_step, const BCVectorRowMajor &bc);
-  void fillVectorFromRowADI(Eigen::Map<DMatrixRowMajor> &c,
-                            const Eigen::VectorXd alpha, int row, double delta,
-                            Diffusion::boundary_condition left,
-                            Diffusion::boundary_condition right,
-                            double time_step, const BCVectorRowMajor &bc);
+  inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc, int size, double dx,
+                                double time_step);
+  inline void fillVectorFromRowADI(DVectorRowMajor &c,
+                                   const Eigen::VectorXd alpha,
+                                   const BCVectorRowMajor &bc,
+                                   DVectorRowMajor &t0_c, int size, double dx,
+                                   double time_step);
   void simulate3D(std::vector<double> &c);
   inline double getBCFromFlux(Diffusion::boundary_condition bc,
                               double nearest_value, double neighbor_alpha);
