@@ -122,7 +122,8 @@ private:
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
-                  Eigen::Map<const BCVectorRowMajor> &bc);
+                  Eigen::Map<const BCVectorRowMajor> &bc, int size, double dx,
+                  double time_step);
 
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,

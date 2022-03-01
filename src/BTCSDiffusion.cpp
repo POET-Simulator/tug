@@ -159,11 +159,8 @@ inline void Diffusion::BTCSDiffusion::reserveMemory(int size,
 
 void Diffusion::BTCSDiffusion::simulate1D(
     Eigen::Map<DVectorRowMajor> &c, Eigen::Map<const DVectorRowMajor> &alpha,
-    Eigen::Map<const BCVectorRowMajor> &bc) {
-
-  int size = this->grid_cells[0];
-  double dx = this->deltas[0];
-  double time_step = this->time_step;
+    Eigen::Map<const BCVectorRowMajor> &bc, int size, double dx,
+    double time_step) {
 
   reserveMemory(size, BTCS_MAX_DEP_PER_CELL);
 
@@ -345,7 +342,8 @@ void Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
     Eigen::Map<const DVectorRowMajor> alpha_in(alpha, this->grid_cells[0]);
     Eigen::Map<const BCVectorRowMajor> bc_in(bc, this->grid_cells[0]);
 
-    simulate1D(c_in, alpha_in, bc_in);
+    simulate1D(c_in, alpha_in, bc_in, this->grid_cells[0], this->deltas[0],
+               this->time_step);
   }
   if (this->grid_dim == 2) {
     Eigen::Map<DMatrixRowMajor> c_in(c, this->grid_cells[1],
