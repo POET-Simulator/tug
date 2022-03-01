@@ -40,6 +40,3 @@ lint:
         - mkdir build && cd build
         - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" ..
         - make
-    only:
-        refs:
-            - main
