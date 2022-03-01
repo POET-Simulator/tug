@@ -12,7 +12,7 @@ build:
     stage: build
     artifacts:
         paths:
-            - build/src/test
+            - build/src/1D
             - build/src/2D
         expire_in: 100s
     script:
@@ -25,7 +25,7 @@ run_1D:
     dependencies: 
         - build
     script:
-        - ./build/src/test
+        - ./build/src/1D
 
 run_2D:
     stage: test
