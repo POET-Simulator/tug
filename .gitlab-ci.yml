@@ -3,7 +3,8 @@ image: sobc/gitlab-ci
 stages:
     - build
     - test
-    - analyze
+    - static_analyze
+    - dynamic_analyze
 
 before_script:
     - apt-get update && apt-get install -y libeigen3-dev
@@ -35,8 +36,20 @@ run_2D:
         - ./build/src/2D
 
 lint:
-    stage: analyze
+    stage: static_analyze
     script:
         - mkdir lint && cd lint
         - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" ..
         - make
+
+memcheck_1D:
+    stage: dynamic_analyze
+    script:
+        - cd build/src
+        - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./1D 1>/dev/null
+
+memcheck_2D:
+    stage: dynamic_analyze
+    script:
+        - cd build/src
+        - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./2D 1>/dev/null
