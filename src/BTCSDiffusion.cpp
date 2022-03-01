@@ -6,6 +6,7 @@
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/Matrix.h>
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
@@ -16,19 +17,20 @@
 
 #include <iostream>
 
-#define BTCS_MAX_DEP_PER_CELL 3
+constexpr int BTCS_MAX_DEP_PER_CELL = 3;
+constexpr int BTCS_2D_DT_SIZE = 2;
 
 Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
-  assert(dim <= 3);
 
   grid_cells.resize(dim, 1);
   domain_size.resize(dim, 1);
   deltas.resize(dim, 1);
+
+  this->time_step = 0;
 }
 
 void Diffusion::BTCSDiffusion::setXDimensions(double domain_size,
                                               unsigned int n_grid_cells) {
-  assert(this->grid_dim > 0);
   this->domain_size[0] = domain_size;
   this->grid_cells[0] = n_grid_cells;
 
@@ -37,7 +39,6 @@ void Diffusion::BTCSDiffusion::setXDimensions(double domain_size,
 
 void Diffusion::BTCSDiffusion::setYDimensions(double domain_size,
                                               unsigned int n_grid_cells) {
-  assert(this->grid_dim > 1);
   this->domain_size[1] = domain_size;
   this->grid_cells[1] = n_grid_cells;
 
@@ -46,29 +47,28 @@ void Diffusion::BTCSDiffusion::setYDimensions(double domain_size,
 
 void Diffusion::BTCSDiffusion::setZDimensions(double domain_size,
                                               unsigned int n_grid_cells) {
-  assert(this->grid_dim > 2);
   this->domain_size[2] = domain_size;
   this->grid_cells[2] = n_grid_cells;
 
   updateInternals();
 }
 
-unsigned int Diffusion::BTCSDiffusion::getXGridCellsN() {
+auto Diffusion::BTCSDiffusion::getXGridCellsN() -> unsigned int {
   return this->grid_cells[0];
 }
-unsigned int Diffusion::BTCSDiffusion::getYGridCellsN() {
+auto Diffusion::BTCSDiffusion::getYGridCellsN() -> unsigned int {
   return this->grid_cells[1];
 }
-unsigned int Diffusion::BTCSDiffusion::getZGridCellsN() {
+auto Diffusion::BTCSDiffusion::getZGridCellsN() -> unsigned int {
   return this->grid_cells[2];
 }
-unsigned int Diffusion::BTCSDiffusion::getXDomainSize() {
+auto Diffusion::BTCSDiffusion::getXDomainSize() -> double {
   return this->domain_size[0];
 }
-unsigned int Diffusion::BTCSDiffusion::getYDomainSize() {
+auto Diffusion::BTCSDiffusion::getYDomainSize() -> double {
   return this->domain_size[1];
 }
-unsigned int Diffusion::BTCSDiffusion::getZDomainSize() {
+auto Diffusion::BTCSDiffusion::getZDomainSize() -> double {
   return this->domain_size[2];
 }
 
@@ -87,7 +87,7 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
   reserveMemory(size, BTCS_MAX_DEP_PER_CELL);
 
   fillMatrixFromRow(alpha.row(0), bc.row(0), size, dx, time_step);
-  fillVectorFromRowADI(c, alpha, bc, Eigen::VectorXd::Constant(size, 0), size,
+  fillVectorFromRow(c, alpha, bc, Eigen::VectorXd::Constant(size, 0), size,
                        dx, time_step);
 
   solveLES();
@@ -126,16 +126,12 @@ void Diffusion::BTCSDiffusion::simulate2D(
     Eigen::Map<DMatrixRowMajor> &c, Eigen::Map<const DMatrixRowMajor> &alpha,
     Eigen::Map<const BCMatrixRowMajor> &bc) {
 
-  int n_rows, n_cols;
-  double dx;
+  int n_rows = this->grid_cells[1];
+  int n_cols = this->grid_cells[0];
+  double dx = this->deltas[0];
   DMatrixRowMajor t0_c;
 
-  double local_dt = this->time_step / 2.;
-  dx = this->deltas[0];
-  DMatrixRowMajor tmp_vector;
-
-  n_rows = this->grid_cells[1];
-  n_cols = this->grid_cells[0];
+  double local_dt = this->time_step / BTCS_2D_DT_SIZE;
 
   t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
 
@@ -159,16 +155,18 @@ void Diffusion::BTCSDiffusion::simulate2D(
   }
 }
 
-Diffusion::BTCSDiffusion::DMatrixRowMajor Diffusion::BTCSDiffusion::calc_t0_c(
-    const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-    const BCMatrixRowMajor &bc, double time_step, double dx) {
+auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
+                                         const DMatrixRowMajor &alpha,
+                                         const BCMatrixRowMajor &bc,
+                                         double time_step, double dx)
+    -> DMatrixRowMajor {
 
   int n_rows = this->grid_cells[1];
   int n_cols = this->grid_cells[0];
 
   DMatrixRowMajor t0_c(n_rows, n_cols);
 
-  double y_values[3];
+  std::array<double, 3> y_values;
 
   // first, iterate over first row
   for (int j = 0; j < n_cols; j++) {
@@ -222,15 +220,17 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 
   A_matrix.insert(0, 0) = 1;
 
-  if (left_constant)
+  if (left_constant) {
     A_matrix.insert(1, 1) = 1;
+  }
 
   A_matrix.insert(A_size - 1, A_size - 1) = 1;
 
-  if (right_constant)
+  if (right_constant) {
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
+  }
 
-  for (int j = 1 + left_constant, k = j - 1; k < size - right_constant;
+  for (int j = 1 + (int)left_constant, k = j - 1; k < size - (int)right_constant;
        j++, k++) {
     double sx = (alpha[k] * time_step) / (dx * dx);
 
@@ -245,8 +245,8 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   }
 }
 
-inline void Diffusion::BTCSDiffusion::fillVectorFromRowADI(
-    const DVectorRowMajor &c, const DVectorRowMajor alpha,
+inline void Diffusion::BTCSDiffusion::fillVectorFromRow(
+    const DVectorRowMajor &c, const DVectorRowMajor &alpha,
     const BCVectorRowMajor &bc, const DVectorRowMajor &t0_c, int size,
     double dx, double time_step) {
 

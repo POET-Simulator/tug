@@ -12,7 +12,6 @@
 #include <type_traits>
 #include <vector>
 
-#define BTCS_MAX_DEP_PER_CELL 3
 
 namespace Diffusion {
 /*!
@@ -64,28 +63,28 @@ public:
   /*!
    * Returns the number of grid cells in x direction.
    */
-  unsigned int getXGridCellsN();
+  auto getXGridCellsN() -> unsigned int;
   /*!
    * Returns the number of grid cells in y direction.
    */
-  unsigned int getYGridCellsN();
+  auto getYGridCellsN() -> unsigned int;
   /*!
    * Returns the number of grid cells in z direction.
    */
-  unsigned int getZGridCellsN();
+  auto getZGridCellsN() -> unsigned int;
 
   /*!
    * Returns the domain size in x direction.
    */
-  unsigned int getXDomainSize();
+  auto getXDomainSize() -> double;
   /*!
    * Returns the domain size in y direction.
    */
-  unsigned int getYDomainSize();
+  auto getYDomainSize() -> double;
   /*!
    * Returns the domain size in z direction.
    */
-  unsigned int getZDomainSize();
+  auto getZDomainSize() -> double;
 
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
@@ -127,15 +126,15 @@ private:
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   Eigen::Map<const BCMatrixRowMajor> &bc);
 
-  DMatrixRowMajor calc_t0_c(const DMatrixRowMajor &c,
+  auto calc_t0_c(const DMatrixRowMajor &c,
                             const DMatrixRowMajor &alpha,
-                            const BCMatrixRowMajor &bc, double time_step, double dx);
+                            const BCMatrixRowMajor &bc, double time_step, double dx) -> DMatrixRowMajor;
 
   inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
                                 const BCVectorRowMajor &bc, int size, double dx,
                                 double time_step);
-  inline void fillVectorFromRowADI(const DVectorRowMajor &c,
-                                   const DVectorRowMajor alpha,
+  inline void fillVectorFromRow(const DVectorRowMajor &c,
+                                   const DVectorRowMajor &alpha,
                                    const BCVectorRowMajor &bc,
                                    const DVectorRowMajor &t0_c, int size,
                                    double dx, double time_step);
@@ -157,7 +156,7 @@ private:
   Eigen::VectorXd x_vector;
 
   double time_step;
-  int grid_dim;
+  unsigned int grid_dim;
 
   std::vector<unsigned int> grid_cells;
   std::vector<double> domain_size;
