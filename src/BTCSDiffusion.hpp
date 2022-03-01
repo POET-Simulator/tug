@@ -115,16 +115,13 @@ private:
                         Eigen::RowMajor>
       BCVectorRowMajor;
 
-  // void simulate_base(DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor>
-  // &bc,
-  //                    Eigen::Map<const DVectorRowMajor> &alpha, double dx,
-  //                    double time_step, int size, DVectorRowMajor &t0_c);
+  void simulate_base(DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor> &bc,
+                     Eigen::Map<const DVectorRowMajor> &alpha, double dx,
+                     double time_step, int size, DVectorRowMajor &t0_c);
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
-                  Eigen::Map<const BCVectorRowMajor> &bc,
-                  const DVectorRowMajor &t0_c, int size, double dx,
-                  double time_step);
+                  Eigen::Map<const BCVectorRowMajor> &bc);
 
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,
@@ -133,7 +130,6 @@ private:
   inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
                                 const BCVectorRowMajor &bc, int size, double dx,
                                 double time_step);
-
   inline void fillVectorFromRowADI(const DVectorRowMajor &c,
                                    const DVectorRowMajor alpha,
                                    const BCVectorRowMajor &bc,
