@@ -77,74 +77,74 @@ void Diffusion::BTCSDiffusion::updateInternals() {
   }
 }
 
-void Diffusion::BTCSDiffusion::simulate_base(
-    DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor> &bc,
-    Eigen::Map<const DVectorRowMajor> &alpha, double dx, double time_step,
-    int size, DVectorRowMajor &t0_c) {
+// void Diffusion::BTCSDiffusion::simulate_base(
+//     DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor> &bc,
+//     Eigen::Map<const DVectorRowMajor> &alpha, double dx, double time_step,
+//     int size, DVectorRowMajor &t0_c) {
 
-  // The sizes for matrix and vectors of the equation system is defined by the
-  // actual size of the input vector and if the system is (partially) closed.
-  // Then we will need ghost nodes. So this variable will give the count of
-  // ghost nodes.
-  // int bc_offset = !left_is_constant + !right_is_constant;
-  // ;
+//   // The sizes for matrix and vectors of the equation system is defined by the
+//   // actual size of the input vector and if the system is (partially) closed.
+//   // Then we will need ghost nodes. So this variable will give the count of
+//   // ghost nodes.
+//   // int bc_offset = !left_is_constant + !right_is_constant;
+//   // ;
 
-  // set sizes of private and yet allocated vectors
-  // b_vector.resize(size + bc_offset);
-  // x_vector.resize(size + bc_offset);
+//   // set sizes of private and yet allocated vectors
+//   // b_vector.resize(size + bc_offset);
+//   // x_vector.resize(size + bc_offset);
 
-  // /*
-  //  * Begin to solve the equation system using LU solver of Eigen.
-  //  *
-  //  * But first fill the A matrix and b vector.
-  //  */
+//   // /*
+//   //  * Begin to solve the equation system using LU solver of Eigen.
+//   //  *
+//   //  * But first fill the A matrix and b vector.
+//   //  */
 
-  // // Set boundary condition for ghost nodes (for closed or flux system) or
-  // outer
-  // // inlet nodes (constant boundary condition)
-  // A_matrix.resize(size + bc_offset, size + bc_offset);
-  // A_matrix.reserve(Eigen::VectorXi::Constant(size + bc_offset, 3));
+//   // // Set boundary condition for ghost nodes (for closed or flux system) or
+//   // outer
+//   // // inlet nodes (constant boundary condition)
+//   // A_matrix.resize(size + bc_offset, size + bc_offset);
+//   // A_matrix.reserve(Eigen::VectorXi::Constant(size + bc_offset, 3));
 
-  // A_matrix.insert(0, 0) = 1;
-  // b_vector[0] =
-  //     (left_is_constant ? left.value : getBCFromFlux(left, c[0], alpha[0]));
+//   // A_matrix.insert(0, 0) = 1;
+//   // b_vector[0] =
+//   //     (left_is_constant ? left.value : getBCFromFlux(left, c[0], alpha[0]));
 
-  // A_matrix.insert(size + 1, size + 1) = 1;
-  // b_vector[size + 1] =
-  //     (right_is_constant ? right.value
-  //                        : getBCFromFlux(right, c[size - 1], alpha[size -
-  //                        1]));
+//   // A_matrix.insert(size + 1, size + 1) = 1;
+//   // b_vector[size + 1] =
+//   //     (right_is_constant ? right.value
+//   //                        : getBCFromFlux(right, c[size - 1], alpha[size -
+//   //                        1]));
 
-  // Start filling the A matrix
-  // =i= is used for equation system matrix and vector indexing
-  // and =j= for indexing of c,alpha and bc
-  // for (int i = 1, j = i + !(left_is_constant); i < size - right_is_constant;
-  //      i++, j++) {
+//   // Start filling the A matrix
+//   // =i= is used for equation system matrix and vector indexing
+//   // and =j= for indexing of c,alpha and bc
+//   // for (int i = 1, j = i + !(left_is_constant); i < size - right_is_constant;
+//   //      i++, j++) {
 
-  //   // if current grid cell is considered as constant boundary conditon
-  //   if (bc[j].type == Diffusion::BC_CONSTANT) {
-  //     A_matrix.insert(i, i) = 1;
-  //     b_vector[i] = bc[j].value;
-  //     continue;
-  //   }
+//   //   // if current grid cell is considered as constant boundary conditon
+//   //   if (bc[j].type == Diffusion::BC_CONSTANT) {
+//   //     A_matrix.insert(i, i) = 1;
+//   //     b_vector[i] = bc[j].value;
+//   //     continue;
+//   //   }
 
-  //   double sx = (alpha[j] * time_step) / (dx * dx);
+//   //   double sx = (alpha[j] * time_step) / (dx * dx);
 
-  //   A_matrix.insert(i, i) = -1. - 2. * sx;
-  //   A_matrix.insert(i, i - 1) = sx;
-  //   A_matrix.insert(i, i + 1) = sx;
+//   //   A_matrix.insert(i, i) = -1. - 2. * sx;
+//   //   A_matrix.insert(i, i - 1) = sx;
+//   //   A_matrix.insert(i, i + 1) = sx;
 
-  //   b_vector[i] = -c[j];
-  // }
+//   //   b_vector[i] = -c[j];
+//   // }
 
-  fillMatrixFromRow(alpha, bc, size, dx, time_step);
-  fillVectorFromRowADI(c, alpha, bc, t0_c, size, dx, time_step);
+//   fillMatrixFromRow(alpha, bc, size, dx, time_step);
+//   fillVectorFromRowADI(c, alpha, bc, t0_c, size, dx, time_step);
 
-  solveLES();
+//   solveLES();
 
-  // write back result to input/output vector
-  // c = x_vector.segment(!left_is_constant, c.size());
-}
+//   // write back result to input/output vector
+//   // c = x_vector.segment(!left_is_constant, c.size());
+// }
 
 inline void Diffusion::BTCSDiffusion::reserveMemory(int size,
                                                     int max_count_per_line) {

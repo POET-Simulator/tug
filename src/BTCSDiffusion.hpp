@@ -115,9 +115,10 @@ private:
                         Eigen::RowMajor>
       BCVectorRowMajor;
 
-  void simulate_base(DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor> &bc,
-                     Eigen::Map<const DVectorRowMajor> &alpha, double dx,
-                     double time_step, int size, DVectorRowMajor &t0_c);
+  // void simulate_base(DVectorRowMajor &c, Eigen::Map<const BCVectorRowMajor>
+  // &bc,
+  //                    Eigen::Map<const DVectorRowMajor> &alpha, double dx,
+  //                    double time_step, int size, DVectorRowMajor &t0_c);
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
