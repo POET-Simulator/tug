@@ -251,8 +251,8 @@ void Diffusion::BTCSDiffusion::simulate2D(
 }
 
 inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
-    const Eigen::VectorXd &alpha,
-    const Eigen::Vector<Diffusion::boundary_condition, Eigen::Dynamic> &bc,
+    const DVectorRowMajor &alpha,
+    const BCVectorRowMajor &bc,
     int size, double dx, double time_step) {
 
   Diffusion::boundary_condition left = bc[0];
@@ -289,7 +289,7 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 }
 
 inline void Diffusion::BTCSDiffusion::fillVectorFromRowADI(
-    const DVectorRowMajor &c, const Eigen::VectorXd alpha,
+    const DVectorRowMajor &c, const DVectorRowMajor alpha,
     const BCVectorRowMajor &bc, const DVectorRowMajor &t0_c, int size,
     double dx, double time_step) {
 

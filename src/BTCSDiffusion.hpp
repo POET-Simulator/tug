@@ -128,12 +128,12 @@ private:
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   Eigen::Map<const BCMatrixRowMajor> &bc);
 
-  inline void fillMatrixFromRow(
-      const Eigen::VectorXd &alpha,
-      const Eigen::Vector<Diffusion::boundary_condition, Eigen::Dynamic> &bc,
-      int size, double dx, double time_step);
+  inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc, int size, double dx,
+                                double time_step);
+
   inline void fillVectorFromRowADI(const DVectorRowMajor &c,
-                                   const Eigen::VectorXd alpha,
+                                   const DVectorRowMajor alpha,
                                    const BCVectorRowMajor &bc,
                                    const DVectorRowMajor &t0_c, int size,
                                    double dx, double time_step);
