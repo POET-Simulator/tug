@@ -43,8 +43,8 @@ int main(int argc, char *argv[]) {
 
     cout << "Iteration: " << i << "\n\n";
 
-    for (int j = 0; j < field.size(); j++) {
-      cout << field[j] << "\n";
+    for (auto & cell : field) {
+      cout << cell << "\n";
     }
 
     cout << "\n" << endl;
