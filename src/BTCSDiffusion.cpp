@@ -127,69 +127,36 @@ void Diffusion::BTCSDiffusion::simulate2D(
     Eigen::Map<const BCMatrixRowMajor> &bc) {
 
   int n_rows, n_cols;
+  double dx;
+  DMatrixRowMajor t0_c;
 
   double local_dt = this->time_step / 2.;
-  double dx = this->deltas[0];
+  dx = this->deltas[0];
   DMatrixRowMajor tmp_vector;
 
   n_rows = this->grid_cells[1];
   n_cols = this->grid_cells[0];
 
-  // unsigned int size = (this->grid_cells[0] + 2) * (this->grid_cells[1]);
-
-  DMatrixRowMajor t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
-
-  std::cout << t0_c.row(0) << std::endl;
+  t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
 
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
-    simulate_base(input_field, bc.row(i), alpha.row(i), dx, local_dt, n_cols, t0_c.row(i));
+    simulate_base(input_field, bc.row(i), alpha.row(i), dx, local_dt, n_cols,
+                  t0_c.row(i));
     c.row(i) << input_field;
   }
 
-  solveLES();
+  dx = this->deltas[1];
 
-  // tmp_vector = x_vector;
-  // tmp_vector.transposeInPlace();
-  // tmp_vector.conservativeResize(c.rows(), c.cols() + 2);
+  t0_c =
+      calc_t0_c(c.transpose(), alpha.transpose(), bc.transpose(), local_dt, dx);
 
-  // Eigen::Map<Eigen::MatrixXd> tmp(tmp_vector.data(), c.rows(), c.cols() + 2);
-
-  // c = tmp_vector.block(0, 1, c.rows(), c.cols());
-  // c.transposeInPlace();
-
-  // size = (this->grid_cells[0] * (this->grid_cells[1] + 2));
-
-  // A_matrix.resize(size, size);
-  // A_matrix.reserve(Eigen::VectorXi::Constant(size, 3));
-
-  // b_vector.resize(size);
-  // x_vector.resize(size);
-
-  // n_cols = c.cols();
-
-  // for (int i = 0; i < c.rows(); i++) {
-  //   boundary_condition left = bc(0, i);
-  //   bool left_constant = left.type == Diffusion::BC_CONSTANT;
-  //   boundary_condition right = bc(n_cols - 1, i);
-  //   bool right_constant = right.type == Diffusion::BC_CONSTANT;
-
-  //   fillMatrixFromRow(alpha.col(i), n_cols, i, left_constant, right_constant,
-  //                     deltas[1], this->time_step / 2, bc.col(i));
-  //   fillVectorFromRowADI(c, alpha.row(i), i, deltas[1], left, right,
-  //   local_dt,
-  //                        bc.col(i));
-  // }
-
-  // solveLES();
-
-  // tmp_vector = x_vector;
-  // tmp_vector.transposeInPlace();
-  // tmp_vector.conservativeResize(c.rows(), c.cols() + 2);
-
-  // c = tmp_vector.block(0, 1, c.rows(), c.cols());
-
-  // c.transposeInPlace();
+  for (int i = 0; i < n_cols; i++) {
+    DVectorRowMajor input_field = c.col(i);
+    simulate_base(input_field, bc.col(i), alpha.col(i), dx, local_dt, n_rows,
+                  t0_c.row(i));
+    c.col(i) << input_field.transpose();
+  }
 }
 
 Diffusion::BTCSDiffusion::DMatrixRowMajor Diffusion::BTCSDiffusion::calc_t0_c(
@@ -221,8 +188,8 @@ Diffusion::BTCSDiffusion::DMatrixRowMajor Diffusion::BTCSDiffusion::calc_t0_c(
       y_values[1] = c(i, j);
       y_values[2] = c(i + 1, j);
 
-    t0_c(i, j) = time_step * alpha(i, j) *
-                 (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
+      t0_c(i, j) = time_step * alpha(i, j) *
+                   (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
     }
   }
 
@@ -230,12 +197,12 @@ Diffusion::BTCSDiffusion::DMatrixRowMajor Diffusion::BTCSDiffusion::calc_t0_c(
 
   // and finally over last row
   for (int j = 0; j < n_cols; j++) {
-    y_values[0] = c(end-1,j);
+    y_values[0] = c(end - 1, j);
     y_values[1] = c(end, j);
     y_values[2] = getBCFromFlux(bc(end, j), c(end, j), alpha(end, j));
 
     t0_c(end, j) = time_step * alpha(end, j) *
-                 (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
+                   (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
   }
 
   return t0_c;
