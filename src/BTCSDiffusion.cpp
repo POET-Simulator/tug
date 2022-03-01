@@ -19,6 +19,7 @@
 
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
+constexpr double center_eq(double sx) { return -1. - 2. * sx; }
 
 Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
 
@@ -87,8 +88,8 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
   reserveMemory(size, BTCS_MAX_DEP_PER_CELL);
 
   fillMatrixFromRow(alpha.row(0), bc.row(0), size, dx, time_step);
-  fillVectorFromRow(c, alpha, bc, Eigen::VectorXd::Constant(size, 0), size,
-                       dx, time_step);
+  fillVectorFromRow(c, alpha, bc, Eigen::VectorXd::Constant(size, 0), size, dx,
+                    time_step);
 
   solveLES();
 
@@ -230,8 +231,8 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
   }
 
-  for (int j = 1 + (int)left_constant, k = j - 1; k < size - (int)right_constant;
-       j++, k++) {
+  for (int j = 1 + (int)left_constant, k = j - 1;
+       k < size - (int)right_constant; j++, k++) {
     double sx = (alpha[k] * time_step) / (dx * dx);
 
     if (bc[k].type == Diffusion::BC_CONSTANT) {
@@ -239,7 +240,7 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
       continue;
     }
 
-    A_matrix.insert(j, j) = -1. - 2. * sx;
+    A_matrix.insert(j, j) = center_eq(sx);
     A_matrix.insert(j, (j - 1)) = sx;
     A_matrix.insert(j, (j + 1)) = sx;
   }
@@ -265,15 +266,6 @@ inline void Diffusion::BTCSDiffusion::fillVectorFromRow(
       b_vector[j + 1] = tmp_bc.value;
       continue;
     }
-
-    // double y_values[3];
-    // y_values[0] =
-    //     (row != 0 ? c(row - 1, j) : getBCFromFlux(tmp_bc, c(row, j),
-    //     alpha[j]));
-    // y_values[1] = c(row, j);
-    // y_values[2] =
-    //     (row != nrow - 1 ? c(row + 1, j)
-    //                      : getBCFromFlux(tmp_bc, c(row, j), alpha[j]));
 
     double t0_c_j = time_step * alpha[j] * (t0_c[j] / (dx * dx));
     b_vector[j + 1] = -c[j] - t0_c_j;
@@ -317,11 +309,12 @@ void Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
   }
 }
 
-inline double Diffusion::BTCSDiffusion::getBCFromFlux(boundary_condition bc,
-                                                      double neighbor_c,
-                                                      double neighbor_alpha) {
+inline auto Diffusion::BTCSDiffusion::getBCFromFlux(boundary_condition bc,
+                                                    double neighbor_c,
+                                                    double neighbor_alpha)
+    -> double {
 
-  double val;
+  double val = 0;
 
   if (bc.type == Diffusion::BC_CLOSED) {
     val = neighbor_c;

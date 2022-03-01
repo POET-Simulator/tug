@@ -12,7 +12,6 @@
 #include <type_traits>
 #include <vector>
 
-
 namespace Diffusion {
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
@@ -126,23 +125,25 @@ private:
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   Eigen::Map<const BCMatrixRowMajor> &bc);
 
-  auto calc_t0_c(const DMatrixRowMajor &c,
-                            const DMatrixRowMajor &alpha,
-                            const BCMatrixRowMajor &bc, double time_step, double dx) -> DMatrixRowMajor;
+  auto calc_t0_c(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
+                 const BCMatrixRowMajor &bc, double time_step, double dx)
+      -> DMatrixRowMajor;
 
   inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
                                 const BCVectorRowMajor &bc, int size, double dx,
                                 double time_step);
   inline void fillVectorFromRow(const DVectorRowMajor &c,
-                                   const DVectorRowMajor &alpha,
-                                   const BCVectorRowMajor &bc,
-                                   const DVectorRowMajor &t0_c, int size,
-                                   double dx, double time_step);
+                                const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc,
+                                const DVectorRowMajor &t0_c, int size,
+                                double dx, double time_step);
   void simulate3D(std::vector<double> &c);
 
   inline void reserveMemory(int size, int max_count_per_line);
-  inline double getBCFromFlux(Diffusion::boundary_condition bc,
-                              double nearest_value, double neighbor_alpha);
+  inline static auto getBCFromFlux(Diffusion::boundary_condition bc,
+                                   double neighbor_c, double neighbor_alpha)
+      -> double;
+
   void solveLES();
   void updateInternals();
 
