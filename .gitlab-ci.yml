@@ -3,7 +3,7 @@ image: sobc/gitlab-ci
 stages:
     - build
     - test
-    - analysis
+    - analyze
 
 before_script:
     - apt-get update && apt-get install -y libeigen3-dev
@@ -35,8 +35,8 @@ run_2D:
         - ./build/src/2D
 
 lint:
-    stage: analysis
+    stage: analyze
     script:
-        - mkdir build && cd build
+        - mkdir lint && cd lint
         - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" ..
         - make
