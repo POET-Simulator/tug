@@ -171,8 +171,6 @@ void Diffusion::BTCSDiffusion::simulate1D(
   fillVectorFromRowADI(c, alpha, bc, Eigen::VectorXd::Constant(size, 0), size,
                        dx, time_step);
 
-  std::cout << A_matrix << std::endl;
-
   solveLES();
 
   c = x_vector.segment(1, size);
@@ -275,7 +273,7 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   if (right_constant)
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
 
-  for (int j = 1 + left_constant, k = j - 1; j < size - (1 - right_constant);
+  for (int j = 1 + left_constant, k = j - 1; k < size - right_constant;
        j++, k++) {
     double sx = (alpha[k] * time_step) / (dx * dx);
 
@@ -327,12 +325,12 @@ inline void Diffusion::BTCSDiffusion::fillVectorFromRowADI(
   if (!left_constant) {
     // this is not correct currently.We will fix this when we are able to define
     // FLUX boundary conditions
-    b_vector[0] = getBCFromFlux(left, b_vector[1], alpha[0]);
+    b_vector[0] = getBCFromFlux(left, c[0], alpha[0]);
   }
 
   if (!right_constant) {
     b_vector[b_size - 1] =
-        getBCFromFlux(right, b_vector[size - 2], alpha[size - 1]);
+        getBCFromFlux(right, c[size - 1], alpha[size - 1]);
   }
 }
 
