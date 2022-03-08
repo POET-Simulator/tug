@@ -1,16 +1,18 @@
 #ifndef BTCSDIFFUSION_H_
 #define BTCSDIFFUSION_H_
 
+#include "BoundaryCondition.hpp"
+
 #include <Eigen/Sparse>
+#include <Eigen/src/Core/Map.h>
+#include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Core/util/Constants.h>
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
 #include <vector>
 
-/*!
- * Defines both types of boundary condition as a datatype.
- */
-typedef int bctype;
-
+namespace Diffusion {
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
  * euler.
@@ -18,21 +20,6 @@ typedef int bctype;
 class BTCSDiffusion {
 
 public:
-  /*!
-   * Defines a constant/Dirichlet boundary condition.
-   */
-  static const int BC_CONSTANT;
-
-  /*!
-   * Defines a closed/Neumann boundary condition.
-   */
-  static const int BC_CLOSED;
-
-  /*!
-   * Defines a flux/Cauchy boundary condition.
-   */
-  static const int BC_FLUX;
-
   /*!
    * Creates a diffusion module.
    *
@@ -75,37 +62,37 @@ public:
   /*!
    * Returns the number of grid cells in x direction.
    */
-  unsigned int getXGridCellsN();
+  auto getXGridCellsN() -> unsigned int;
   /*!
    * Returns the number of grid cells in y direction.
    */
-  unsigned int getYGridCellsN();
+  auto getYGridCellsN() -> unsigned int;
   /*!
    * Returns the number of grid cells in z direction.
    */
-  unsigned int getZGridCellsN();
+  auto getZGridCellsN() -> unsigned int;
 
   /*!
    * Returns the domain size in x direction.
    */
-  unsigned int getXDomainSize();
+  auto getXDomainSize() -> double;
   /*!
    * Returns the domain size in y direction.
    */
-  unsigned int getYDomainSize();
+  auto getYDomainSize() -> double;
   /*!
    * Returns the domain size in z direction.
    */
-  unsigned int getZDomainSize();
+  auto getZDomainSize() -> double;
 
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
    *
-   * @param c Vector describing the concentration of one solution of the grid as
-   * continious memory (row major).
-   * @param alpha Vector of diffusion coefficients for each grid element.
+   * @param c Pointer to continious memory describing the current concentration state of each grid cell.
+   * @param alpha Pointer to memory area of diffusion coefficients for each grid element.
+   * @param bc Pointer to memory setting boundary conidition of each grid cell.
    */
-  void simulate(std::vector<double> &c, const std::vector<double> &alpha);
+  void simulate(double *c, double *alpha, Diffusion::boundary_condition *bc);
 
   /*!
    * Set the timestep of the simulation
@@ -114,48 +101,62 @@ public:
    */
   void setTimestep(double time_step);
 
-  /*!
-   * Set the boundary condition of the given grid. This is done by defining an
-   * index (exact order still to be determined), the type of the boundary
-   * condition and the according value.
-   *
-   * @param index Index of the grid cell the boundary condition is applied to.
-   * @param type Type of the boundary condition. Must be constant, closed or
-   * flux.
-   * @param value For constant boundary conditions this value is set
-   * during solving. For flux value refers to a gradient of change for this grid
-   * cell. For closed this value has no effect since a gradient of 0 is used.
-   */
-  void setBoundaryCondition(int index, bctype type, double value);
-
 private:
-  typedef struct boundary_condition {
-    bctype type;
-    double value;
-  } boundary_condition;
-  typedef Eigen::Triplet<double> T;
+  typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      DMatrixRowMajor;
+  typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
+      DVectorRowMajor;
+  typedef Eigen::Matrix<Diffusion::boundary_condition, Eigen::Dynamic,
+                        Eigen::Dynamic, Eigen::RowMajor>
+      BCMatrixRowMajor;
+  typedef Eigen::Matrix<Diffusion::boundary_condition, 1, Eigen::Dynamic,
+                        Eigen::RowMajor>
+      BCVectorRowMajor;
 
-  void simulate1D(std::vector<double> &c, boundary_condition left,
-                  boundary_condition right, const std::vector<double> &alpha,
-                  double dx, int size);
-  void simulate2D(std::vector<double> &c);
+  void simulate_base(DVectorRowMajor &c, const BCVectorRowMajor &bc,
+                     const DVectorRowMajor &alpha, double dx, double time_step,
+                     int size, const DVectorRowMajor &t0_c);
+
+  void simulate1D(Eigen::Map<DVectorRowMajor> &c,
+                  Eigen::Map<const DVectorRowMajor> &alpha,
+                  Eigen::Map<const BCVectorRowMajor> &bc);
+
+  void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
+                  Eigen::Map<const DMatrixRowMajor> &alpha,
+                  Eigen::Map<const BCMatrixRowMajor> &bc);
+
+  auto calc_t0_c(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
+                 const BCMatrixRowMajor &bc, double time_step, double dx)
+      -> DMatrixRowMajor;
+
+  inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc, int size, double dx,
+                                double time_step);
+  inline void fillVectorFromRow(const DVectorRowMajor &c,
+                                const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc,
+                                const DVectorRowMajor &t0_c, int size,
+                                double dx, double time_step);
   void simulate3D(std::vector<double> &c);
-  inline double getBCFromFlux(boundary_condition bc, double nearest_value,
-                              double neighbor_alpha);
-  void updateInternals();
 
-  std::vector<boundary_condition> bc;
+  inline void reserveMemory(int size, int max_count_per_line);
+  inline static auto getBCFromFlux(Diffusion::boundary_condition bc,
+                                   double neighbor_c, double neighbor_alpha)
+      -> double;
+
+  void solveLES();
+  void updateInternals();
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
   Eigen::VectorXd x_vector;
 
   double time_step;
-  int grid_dim;
+  unsigned int grid_dim;
 
   std::vector<unsigned int> grid_cells;
-  std::vector<unsigned int> domain_size;
+  std::vector<double> domain_size;
   std::vector<double> deltas;
 };
-
+} // namespace Diffusion
 #endif // BTCSDIFFUSION_H_
