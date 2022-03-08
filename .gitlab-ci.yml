@@ -27,14 +27,14 @@ run_1D:
     dependencies: 
         - build
     script:
-        - ./build/src/1D
+        - ./build/app/1D
 
 run_2D:
     stage: test
     dependencies: 
        - build
     script:
-        - ./build/src/2D
+        - ./build/app/2D
 
 lint:
     stage: static_analyze
@@ -46,11 +46,11 @@ lint:
 memcheck_1D:
     stage: dynamic_analyze
     script:
-        - cd build/src
+        - cd build/app
         - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./1D 1>/dev/null
 
 memcheck_2D:
     stage: dynamic_analyze
     script:
-        - cd build/src
+        - cd build/app
         - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./2D 1>/dev/null
