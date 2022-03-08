@@ -88,9 +88,9 @@ public:
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
    *
-   * @param c Vector describing the concentration of one solution of the grid as
-   * continious memory (row major).
-   * @param alpha Vector of diffusion coefficients for each grid element.
+   * @param c Pointer to continious memory describing the current concentration state of each grid cell.
+   * @param alpha Pointer to memory area of diffusion coefficients for each grid element.
+   * @param bc Pointer to memory setting boundary conidition of each grid cell.
    */
   void simulate(double *c, double *alpha, Diffusion::boundary_condition *bc);
 
@@ -146,11 +146,6 @@ private:
 
   void solveLES();
   void updateInternals();
-
-  // std::vector<boundary_condition> bc;
-  // Eigen::Matrix<boundary_condition, Eigen::Dynamic, Eigen::Dynamic,
-  //               Eigen::RowMajor>
-  // bc;
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
