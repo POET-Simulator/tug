@@ -13,8 +13,9 @@ build:
     stage: build
     artifacts:
         paths:
-            - build/src/1D
-            - build/src/2D
+            - build/app/1D
+            - build/app/2D
+            - build/app/Comp2D
         expire_in: 100s
     script:
         - mkdir build && cd build
