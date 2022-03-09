@@ -53,7 +53,10 @@ int main(int argc, char *argv[]) {
 
   // Now we simulate and output 8 steps à 1 sec
   for (int t = 1; t < 6; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc.data());
+    double time = diffu.simulate(field.data(), alpha.data(), bc.data());
+
+    cerr << "time elapsed: " << time << " seconds" << endl;
+
     cout << t;
     
     for (int i=0; i < m*n; i++) {

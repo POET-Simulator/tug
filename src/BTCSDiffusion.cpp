@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cstddef>
 #include <iomanip>
 #include <iterator>
@@ -286,8 +287,13 @@ void Diffusion::BTCSDiffusion::setTimestep(double time_step) {
   this->time_step = time_step;
 }
 
-void Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
-                                        Diffusion::boundary_condition *bc) {
+auto Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
+                                        Diffusion::boundary_condition *bc)
+    -> double {
+
+  std::chrono::high_resolution_clock::time_point start =
+      std::chrono::high_resolution_clock::now();
+
   if (this->grid_dim == 1) {
     Eigen::Map<DVectorRowMajor> c_in(c, this->grid_cells[0]);
     Eigen::Map<const DVectorRowMajor> alpha_in(alpha, this->grid_cells[0]);
@@ -307,6 +313,14 @@ void Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
 
     simulate2D(c_in, alpha_in, bc_in);
   }
+
+  std::chrono::high_resolution_clock::time_point end =
+      std::chrono::high_resolution_clock::now();
+
+  std::chrono::duration<double> duration =
+      std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+
+  return duration.count();
 }
 
 inline auto Diffusion::BTCSDiffusion::getBCFromFlux(boundary_condition bc,
