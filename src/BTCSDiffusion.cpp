@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <iomanip>
 #include <iterator>
+#include <omp.h>
 #include <ostream>
 #include <tuple>
 #include <vector>
@@ -143,6 +144,7 @@ void Diffusion::BTCSDiffusion::simulate2D(
 
   t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
 
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
     simulate_base(input_field, bc.row(i), alpha.row(i), dx, local_dt, n_cols,
@@ -155,6 +157,7 @@ void Diffusion::BTCSDiffusion::simulate2D(
   t0_c =
       calc_t0_c(c.transpose(), alpha.transpose(), bc.transpose(), local_dt, dx);
 
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_cols; i++) {
     DVectorRowMajor input_field = c.col(i);
     simulate_base(input_field, bc.col(i), alpha.col(i), dx, local_dt, n_rows,
@@ -186,7 +189,8 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
                  (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
   }
 
-  // then iterate over inlet
+// then iterate over inlet
+#pragma omp parallel for private(y_values) schedule(dynamic)
   for (int i = 1; i < n_rows - 1; i++) {
     for (int j = 0; j < n_cols; j++) {
 
