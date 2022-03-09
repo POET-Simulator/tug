@@ -88,11 +88,16 @@ public:
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
    *
-   * @param c Pointer to continious memory describing the current concentration state of each grid cell.
-   * @param alpha Pointer to memory area of diffusion coefficients for each grid element.
+   * @param c Pointer to continious memory describing the current concentration
+   * state of each grid cell.
+   * @param alpha Pointer to memory area of diffusion coefficients for each grid
+   * element.
    * @param bc Pointer to memory setting boundary conidition of each grid cell.
+   *
+   * @return Time in seconds [s] used to simulate one iteration.
    */
-  void simulate(double *c, double *alpha, Diffusion::boundary_condition *bc);
+  auto simulate(double *c, double *alpha, Diffusion::boundary_condition *bc)
+      -> double;
 
   /*!
    * Set the timestep of the simulation
