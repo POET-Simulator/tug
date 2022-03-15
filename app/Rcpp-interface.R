@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2022-03-15 18:04:27 delucia"
+## Time-stamp: "Last modified 2022-03-15 18:31:55 delucia"
 library(Rcpp)
 library(RcppEigen)
 library(ReacTran)
@@ -18,7 +18,7 @@ sourceCpp("RcppFTCS.cpp")
 
 ## Grid 101
 ## Set initial conditions
-N <- 501
+N <- 1001
 D.coeff <- 1E-3
 C0 <- 1             ## Initial concentration (mg/L)
 X0 <- 0             ## Location of initial concentration (m)
@@ -34,25 +34,25 @@ Diffusion <- function (t, Y, parms){
 
 
 ## gaussian pulse as initial condition
-sigma <- 0.01
-Yini <- exp(-0.5*((x-1/2.0)**2)/sigma**2)
+sigma <- 0.02
+Yini <- 0.5*exp(-0.5*((x-1/2.0)**2)/sigma**2)
 
 ## plot(x, Yini, type="l")
 
 parms1 <- list(D=D.coeff)
 # 1 timestep, 10 s
-times <- seq(from = 0, to = 1, by = 1)
+times <- seq(from = 0, to = 1, by = 0.1)
 
 system.time({
     out1 <- ode.1D(y = Yini, times = times, func = Diffusion,
-                  parms = parms1, dimens = N)[2,-1]
+                  parms = parms1, dimens = N)[11,-1]
 })
 
 ## Now with BTCS 
 alpha <- rep(D.coeff, N)
 
 system.time({
-    out2 <- diff1D(n=N, length=1, field=Yini, alpha=alpha, timestep = 1, 0, 0, iterations = 1)
+    out2 <- diff1D(n=N, length=1, field=Yini, alpha=alpha, timestep = 0.1, 0, 0, iterations = 10)
 })
 
 ## plot(out1, out2)
@@ -75,8 +75,18 @@ mm <- colMeans(rbind(out2,out3))
 
 
 
-matplot(cbind(Yini, out1, out2, out3, mm),type="l", col=c("black","grey","red","blue","green4"), lty=c("dashed", rep("solid",4)), lwd=2,
+matplot(cbind(Yini,out1, out2, out3, mm),type="l", col=c("grey","black","red","blue","green4"), lty="solid", lwd=2,
         xlab="grid element", ylab="Concentration", las=1)
-legend("topright", c("Init","ReacTran ode1D", "BTCS 1d", "FTCS", "poor man's CN"), text.col=c("black","grey","red","blue","green4"), bty = "n")
+legend("topright", c("init","ReacTran ode1D", "BTCS 1d", "FTCS", "poor man's CN"), text.col=c("grey","black","red","blue","green4"), bty = "n")
 
 
+sum(Yini)
+sum(out1)
+sum(out2)
+sum(out3)
+sum(mm)
+
+## Yini <- 0.2*sin(pi/0.1*x)+0.2
+## plot(Yini)
+
+## plot(out3)

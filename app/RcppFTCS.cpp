@@ -1,4 +1,4 @@
-//  Time-stamp: "Last modified 2022-03-15 17:49:54 delucia"
+//  Time-stamp: "Last modified 2022-03-15 18:15:39 delucia"
 #include <Rcpp.h>
 #include <iostream> // for std
 #include <vector>   // for vector
@@ -19,7 +19,7 @@ NumericVector RcppFTCS(int n,
     // dimension of grid
     NumericVector ext (clone(field));
     double dx = length / ((double) n - 1.);
-    double dt = 0.5*dx*dx/alpha;
+    double dt = 0.25*dx*dx/alpha;
 
     
     double afac = alpha*dt/dx/dx;
