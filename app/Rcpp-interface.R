@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2022-03-15 18:31:55 delucia"
+## Time-stamp: "Last modified 2022-03-16 14:01:11 delucia"
 library(Rcpp)
 library(RcppEigen)
 library(ReacTran)
@@ -9,7 +9,7 @@ options(width=110)
 setwd("app")
 
 ## This creates the "diff1D" function with our BTCSdiffusion code
-sourceCpp("Rcpp-interface.cpp")
+sourceCpp("Rcpp-BTCS-1d.cpp")
 
 ### FTCS explicit (same name)
 sourceCpp("RcppFTCS.cpp")
@@ -90,3 +90,70 @@ sum(mm)
 ## plot(Yini)
 
 ## plot(out3)
+
+Fun <- function(dx) {
+    tmp <- diff1D(n=N, length=1, field=Yini, alpha=alpha, timestep = dx, 0, 0, iterations = floor(1/dx))
+    sqrt(sum({out1-tmp}^2))
+}
+
+reso <- optimise(f=Fun, interval=c(1E-5, 1E-1), maximum = FALSE)
+
+
+dx <- 0.0006038284
+floor(1/dx)
+
+1/dx
+
+system.time({
+    out2o <- diff1D(n=N, length=1, field=Yini, alpha=alpha, timestep = dx, 0, 0, iterations = 1656)
+})
+
+matplot(cbind(out1, out2o),type="l", col=c("black","red"), lty="solid", lwd=2,
+        xlab="grid element", ylab="Concentration", las=1)
+legend("topright", c("ReacTran ode1D", "BTCS 1d dx=0.0006"), text.col=c("black","red"), bty = "n")
+
+
+dx <- 0.05
+
+system.time({
+    out2o <- diff1D(n=N, length=1, field=Yini, alpha=alpha, timestep = dx, 0, 0, iterations = 1/dx)
+})
+
+matplot(cbind(out1, out2o),type="l", col=c("black","red"), lty="solid", lwd=2,
+        xlab="grid element", ylab="Concentration", las=1)
+legend("topright", c("ReacTran ode1D", "BTCS 1d dx=0.0006"), text.col=c("black","red"), bty = "n")
+
+Matplot
+
+
+
+
+## This creates the "diff1D" function with our BTCSdiffusion code
+sourceCpp("Rcpp-BTCS-2d.cpp")
+
+n <- 256
+a2d <- rep(1E-3, n^2)
+
+init2d <- readRDS("gs1.rds")
+
+ll <- {init2d - min(init2d)}/diff(range(init2d))
+
+system.time({
+    res1 <- diff2D(nx=N, ny=N, lenx=1, leny=1, field=ll, alpha=a2d, timestep = 0.1, iterations = 10)
+})
+
+hist(ll,32)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
