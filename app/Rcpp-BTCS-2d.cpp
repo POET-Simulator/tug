@@ -1,5 +1,5 @@
-#include "../src/BTCSDiffusion.hpp" // for BTCSDiffusion, BTCSDiffusion::BC_DIRICHLET
-#include "../src/BoundaryCondition.hpp"
+#include "../include/diffusion/BTCSDiffusion.hpp"
+#include "../include/diffusion/BoundaryCondition.hpp"
 #include <algorithm> // for copy, max
 #include <cmath>
 #include <iomanip>

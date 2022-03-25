@@ -1,5 +1,5 @@
-#include "BTCSDiffusion.hpp"
-#include "BoundaryCondition.hpp"
+#include "diffusion/BTCSDiffusion.hpp"
+#include "diffusion/BoundaryCondition.hpp"
 
 #include <Eigen/SparseLU>
 
