@@ -14,10 +14,15 @@
 #include <cstddef>
 #include <iomanip>
 #include <iterator>
-#include <omp.h>
 #include <ostream>
 #include <tuple>
 #include <vector>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_thread_num() 0
+#endif
 
 #include <iostream>
 
