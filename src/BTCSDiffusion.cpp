@@ -1,10 +1,12 @@
-#include "BTCSDiffusion.hpp"
-#include "BoundaryCondition.hpp"
+#include "diffusion/BTCSDiffusion.hpp"
+#include "diffusion/BoundaryCondition.hpp"
 
 #include <Eigen/SparseLU>
 
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/SparseCore/SparseMatrix.h>
+#include <Eigen/src/SparseCore/SparseMatrixBase.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -15,6 +17,12 @@
 #include <ostream>
 #include <tuple>
 #include <vector>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_thread_num() 0
+#endif
 
 #include <iostream>
 
@@ -86,26 +94,30 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
                                              int size,
                                              const DVectorRowMajor &t0_c) {
 
-  reserveMemory(size, BTCS_MAX_DEP_PER_CELL);
+  Eigen::SparseMatrix<double> A_matrix;
+  Eigen::VectorXd b_vector;
+  Eigen::VectorXd x_vector;
 
-  fillMatrixFromRow(alpha.row(0), bc.row(0), size, dx, time_step);
-  fillVectorFromRow(c, alpha, bc, Eigen::VectorXd::Constant(size, 0), size, dx,
-                    time_step);
+  A_matrix.resize(size + 2, size + 2);
+  A_matrix.reserve(Eigen::VectorXi::Constant(size + 2, BTCS_MAX_DEP_PER_CELL));
 
-  solveLES();
+  b_vector.resize(size + 2);
+  x_vector.resize(size + 2);
+
+  fillMatrixFromRow(A_matrix, alpha.row(0), bc.row(0), size, dx, time_step);
+  fillVectorFromRow(b_vector, c, alpha, bc, Eigen::VectorXd::Constant(size, 0),
+                    size, dx, time_step);
+
+  // start to solve
+  Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
+      solver;
+  solver.analyzePattern(A_matrix);
+
+  solver.factorize(A_matrix);
+
+  x_vector = solver.solve(b_vector);
 
   c = x_vector.segment(1, size);
-}
-
-inline void Diffusion::BTCSDiffusion::reserveMemory(int size,
-                                                    int max_count_per_line) {
-  size += 2;
-
-  A_matrix.resize(size, size);
-  A_matrix.reserve(Eigen::VectorXi::Constant(size, max_count_per_line));
-
-  b_vector.resize(size);
-  x_vector.resize(size);
 }
 
 void Diffusion::BTCSDiffusion::simulate1D(
@@ -137,6 +149,7 @@ void Diffusion::BTCSDiffusion::simulate2D(
 
   t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
 
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
     simulate_base(input_field, bc.row(i), alpha.row(i), dx, local_dt, n_cols,
@@ -149,6 +162,7 @@ void Diffusion::BTCSDiffusion::simulate2D(
   t0_c =
       calc_t0_c(c.transpose(), alpha.transpose(), bc.transpose(), local_dt, dx);
 
+#pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_cols; i++) {
     DVectorRowMajor input_field = c.col(i);
     simulate_base(input_field, bc.col(i), alpha.col(i), dx, local_dt, n_rows,
@@ -180,7 +194,8 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
                  (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
   }
 
-  // then iterate over inlet
+// then iterate over inlet
+#pragma omp parallel for private(y_values) schedule(dynamic)
   for (int i = 1; i < n_rows - 1; i++) {
     for (int j = 0; j < n_cols; j++) {
 
@@ -208,9 +223,9 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
   return t0_c;
 }
 
-inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
-    const DVectorRowMajor &alpha, const BCVectorRowMajor &bc, int size,
-    double dx, double time_step) {
+void Diffusion::BTCSDiffusion::fillMatrixFromRow(
+    Eigen::SparseMatrix<double> &A_matrix, const DVectorRowMajor &alpha,
+    const BCVectorRowMajor &bc, int size, double dx, double time_step) {
 
   Diffusion::boundary_condition left = bc[0];
   Diffusion::boundary_condition right = bc[size - 1];
@@ -247,10 +262,10 @@ inline void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   }
 }
 
-inline void Diffusion::BTCSDiffusion::fillVectorFromRow(
-    const DVectorRowMajor &c, const DVectorRowMajor &alpha,
-    const BCVectorRowMajor &bc, const DVectorRowMajor &t0_c, int size,
-    double dx, double time_step) {
+void Diffusion::BTCSDiffusion::fillVectorFromRow(
+    Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
+    const DVectorRowMajor &alpha, const BCVectorRowMajor &bc,
+    const DVectorRowMajor &t0_c, int size, double dx, double time_step) {
 
   Diffusion::boundary_condition left = bc[0];
   Diffusion::boundary_condition right = bc[size - 1];
@@ -340,15 +355,4 @@ inline auto Diffusion::BTCSDiffusion::getBCFromFlux(boundary_condition bc,
   }
 
   return val;
-}
-
-inline void Diffusion::BTCSDiffusion::solveLES() {
-  // start to solve
-  Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
-      solver;
-  solver.analyzePattern(A_matrix);
-
-  solver.factorize(A_matrix);
-
-  x_vector = solver.solve(b_vector);
 }

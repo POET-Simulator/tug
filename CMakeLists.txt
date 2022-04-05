@@ -6,6 +6,9 @@ project(Diffusion CXX)
 set(CMAKE_CXX_STANDARD 14)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(OpenMP)
+
+option(USE_OPENMP "Compile with OpenMP support" ON)
 
 add_subdirectory(app)
 add_subdirectory(src)

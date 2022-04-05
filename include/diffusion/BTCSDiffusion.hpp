@@ -7,6 +7,7 @@
 #include <Eigen/src/Core/Map.h>
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Core/util/Constants.h>
+#include <Eigen/src/SparseCore/SparseMatrix.h>
 #include <cstddef>
 #include <tuple>
 #include <type_traits>
@@ -134,27 +135,23 @@ private:
                  const BCMatrixRowMajor &bc, double time_step, double dx)
       -> DMatrixRowMajor;
 
-  inline void fillMatrixFromRow(const DVectorRowMajor &alpha,
-                                const BCVectorRowMajor &bc, int size, double dx,
-                                double time_step);
-  inline void fillVectorFromRow(const DVectorRowMajor &c,
-                                const DVectorRowMajor &alpha,
-                                const BCVectorRowMajor &bc,
-                                const DVectorRowMajor &t0_c, int size,
-                                double dx, double time_step);
+  void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,
+                         const DVectorRowMajor &alpha,
+                         const BCVectorRowMajor &bc, int size, double dx,
+                         double time_step);
+
+  void fillVectorFromRow(Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
+                         const DVectorRowMajor &alpha,
+                         const BCVectorRowMajor &bc,
+                         const DVectorRowMajor &t0_c, int size, double dx,
+                         double time_step);
   void simulate3D(std::vector<double> &c);
 
-  inline void reserveMemory(int size, int max_count_per_line);
   inline static auto getBCFromFlux(Diffusion::boundary_condition bc,
                                    double neighbor_c, double neighbor_alpha)
       -> double;
 
-  void solveLES();
   void updateInternals();
-
-  Eigen::SparseMatrix<double> A_matrix;
-  Eigen::VectorXd b_vector;
-  Eigen::VectorXd x_vector;
 
   double time_step;
   unsigned int grid_dim;
