@@ -10,7 +10,7 @@ find_package(OpenMP)
 
 option(USE_OPENMP "Compile with OpenMP support" ON)
 
-set(CMAKE_CXX_FLAGS_GENERICOPT "-O3 -march=native -ffast-math" CACHE STRING
+set(CMAKE_CXX_FLAGS_GENERICOPT "-O3 -march=native" CACHE STRING
  "Flags used by the C++ compiler during opt builds."
   FORCE)
 
