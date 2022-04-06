@@ -28,8 +28,6 @@
 
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
-constexpr double center_eq(double sx) { return -1. - 2. * sx; }
-
 Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
 
   grid_cells.resize(dim, 1);
@@ -239,16 +237,25 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 
   if (left_constant) {
     A_matrix.insert(1, 1) = 1;
+  } else {
+    double sx = (alpha[0] * time_step) / (dx * dx);
+    A_matrix.insert(1, 1) = -1. - 2. * sx;
+    A_matrix.insert(1, 0) = sx;
+    A_matrix.insert(1, 2) = sx;
   }
 
   A_matrix.insert(A_size - 1, A_size - 1) = 1;
 
   if (right_constant) {
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
+  } else {
+    double sx = (alpha[size - 1] * time_step) / (dx * dx);
+    A_matrix.insert(A_size - 2, A_size - 2) = -1. - 2. * sx;
+    A_matrix.insert(A_size - 2, A_size - 3) = sx;
+    A_matrix.insert(A_size - 2, A_size - 1) = sx;
   }
 
-  for (int j = 1 + (int)left_constant, k = j - 1;
-       k < size - (int)right_constant; j++, k++) {
+  for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
     double sx = (alpha[k] * time_step) / (dx * dx);
 
     if (bc[k].type == Diffusion::BC_CONSTANT) {
@@ -256,7 +263,7 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
       continue;
     }
 
-    A_matrix.insert(j, j) = center_eq(sx);
+    A_matrix.insert(j, j) = -1. - 2. * sx;
     A_matrix.insert(j, (j - 1)) = sx;
     A_matrix.insert(j, (j + 1)) = sx;
   }
