@@ -18,5 +18,15 @@ set(CMAKE_BUILD_TYPE "${CMAKE_BUILD_TYPE}" CACHE STRING
   "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel GenericOpt."
   FORCE)
 
+option(USE_UNSAFE_MATH_OPT
+  "Use compiler options to break IEEE compliances by
+    oenabling reordering of instructions when adding/multiplying of floating
+    points."
+  OFF)
+
+if(USE_UNSAFE_MATH_OPT)
+  add_compile_options(-ffast-math)
+endif()
+
 add_subdirectory(app)
 add_subdirectory(src)
