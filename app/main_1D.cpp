@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   // create input + diffusion coefficients for each grid cell
   std::vector<double> alpha(n, 1 * pow(10, -1));
   std::vector<double> field(n, 1 * std::pow(10, -6));
-  std::vector<boundary_condition> bc(n, {0,0});
+  std::vector<boundary_condition> bc(n + 2, {0, 0});
 
   // create instance of diffusion module
   BTCSDiffusion diffu(dim);
@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
 
   // set the boundary condition for the left ghost cell to dirichlet
-  bc[0] = {Diffusion::BC_CONSTANT, 5*std::pow(10,-6)};
+  bc[1] = {Diffusion::BC_CONSTANT, 5 * std::pow(10, -6)};
   // diffu.setBoundaryCondition(1, 0, BTCSDiffusion::BC_CONSTANT,
   //                            5. * std::pow(10, -6));
 
@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
     cout << "Iteration: " << i << "\n\n";
 
-    for (auto & cell : field) {
+    for (auto &cell : field) {
       cout << cell << "\n";
     }
 
