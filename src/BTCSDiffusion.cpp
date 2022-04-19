@@ -102,7 +102,7 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
   b_vector.resize(size + 2);
   x_vector.resize(size + 2);
 
-  fillMatrixFromRow(A_matrix, alpha.row(0), bc.row(0), size, dx, time_step);
+  fillMatrixFromRow(A_matrix, alpha, bc, size, dx, time_step);
   fillVectorFromRow(b_vector, c, alpha, bc, Eigen::VectorXd::Constant(size, 0),
                     size, dx, time_step);
 
@@ -225,8 +225,8 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     Eigen::SparseMatrix<double> &A_matrix, const DVectorRowMajor &alpha,
     const BCVectorRowMajor &bc, int size, double dx, double time_step) {
 
-  Diffusion::boundary_condition left = bc[0];
-  Diffusion::boundary_condition right = bc[size - 1];
+  Diffusion::boundary_condition left = bc[1];
+  Diffusion::boundary_condition right = bc[size];
 
   bool left_constant = (left.type == Diffusion::BC_CONSTANT);
   bool right_constant = (right.type == Diffusion::BC_CONSTANT);
@@ -244,7 +244,18 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(1, 2) = sx;
   }
 
-  A_matrix.insert(A_size - 1, A_size - 1) = 1;
+  for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
+    double sx = (alpha[k] * time_step) / (dx * dx);
+
+    if (bc[k + 1].type == Diffusion::BC_CONSTANT) {
+      A_matrix.insert(j, j) = 1;
+      continue;
+    }
+
+    A_matrix.insert(j, j) = -1. - 2. * sx;
+    A_matrix.insert(j, (j - 1)) = sx;
+    A_matrix.insert(j, (j + 1)) = sx;
+  }
 
   if (right_constant) {
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
@@ -255,18 +266,7 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(A_size - 2, A_size - 1) = sx;
   }
 
-  for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
-    double sx = (alpha[k] * time_step) / (dx * dx);
-
-    if (bc[k].type == Diffusion::BC_CONSTANT) {
-      A_matrix.insert(j, j) = 1;
-      continue;
-    }
-
-    A_matrix.insert(j, j) = -1. - 2. * sx;
-    A_matrix.insert(j, (j - 1)) = sx;
-    A_matrix.insert(j, (j + 1)) = sx;
-  }
+  A_matrix.insert(A_size - 1, A_size - 1) = 1;
 }
 
 void Diffusion::BTCSDiffusion::fillVectorFromRow(
@@ -275,7 +275,7 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
     const DVectorRowMajor &t0_c, int size, double dx, double time_step) {
 
   Diffusion::boundary_condition left = bc[0];
-  Diffusion::boundary_condition right = bc[size - 1];
+  Diffusion::boundary_condition right = bc[size + 1];
 
   bool left_constant = (left.type == Diffusion::BC_CONSTANT);
   bool right_constant = (right.type == Diffusion::BC_CONSTANT);
@@ -283,7 +283,7 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
   int b_size = b_vector.size();
 
   for (int j = 0; j < size; j++) {
-    boundary_condition tmp_bc = bc[j];
+    boundary_condition tmp_bc = bc[j + 1];
 
     if (tmp_bc.type == Diffusion::BC_CONSTANT) {
       b_vector[j + 1] = tmp_bc.value;
@@ -319,7 +319,7 @@ auto Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
   if (this->grid_dim == 1) {
     Eigen::Map<DVectorRowMajor> c_in(c, this->grid_cells[0]);
     Eigen::Map<const DVectorRowMajor> alpha_in(alpha, this->grid_cells[0]);
-    Eigen::Map<const BCVectorRowMajor> bc_in(bc, this->grid_cells[0]);
+    Eigen::Map<const BCVectorRowMajor> bc_in(bc, this->grid_cells[0] + 2);
 
     simulate1D(c_in, alpha_in, bc_in);
   }
@@ -330,8 +330,8 @@ auto Diffusion::BTCSDiffusion::simulate(double *c, double *alpha,
     Eigen::Map<const DMatrixRowMajor> alpha_in(alpha, this->grid_cells[1],
                                                this->grid_cells[0]);
 
-    Eigen::Map<const BCMatrixRowMajor> bc_in(bc, this->grid_cells[1],
-                                             this->grid_cells[0]);
+    Eigen::Map<const BCMatrixRowMajor> bc_in(bc, this->grid_cells[1] + 2,
+                                             this->grid_cells[0] + 2);
 
     simulate2D(c_in, alpha_in, bc_in);
   }
