@@ -132,7 +132,7 @@ and assuming constant $\alpha$:
 
 #+NAME: eqn:2
 \begin{equation}\displaystyle
-   \frac{C_i^{j+1} -C_i^{j}}{\Delta t} = \alpha\frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x}
+   \frac{C_i^{j+1} -C_i^{j}}{\Delta t} = \alpha\frac{\frac{C^j_{i+1}-C^j_{i}}{\Delta x}-\frac{C^j_{i}-C^j_{i-1}}{\Delta x}}{\Delta x}
 \end{equation}
 
 In practice, we evaluate the first derivatives of $C$ w.r.t. $x$ on
@@ -151,13 +151,75 @@ calling $l$ the numerical value of a constant boundary condition:
 
 #+NAME: eqn:3
 \begin{equation}\displaystyle
+\frac{C_0^{j+1} -C_0^{j}}{\Delta t} = \alpha\frac{\frac{C^j_{1}-C^j_{0}}{\Delta x}-
+\frac{C^j_{0}-l}{\frac{\Delta x}{2}}}{\Delta x}
+\end{equation}
+
+This expression, once developed, yields:
+
+#+NAME: eqn:4
+\begin{align}\displaystyle
+C_0^{j+1} & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^j_{1}-C^j_{0}- 2 C^j_{0}+2l \right) \nonumber \\
+          & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^j_{1}- 3 C^j_{0} +2l \right)
+\end{align}
+
+
+In case of constant right boundary, the finite difference of point
+$C_n$ - calling $r$ the right boundary value - is:
+
+#+NAME: eqn:5
+\begin{equation}\displaystyle
+\frac{C_n^{j+1} -C_n^j}{\Delta t} = \alpha\frac{\frac{r - C^j_{n}}{\frac{\Delta x}{2}}-
+\frac{C^j_{n}-C^j_{n-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+Which, developed, gives
+#+NAME: eqn:6
+\begin{align}\displaystyle
+C_n^{j+1} & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 2 C^j_{n} -C^j_{n} + C^j_{n-1} \right) \nonumber \\
+          & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 3 C^j_{n} + C^j_{n-1} \right)
+\end{align}
+
+If on the right boundary we have closed or Neumann condition, the left derivative in eq. [[eqn:5]]
+becomes zero and we are left with:
+
+
+#+NAME: eqn:7
+\begin{equation}\displaystyle
+C_n^{j+1} = C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot (C^j_{n-1} - C^j_n)
+\end{equation}
+
+
+
+A similar treatment can be applied to the BTCS implicit scheme.
+
+*** implicit BTCS
+
+\begin{equation}\displaystyle
+   \frac{C_i^{j+1} -C_i^{j}}{\Delta t} = \alpha\frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+In practice, we evaluate the first derivatives of $C$ w.r.t. $x$ on
+the boundaries of each cell (i.e., $(C_{i+1}-C_i)/\Delta x$ on the
+right boundary of the i-th cell and $(C_{i}-C_{i-1})/\Delta x$ on its
+left cell boundary) and then repeat the differentiation to get the
+second derivative of $C$ on the the cell centre $i$.
+
+This discretization works for all internal cells, but not for the
+boundaries. To properly treat them, we need to account for the
+discrepancy in the discretization.
+
+For the first (left) cell, whose center is at $x=dx/2$, we can
+evaluate the left gradient with the left boundary using such distance,
+calling $l$ the numerical value of a constant boundary condition:
+
+\begin{equation}\displaystyle
 \frac{C_0^{j+1} -C_0^{j}}{\Delta t} = \alpha\frac{\frac{C^{j+1}_{1}-C^{j+1}_{0}}{\Delta x}-
 \frac{C^{j+1}_{0}-l}{\frac{\Delta x}{2}}}{\Delta x}
 \end{equation}
 
 This expression, once developed, yields:
 
-#+NAME: eqn:4
 \begin{align}\displaystyle
 C_0^{j+1} & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^{j+1}_{1}-C^{j+1}_{0}- 2 C^{j+1}_{0}+2l \right) \nonumber \\
           & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^{j+1}_{1}- 3 C^{j+1}_{0} +2l \right)
@@ -171,36 +233,6 @@ Now we define variable $s_x$ as following:
 
 Substituting with the new variable $s_x$ and reordering of terms leads to the equation applicable to our model:
 
-#+NAME: eqn:5
 \begin{equation}\displaystyle
     -C^j_0} = s_x \cdot C^{j+1}_1 + (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{j+1}_0
 \end{equation}
-
-In case of constant right boundary, the finite difference of point
-$C_n$ - calling $r$ the right boundary value - is:
-
-#+NAME: eqn:6
-\begin{equation}\displaystyle
-\frac{C_n^{j+1} -C_n^j}{\Delta t} = \alpha\frac{\frac{r - C^j_{n}}{\frac{\Delta x}{2}}-
-\frac{C^j_{n}-C^j_{n-1}}{\Delta x}}{\Delta x}
-\end{equation}
-
-Which, developed, gives
-#+NAME: eqn:7
-\begin{align}\displaystyle
-C_n^{j+1} & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 2 C^j_{n} -C^j_{n} + C^j_{n-1} \right) \nonumber \\
-          & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 3 C^j_{n} + C^j_{n-1} \right)
-\end{align}
-
-If on the right boundary we have closed or Neumann condition, the left derivative in eq. [[eqn:6]]
-becomes zero and we are left with:
-
-
-#+NAME: eqn:8
-\begin{equation}\displaystyle
-C_n^{j+1} = C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot (C^j_{n-1} - C^j_n)
-\end{equation}
-
-
-
-A similar treatment can be applied to the BTCS implicit scheme.
