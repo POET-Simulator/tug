@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
 
   // set the boundary condition for the left ghost cell to dirichlet
-  bc[1] = {Diffusion::BC_CONSTANT, 5 * std::pow(10, -6)};
+  bc[0] = {Diffusion::BC_CONSTANT, 5 * std::pow(10, -6)};
   // diffu.setBoundaryCondition(1, 0, BTCSDiffusion::BC_CONSTANT,
   //                            5. * std::pow(10, -6));
 
