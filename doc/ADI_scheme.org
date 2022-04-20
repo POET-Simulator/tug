@@ -163,11 +163,17 @@ C_0^{j+1} & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C
           & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^{j+1}_{1}- 3 C^{j+1}_{0} +2l \right)
 \end{align}
 
-Which leads to the following term applicable to our approach:
+Now we define variable $s_x$ as following:
+
+\begin{equation}
+    s_x = \frac{\alpha \cdot \Delta t}{\Delta x^2}
+\end{equation}
+
+Substituting with the new variable $s_x$ and reordering of terms leads to the equation applicable to our model:
 
 #+NAME: eqn:5
 \begin{equation}\displaystyle
-    -C^j_0} = \left[\frac{\alpha \cdot \Delta t}{\Delta x^2}\right] \cdot \left(C^{j+1}_1 + 2l \right) + \left[ -1 - 3 \cdot \frac{\alpha \cdot \Delta t}{\Delta x^2} \right] \cdot C^{j+1}_0
+    -C^j_0} = s_x \cdot C^{j+1}_1 + (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{j+1}_0
 \end{equation}
 
 In case of constant right boundary, the finite difference of point
