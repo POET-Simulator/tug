@@ -239,8 +239,8 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(1, 1) = 1;
   } else {
     double sx = (alpha[0] * time_step) / (dx * dx);
-    A_matrix.insert(1, 1) = -1. - 2. * sx;
-    A_matrix.insert(1, 0) = sx;
+    A_matrix.insert(1, 1) = -1. - 3. * sx;
+    A_matrix.insert(1, 0) = 2.*sx;
     A_matrix.insert(1, 2) = sx;
   }
 
@@ -261,9 +261,9 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
   } else {
     double sx = (alpha[size - 1] * time_step) / (dx * dx);
-    A_matrix.insert(A_size - 2, A_size - 2) = -1. - 2. * sx;
+    A_matrix.insert(A_size - 2, A_size - 2) = -1. - 3. * sx;
     A_matrix.insert(A_size - 2, A_size - 3) = sx;
-    A_matrix.insert(A_size - 2, A_size - 1) = sx;
+    A_matrix.insert(A_size - 2, A_size - 1) = 2.*sx;
   }
 
   A_matrix.insert(A_size - 1, A_size - 1) = 1;
