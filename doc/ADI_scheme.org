@@ -192,7 +192,7 @@ C_n^{j+1} & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2
           & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 3 C^j_{n} + C^j_{n-1} \right)
 \end{align}
 
-If on the right boundary we have closed or Neumann condition, the left derivative in eq. [[eqn:5]]
+If on the right boundary we have closed or Neumann condition, the left derivative in eq. [[eqn:6]]
 becomes zero and we are left with:
 
 
