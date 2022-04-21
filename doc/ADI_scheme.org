@@ -234,5 +234,5 @@ Now we define variable $s_x$ as following:
 Substituting with the new variable $s_x$ and reordering of terms leads to the equation applicable to our model:
 
 \begin{equation}\displaystyle
-    -C^j_0} = s_x \cdot C^{j+1}_1 + (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{j+1}_0
+    -C^j_0 = s_x \cdot C^{j+1}_1 + (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{j+1}_0
 \end{equation}
