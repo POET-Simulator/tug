@@ -1,114 +1,11 @@
-#+TITLE: Adi 2D Scheme
+#+TITLE: Numerical solution of diffusion equation in 2D with ADI Scheme
 #+LaTeX_CLASS_OPTIONS: [a4paper,10pt]
 #+LATEX_HEADER: \usepackage{fullpage}
 #+LATEX_HEADER: \usepackage{amsmath}
 #+OPTIONS: toc:nil
 
-* Input
 
-- =c= $\rightarrow c$
-  - containing current concentrations at each grid cell for species
-  - size: $N \times M$
-  - row-major
-- =alpha= $\rightarrow \alpha$
-  - diffusion coefficient for both directions (x and y)
-  - size: $N \times M$
-  - row-major
-- =boundary_condition= $\rightarrow bc$
-  - Defines closed or constant boundary condition for each grid cell
-  - size: $N \times M$
-  - row-major
-
-* Internals
-
-- =A_matrix= $\rightarrow A$
-  - coefficient matrix for linear equation system implemented as sparse matrix
-  - size: $((N+2)\cdot M) \times ((N+2)\cdot M)$ (including ghost zones in x direction)
-  - column-major (not relevant)
-
-- =b_vector= $\rightarrow b$
-  - right hand side of the linear equation system
-  - size: $(N+2) \cdot M$
-  - column-major (not relevant)
-- =x_vector= $\rightarrow x$
-  - solutions of the linear equation system
-  - size: $(N+2) \cdot M$
-  - column-major (not relevant)
-
-* Calculation for $\frac{1}{2}$ timestep
-
-** Symbolic addressing of grid cells
-[[./grid.png]]
-
-** Filling of matrix $A$
-
-- row-wise iterating with $i$ over =c= and =\alpha= matrix respectively
-- addressing each element of a row with $j$
-- matrix $A$ also containing $+2$ ghost nodes for each row of input matrix $\alpha$
-  - $\rightarrow offset = N+2$
-  - addressing each object $(i,j)$ in matrix $A$ with $(offset \cdot i + j, offset \cdot i + j)$
-
-*** Rules
-
-$s_x(i,j) = \frac{\alpha(i,j)*\frac{t}{2}}{\Delta x^2}$ where $x$ defining the domain size in x direction.
-
-For the sake of simplicity we assume that each row of the $A$ matrix is addressed correctly with the given offset.
-
-**** Ghost nodes
-
-$A(i,-1) = 1$
-
-$A(i,N) = 1$
-
-**** Inlet
-
-$A(i,j) = \begin{cases}
-1 & \text{if } bc(i,j) = \text{constant} \\
--1-2*s_x(i,j) & \text{else}
-\end{cases}$
-
-$A(i,j\pm 1) = \begin{cases}
-0 & \text{if } bc(i,j) = \text{constant} \\
-s_x(i,j) & \text{else}
-\end{cases}$
-
-** Filling of vector $b$
-
-- each elements assign a concrete value to the according value of the row of matrix $A$
-- Adressing would look like this: $(i,j) = b(i \cdot (N+2) + j)$
-  - $\rightarrow$ for simplicity we will write $b(i,j)$
-
-
-
-
-*** Rules
-
-**** Ghost nodes
-
-$b(i,-1) = \begin{cases}
-0 & \text{if } bc(i,0) = \text{constant} \\
-c(i,0) & \text{else}
-\end{cases}$
-
-$b(i,N) = \begin{cases}
-0 & \text{if } bc(i,N-1) = \text{constant} \\
-c(i,N-1) & \text{else}
-\end{cases}$
-
-*** Inlet
-
-$p(i,j) = \frac{\Delta t}{2}\alpha(i,j)\frac{c(i-1,j) - 2\cdot c(i,j) + c(i+1,j)}{\Delta x^2}$[fn:1]
-
-$b(i,j) = \begin{cases}
-bc(i,j).\text{value} & \text{if } bc(i,N-1) = \text{constant} \\
--c(i,j)-p(i,j) & \text{else}
-\end{cases}$
-
-[fn:1] $p$ is called =t0_c= inside code
-
-** Finite differences with nodes as cells' centres
-
-*** The explicit FTCS scheme as in PHREEQC
+* Finite differences with nodes as cells' centres
 
 The 1D diffusion equation is:
 
@@ -118,17 +15,22 @@ The 1D diffusion equation is:
    & = \alpha \frac{\partial^2 C}{\partial x^2}
 \end{align}
 
-We discretize it following a Forward Time, Centered Space finite
-difference scheme where the nodes correspond to the centers of a grid
-such as:
+We aim at numerically solving [[eqn:1]] on a spatial grid such as:
 
 [[./grid_pqc.pdf]]
 
 The left boundary is defined on $x=0$ while the center of the first
-cell is in $x=dx/2$, with $dx=L/n$.
+cell - which are the points constituting the finite difference nodes -
+is in $x=dx/2$, with $dx=L/n$.
 
-We discretize [[eqn:1]] as following, for each index i in 1, \dots, n-1
-and assuming constant $\alpha$:
+
+** The explicit FTCS scheme (as in PHREEQC)
+
+We start by discretizing [[eqn:1]] following an explicit Euler scheme and
+specifically a Forward Time, Centered Space finite difference. 
+
+For each cell index $i \in 1, \dots, n-1$ and assuming constant
+$\alpha$, we can write:
 
 #+NAME: eqn:2
 \begin{equation}\displaystyle
@@ -142,8 +44,8 @@ left cell boundary) and then repeat the differentiation to get the
 second derivative of $C$ on the the cell centre $i$.
 
 This discretization works for all internal cells, but not for the
-boundaries. To properly treat them, we need to account for the
-discrepancy in the discretization.
+domain boundaries ($i=0$ and $i=n$). To properly treat them, we need
+to account for the discrepancy in the discretization.
 
 For the first (left) cell, whose center is at $x=dx/2$, we can
 evaluate the left gradient with the left boundary using such distance,
@@ -193,29 +95,30 @@ C_n^{j+1} = C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot (C^j_{n-1} 
 
 A similar treatment can be applied to the BTCS implicit scheme.
 
-*** implicit BTCS
+** Implicit BTCS scheme
 
-First, we define the Backward time difference:
+First, we define the Backward Time difference:
 
 \begin{equation}
-    \frac{\partial C }{\partial t} = \frac{C^j_i - C^{j-1}_i}{\Delta t}
+    \frac{\partial C^{j+1} }{\partial t} = \frac{C^{j+1}_i - C^{j}_i}{\Delta t}
 \end{equation}
 
-Second the spatial derivative approximation:
+Second the spatial derivative approximation, evaluated at time level $j+1$:
 
 \begin{equation}
-    \frac{\partial^2 C }{\partial t} = \frac{\frac{C^{j}_{i+1}-C^{j}_{i}}{\Delta x}-\frac{C^{j}_{i}-C^{j}_{i-1}}{\Delta x}}{\Delta x}
+    \frac{\partial^2 C^{j+1} }{\partial x^2} = \frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x}
 \end{equation}
 
 Taking the 1D diffusion equation from [[eqn:1]] and substituting each term by the
 equations given above leads to the following equation:
 
-\begin{equation}\displaystyle
-   \frac{C_i^{j} -C_i^{j-1}}{\Delta t} = \alpha\frac{\frac{C^{j}_{i+1}-C^{j}_{i}}{\Delta x}-\frac{C^{j}_{i}-C^{j}_{i-1}}{\Delta x}}{\Delta x}
-\end{equation}
 
-Since we are not able to solve this system w.r.t unknown values in $C^{j-1}$ we
-are shifting each j by 1 to $j \to (j+1)$ and $(j-1) \to j$ which leads to:
+# \begin{equation}\displaystyle
+#    \frac{C_i^{j+1} -C_i^{j}}{\Delta t} = \alpha\frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x}
+# \end{equation}
+
+# Since we are not able to solve this system w.r.t unknown values in $C^{j-1}$ we
+# are shifting each j by 1 to $j \to (j+1)$ and $(j-1) \to j$ which leads to:
 
 \begin{align}\displaystyle
 \frac{C_i^{j+1} - C_i^{j}}{\Delta t}    & = \alpha\frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x} \nonumber \\
@@ -249,3 +152,113 @@ Substituting with the new variable $s_x$ and reordering of terms leads to the eq
 \begin{equation}\displaystyle
     -C^j_0 = s_x \cdot C^{j+1}_1 + (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{j+1}_0
 \end{equation}
+
+*TODO*
+- Right boundary
+- Tridiagonal matrix filling
+
+
+
+
+#+LATEX: \clearpage
+
+* Old stuff
+
+** Input
+
+- =c= $\rightarrow c$
+  - containing current concentrations at each grid cell for species
+  - size: $N \times M$
+  - row-major
+- =alpha= $\rightarrow \alpha$
+  - diffusion coefficient for both directions (x and y)
+  - size: $N \times M$
+  - row-major
+- =boundary_condition= $\rightarrow bc$
+  - Defines closed or constant boundary condition for each grid cell
+  - size: $N \times M$
+  - row-major
+
+** Internals
+
+- =A_matrix= $\rightarrow A$
+  - coefficient matrix for linear equation system implemented as sparse matrix
+  - size: $((N+2)\cdot M) \times ((N+2)\cdot M)$ (including ghost zones in x direction)
+  - column-major (not relevant)
+
+- =b_vector= $\rightarrow b$
+  - right hand side of the linear equation system
+  - size: $(N+2) \cdot M$
+  - column-major (not relevant)
+- =x_vector= $\rightarrow x$
+  - solutions of the linear equation system
+  - size: $(N+2) \cdot M$
+  - column-major (not relevant)
+
+** Calculation for $\frac{1}{2}$ timestep
+
+** Symbolic addressing of grid cells
+[[./grid.png]]
+
+** Filling of matrix $A$
+
+- row-wise iterating with $i$ over =c= and =\alpha= matrix respectively
+- addressing each element of a row with $j$
+- matrix $A$ also containing $+2$ ghost nodes for each row of input matrix $\alpha$
+  - $\rightarrow offset = N+2$
+  - addressing each object $(i,j)$ in matrix $A$ with $(offset \cdot i + j, offset \cdot i + j)$
+
+*** Rules
+
+$s_x(i,j) = \frac{\alpha(i,j)*\frac{t}{2}}{\Delta x^2}$ where $x$ defining the domain size in x direction.
+
+For the sake of simplicity we assume that each row of the $A$ matrix is addressed correctly with the given offset.
+
+**** Ghost nodes
+
+$A(i,-1) = 1$
+
+$A(i,N) = 1$
+
+**** Inlet
+
+$A(i,j) = \begin{cases}
+1 & \text{if } bc(i,j) = \text{constant} \\
+-1-2*s_x(i,j) & \text{else}
+\end{cases}$
+
+$A(i,j\pm 1) = \begin{cases}
+0 & \text{if } bc(i,j) = \text{constant} \\
+s_x(i,j) & \text{else}
+\end{cases}$
+
+** Filling of vector $b$
+
+- each elements assign a concrete value to the according value of the row of matrix $A$
+- Adressing would look like this: $(i,j) = b(i \cdot (N+2) + j)$
+  - $\rightarrow$ for simplicity we will write $b(i,j)$
+
+*** Rules
+
+**** Ghost nodes
+
+$b(i,-1) = \begin{cases}
+0 & \text{if } bc(i,0) = \text{constant} \\
+c(i,0) & \text{else}
+\end{cases}$
+
+$b(i,N) = \begin{cases}
+0 & \text{if } bc(i,N-1) = \text{constant} \\
+c(i,N-1) & \text{else}
+\end{cases}$
+
+*** Inlet
+
+$p(i,j) = \frac{\Delta t}{2}\alpha(i,j)\frac{c(i-1,j) - 2\cdot c(i,j) + c(i+1,j)}{\Delta x^2}$
+
+\noindent $p$ is called =t0_c= inside code
+
+$b(i,j) = \begin{cases}
+bc(i,j).\text{value} & \text{if } bc(i,N-1) = \text{constant} \\
+-c(i,j)-p(i,j) & \text{else}
+\end{cases}$
