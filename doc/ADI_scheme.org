@@ -105,6 +105,7 @@ First, we define the Backward Time difference:
 
 Second the spatial derivative approximation, evaluated at time level $j+1$:
 
+#+NAME: eqn:secondderivative
 \begin{equation}
     \frac{\partial^2 C^{j+1} }{\partial x^2} = \frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x}
 \end{equation}
@@ -120,6 +121,7 @@ equations given above leads to the following equation:
 # Since we are not able to solve this system w.r.t unknown values in $C^{j-1}$ we
 # are shifting each j by 1 to $j \to (j+1)$ and $(j-1) \to j$ which leads to:
 
+#+NAME: eqn:1DBTCS
 \begin{align}\displaystyle
 \frac{C_i^{j+1} - C_i^{j}}{\Delta t}    & = \alpha\frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x} \nonumber \\
                                         & = \alpha\frac{C^{j+1}_{i-1} - 2C^{j+1}_{i} + C^{j+1}_{i+1}}{\Delta x^2}
@@ -176,8 +178,54 @@ Now rearrange terms and substituting with $s_x$ leads to:
 *TODO*
 - Tridiagonal matrix filling
 
+** 2D ADI using BTCS scheme
 
+In the previous sections we described the usage of FTCS and BTCS on 1D grids. To
+make usage of the BTCS scheme we are following the alternating-direction
+implicit method. Therefore we make use of second difference operator defined in
+equation [[eqn:secondderivative]] in both $x$ and $y$ direction for half the time
+step $\Delta t$. We are denoting the numerator of equation [[eqn:1DBTCS]] as
+$\delta^2_x C^n_{ij}$ and $\delta^2_y C^n_{ij}$ respectively with $i$ the
+position in $x$, $j$ the position in $y$ direction and $n$ as the current time
+step:
 
+\begin{align}\displaystyle
+\delta^2_x C^n_{ij} &= C^{n}_{i-1,j} - 2C^{n}_{i,j} + C^{n}_{i+1,j} \nonumber \\
+\delta^2_y C^n_{ij} &= C^{n}_{i,j-1} - 2C^{n}_{i,j} + C^{n}_{i,j+1}
+\end{align}
+
+Assuming a constant $\alpha_x$ and $\alpha_y$ in each direction the equation can
+be defined:
+
+#+NAME: eqn:genADI
+\begin{align}\displaystyle
+\frac{C^{n+1/2}_{ij}-C^n_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{n+1/2}_{ij} + \delta^2_y C^{n}_{ij}\right)}{\Delta x^2} \nonumber \\
+\frac{C^{n+1}_{ij}-C^{n+1/2}_{ij}}{\frac{\Delta t}{2}} &= \alpha_y \frac{\left( \delta^2_x C^{n+1/2}_{ij} + \delta^2_y C^{n+1}_{ij}\right)}{\Delta y^2}
+\end{align}
+
+Now we will define $s_x$ and $s_y$ respectively as followed:
+
+\begin{align}\displaystyle
+s_x &= \frac{\alpha_x \cdot \frac{\Delta t}{2}}{\Delta x^2} \nonumber \\
+s_y &= \frac{\alpha_y \cdot \frac{\Delta t}{2}}{\Delta y^2}
+\end{align}
+
+Equation [[eqn:genADI]], once developed in the $x$ direction, yields:
+
+\begin{align}\displaystyle
+\frac{C^{n+1/2}_{ij}-C^n_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{n+1/2}_{ij} + \delta^2_y C^{n}_{ij}\right)}{\Delta x^2} \nonumber \\
+\frac{C^{n+1/2}_{ij}-C^n_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{n+1/2}_{ij} \right)}{\Delta x^2} + \alpha_x \frac{\left(\delta^2_y C^{n}_{ij}\right)}{\Delta x^2} \nonumber \\
+C^{n+1/2}_{ij}-C^n_{ij} &= s_x \delta^2_x C^{n+1/2}_{ij} + s_x \delta^2_y C^{n}_{ij} \nonumber \\
+-C^n_{ij} - s_x \delta^2_y C^{n}_{ij} &= C^{n+1/2}_{ij} + s_x \delta^2_x C^{n+1/2}_{ij} \nonumber \\
+-C^n_{ij} - s_x \left(C^n_{i,j-1}-2C^n_{i,j}+C^n_{i,j+1} \right)&= C^{n+1/2}_{ij} + s_x \left( C^{n+1/2}_{i-1,j} - 2C^{n+1/2}_{i,j} + C^{n+1/2}_{i+1,j} \right)
+\end{align}
+
+All values on the left side of the equation are known and we are solving for
+$C^{1/2}$. The calculation in $y$ direction for another $\frac{\Delta t}{2}$ is
+similar and can also be easily derived. Therefore we do not show it here.
+
+*TODO*:
+- ADI at boundaries
 
 #+LATEX: \clearpage
 
