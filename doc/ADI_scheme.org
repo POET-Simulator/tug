@@ -153,8 +153,27 @@ Substituting with the new variable $s_x$ and reordering of terms leads to the eq
     -C^j_0 = (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{j+1}_0 + s_x \cdot C^{j+1}_1
 \end{equation}
 
+The right boundary follows the same scheme. We now want to show the equation for the rightmost inlet cell $C_n$ with right boundary value $r$:
+
+\begin{equation}\displaystyle
+\frac{C_n^{j+1} -C_n^{j}}{\Delta t} = \alpha\frac{\frac{r-C^{j+1}_{n}}{\frac{\Delta x}{2}}-
+\frac{C^{j+1}_{n}-C^{j+1}_{n-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+This expression, once developed, yields:
+
+\begin{align}\displaystyle
+C_n^{j+1} & =  C_n^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2r - 2C^{j+1}_{n} - C^{j+1}_{n} + C^{j+1}_{n-1} \right) \nonumber \\
+          & =  C_0^{j} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2r - 3C^{j+1}_{n} + C^{j+1}_{n-1} \right)
+\end{align}
+
+Now rearrange terms and substituting with $s_x$ leads to:
+
+\begin{equation}\displaystyle
+    -C^j_n = s_x \cdot C^{j+1}_{n-1} + (-1 - 3s_x) \cdot C^{j+1}_n + (2s_x) \cdot r
+\end{equation}
+
 *TODO*
-- Right boundary
 - Tridiagonal matrix filling
 
 
