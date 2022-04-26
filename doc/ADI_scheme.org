@@ -253,22 +253,56 @@ yields:
 -C^{t + 1/2}_{i,j} - s_x (C^{t + 1/2}_{i-1,j} - 2C^{t + 1/2}_{i,j} + C^{t + 1/2}_{i+1,j}) = - C^{t+1}_{i,j} + s_y (C^{t+1}_{i,j-1} - 2C^{t+1}_{i,j} + C^{t+1}_{i,j+1}) 
 \end{equation}
 
-This scheme only applies to inlet cells without a relation to
-boundaries. Fortunately we already derived both cases of outer left
-and right inlet cell respectively. Hence we are able to redefine each
-$\delta^2$ case in x and y direction, assuming $l_x$ and $l_y$ the be
-the left boundary value and $r_x$ and $r_y$ the right one for each
-direction $x$ and $y$. The equations are exemplary for time level
-$t+1/2$:
+This scheme only applies to inner cells, or else $\forall i,j \in [1,
+n-1] \times [1, n-1]$. Following an analogous treatment as for the 1D
+case, and noting $l_x$ and $l_y$ the constant left boundary values and
+$r_x$ and $r_y$ the right ones for each direction $x$ and $y$, we can
+modify equations [[eqn:sweepX]] for $i=0, j \in [1, n-1]$
+
+#+NAME: eqn:boundXleft
+\begin{equation}\displaystyle
+-C^t_{0,j} - s_y (C^{t}_{0,j-1} - 2C^{t}_{0,j} + C^{t}_{0,j+1}) = - C^{t+1/2}_{0,j} + s_x (C^{t+1/2}_{1,j} - 3C^{t+1/2}_{0,j} + 2 l_x) 
+\end{equation}
+
+\noindent Similarly for  $i=n, j \in [1, n-1]$:
+#+NAME: eqn:boundXright
+\begin{equation}\displaystyle
+-C^t_{n,j} - s_y (C^{t}_{n,j-1} - 2C^{t}_{n,j} + C^{t}_{n,j+1}) = - C^{t+1/2}_{n,j} + s_x (C^{t+1/2}_{n-1,j} - 3C^{t+1/2}_{n,j} + 2 r_x) 
+\end{equation}
+
+\noindent For $i=j=0$:
+#+NAME: eqn:bound00
+\begin{equation}\displaystyle
+-C^t_{0,0} - s_y (C^{t}_{0,1} - 3C^{t}_{0,0} + 2l_y) = - C^{t+1/2}_{0,0} + s_x (C^{t+1/2}_{1,0} - 3C^{t+1/2}_{0,0} + 2 l_x) 
+\end{equation}
+
+Analogous expressions are readily derived for all possible
+combinations of $i,j \in 0\times n$. In practice, wherever an index
+$i$ or $j$ is $0$ or $n$, the centered spatial derivatives in $x$ or
+$y$ directions must be substituted in relevant parts of the sweeping
+equations \textbf{in both the implicit or the explicit sides} of
+equations [[eqn:sweepX]] and [[eqn:sweepY]] by a term
+
+#+NAME: eqn:bound00
+\begin{equation}\displaystyle
+ s(C_{forw} - 3C + 2 bc) 
+\end{equation}
+\noindent where $bc$ is the boundary condition in the given direction,
+$s$ is either $s_x$ or $s_y$, and $C_{forw}$ indicates the contiguous
+cell opposite to the boundary. Alternatively, noting the second
+derivative operator as $\partial_{dir}^2$, we can write in compact
+form:
 
 \begin{equation}
 \systeme{
-  \displaystyle  \delta^2_d C^{t+1/2}_{0,j} = 2l_x - 3C^{t+1/2}_{0,j} + C^{t+1/2}_{1,j} ,
-  \displaystyle  \delta^2_d C^{t+1/2}_{n,j} = 2r_x - 3C^{t+1/2}_{n,j} + C^{t+1/2}_{n-1,j} ,
-  \displaystyle  \delta^2_d C^{t+1/2}_{i,0} = 2l_y - 3C^{t+1/2}_{i,0} + C^{t+1/2}_{i,1} ,
-  \displaystyle  \delta^2_d C^{t+1/2}_{i,n} = 2r_y - 3C^{t+1/2}_{i,n} + C^{t+1/2}_{i,n-1}
+  \displaystyle  \partial_x^2 C_{0,j} = 2l_x - 3C_{0,j} + C_{1,j} ,
+  \displaystyle  \partial_x^2 C_{n,j} = 2r_x - 3C_{n,j} + C_{n-1,j} ,
+  \displaystyle  \partial_y^2 C_{i,0} = 2l_y - 3C_{i,0} + C_{i,1} ,
+  \displaystyle  \partial_y^2 C_{i,n} = 2r_y - 3C_{i,n} + C_{i,n-1}
 }
 \end{equation}
+
+
 
 #+LATEX: \clearpage
 
