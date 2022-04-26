@@ -141,11 +141,10 @@ void Diffusion::BTCSDiffusion::simulate2D(
   int n_rows = this->grid_cells[1];
   int n_cols = this->grid_cells[0];
   double dx = this->deltas[0];
-  DMatrixRowMajor t0_c;
 
   double local_dt = this->time_step / BTCS_2D_DT_SIZE;
 
-  t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
+  DMatrixRowMajor t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
@@ -184,12 +183,17 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
 
   // first, iterate over first row
   for (int j = 0; j < n_cols; j++) {
-    y_values[0] = getBCFromFlux(bc(0, j), c(0, j), alpha(0, j));
+    boundary_condition tmp_bc = bc(0,j+1);
+
+    if (tmp_bc.type == Diffusion::BC_CLOSED)
+      continue;
+
+    y_values[0] = getBCFromFlux(tmp_bc, c(0, j), alpha(0, j));
     y_values[1] = c(0, j);
     y_values[2] = c(1, j);
 
     t0_c(0, j) = time_step * alpha(0, j) *
-                 (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
+                 (2*y_values[0] - 3 * y_values[1] + y_values[2]) / (dx * dx);
   }
 
 // then iterate over inlet
@@ -210,12 +214,17 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
 
   // and finally over last row
   for (int j = 0; j < n_cols; j++) {
+    boundary_condition tmp_bc = bc(end+1,j+1);
+
+    if (tmp_bc.type == Diffusion::BC_CLOSED)
+      continue;
+
     y_values[0] = c(end - 1, j);
     y_values[1] = c(end, j);
-    y_values[2] = getBCFromFlux(bc(end, j), c(end, j), alpha(end, j));
+    y_values[2] = getBCFromFlux(tmp_bc, c(end, j), alpha(end, j));
 
     t0_c(end, j) = time_step * alpha(end, j) *
-                   (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
+                   (y_values[0] - 3 * y_values[1] + 2*y_values[2]) / (dx * dx);
   }
 
   return t0_c;
