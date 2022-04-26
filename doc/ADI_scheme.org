@@ -186,12 +186,12 @@ implicit method. Therefore we make use of second difference operator defined in
 equation [[eqn:secondderivative]] in both $x$ and $y$ direction for half the time
 step $\Delta t$. We are denoting the numerator of equation [[eqn:1DBTCS]] as
 $\delta^2_x C^n_{ij}$ and $\delta^2_y C^n_{ij}$ respectively with $i$ the
-position in $x$, $j$ the position in $y$ direction and $n$ as the current time
+position in $x$, $j$ the position in $y$ direction and $T$ as the current time
 step:
 
 \begin{align}\displaystyle
-\delta^2_x C^n_{ij} &= C^{n}_{i-1,j} - 2C^{n}_{i,j} + C^{n}_{i+1,j} \nonumber \\
-\delta^2_y C^n_{ij} &= C^{n}_{i,j-1} - 2C^{n}_{i,j} + C^{n}_{i,j+1}
+\delta^2_x C^T_{ij} &= C^{T}_{i-1,j} - 2C^{T}_{i,j} + C^{T}_{i+1,j} \nonumber \\
+\delta^2_y C^T_{ij} &= C^{T}_{i,j-1} - 2C^{T}_{i,j} + C^{T}_{i,j+1}
 \end{align}
 
 Assuming a constant $\alpha_x$ and $\alpha_y$ in each direction the equation can
@@ -199,8 +199,8 @@ be defined:
 
 #+NAME: eqn:genADI
 \begin{align}\displaystyle
-\frac{C^{n+1/2}_{ij}-C^n_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{n+1/2}_{ij} + \delta^2_y C^{n}_{ij}\right)}{\Delta x^2} \nonumber \\
-\frac{C^{n+1}_{ij}-C^{n+1/2}_{ij}}{\frac{\Delta t}{2}} &= \alpha_y \frac{\left( \delta^2_x C^{n+1/2}_{ij} + \delta^2_y C^{n+1}_{ij}\right)}{\Delta y^2}
+\frac{C^{T+1/2}_{ij}-C^T_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{T+1/2}_{ij} + \delta^2_y C^{T}_{ij}\right)}{\Delta x^2} \nonumber \\
+\frac{C^{T+1}_{ij}-C^{T+1/2}_{ij}}{\frac{\Delta t}{2}} &= \alpha_y \frac{\left( \delta^2_x C^{T+1/2}_{ij} + \delta^2_y C^{T+1}_{ij}\right)}{\Delta y^2}
 \end{align}
 
 Now we will define $s_x$ and $s_y$ respectively as followed:
@@ -213,19 +213,34 @@ s_y &= \frac{\alpha_y \cdot \frac{\Delta t}{2}}{\Delta y^2}
 Equation [[eqn:genADI]], once developed in the $x$ direction, yields:
 
 \begin{align}\displaystyle
-\frac{C^{n+1/2}_{ij}-C^n_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{n+1/2}_{ij} + \delta^2_y C^{n}_{ij}\right)}{\Delta x^2} \nonumber \\
-\frac{C^{n+1/2}_{ij}-C^n_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{n+1/2}_{ij} \right)}{\Delta x^2} + \alpha_x \frac{\left(\delta^2_y C^{n}_{ij}\right)}{\Delta x^2} \nonumber \\
-C^{n+1/2}_{ij}-C^n_{ij} &= s_x \delta^2_x C^{n+1/2}_{ij} + s_x \delta^2_y C^{n}_{ij} \nonumber \\
--C^n_{ij} - s_x \delta^2_y C^{n}_{ij} &= C^{n+1/2}_{ij} + s_x \delta^2_x C^{n+1/2}_{ij} \nonumber \\
--C^n_{ij} - s_x \left(C^n_{i,j-1}-2C^n_{i,j}+C^n_{i,j+1} \right)&= C^{n+1/2}_{ij} + s_x \left( C^{n+1/2}_{i-1,j} - 2C^{n+1/2}_{i,j} + C^{n+1/2}_{i+1,j} \right)
+\frac{C^{T+1/2}_{ij}-C^T_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{T+1/2}_{ij} + \delta^2_y C^{T}_{ij}\right)}{\Delta x^2} \nonumber \\
+\frac{C^{T+1/2}_{ij}-C^T_{ij}}{\frac{\Delta t}{2}} &= \alpha_x \frac{\left( \delta^2_x C^{T+1/2}_{ij} \right)}{\Delta x^2} + \alpha_x \frac{\left(\delta^2_y C^{T}_{ij}\right)}{\Delta x^2} \nonumber \\
+C^{T+1/2}_{ij}-C^T_{ij} &= s_x \delta^2_x C^{T+1/2}_{ij} + s_x \delta^2_y C^{T}_{ij} \nonumber \\
+-C^T_{ij} - s_x \delta^2_y C^{T}_{ij} &= C^{T+1/2}_{ij} + s_x \delta^2_x C^{T+1/2}_{ij}
 \end{align}
 
 All values on the left side of the equation are known and we are solving for
 $C^{1/2}$. The calculation in $y$ direction for another $\frac{\Delta t}{2}$ is
 similar and can also be easily derived. Therefore we do not show it here.
+Substituting $\delta$ in the equation leads to following epxression:
 
-*TODO*:
-- ADI at boundaries
+\begin{equation}
+    -C^T_{ij} - s_x \left(C^T_{i,j-1}-2C^T_{i,j}+C^T_{i,j+1} \right) = C^{T+1/2}_{ij} + s_x \left( C^{T+1/2}_{i-1,j} - 2C^{T+1/2}_{i,j} + C^{T+1/2}_{i+1,j} \right)
+\end{equation}
+
+This scheme also only applies to inlet cells without a relation to boundaries.
+Fortunately we already derived both cases of outer left and right inlet cell
+respectively. Hence we are able to redefine each $\delta^2$ case in x and y
+direction, assuming $l_x$ and $l_y$ the be the left boundary value and $r_x$ and
+$r_y$ the right one for each direction $x$ and $y$. The equations are exemplary
+for timestep $T+1/2$:
+
+\begin{align}\displaystyle
+\delta^2_d C^{T+1/2}_{0,j} &= 2l_x - 3C^{T+1/2}_{0,j} + C^{T+1/2}_{1,j} \nonumber \\
+\delta^2_d C^{T+1/2}_{n,j} &= 2r_x - 3C^{T+1/2}_{n,j} + C^{T+1/2}_{n-1,j} \nonumber \\
+\delta^2_d C^{T+1/2}_{i,0} &= 2l_y - 3C^{T+1/2}_{i,0} + C^{T+1/2}_{i,1} \nonumber \\
+\delta^2_d C^{T+1/2}_{i,n} &= 2r_y - 3C^{T+1/2}_{i,n} + C^{T+1/2}_{i,n-1}
+\end{align}
 
 #+LATEX: \clearpage
 
