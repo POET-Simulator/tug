@@ -149,8 +149,8 @@ void Diffusion::BTCSDiffusion::simulate2D(
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
-    simulate_base(input_field, bc.row(i), alpha.row(i), dx, local_dt, n_cols,
-                  t0_c.row(i));
+    simulate_base(input_field, bc.row(i + 1), alpha.row(i), dx, local_dt,
+                  n_cols, t0_c.row(i));
     c.row(i) << input_field;
   }
 
@@ -162,8 +162,8 @@ void Diffusion::BTCSDiffusion::simulate2D(
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_cols; i++) {
     DVectorRowMajor input_field = c.col(i);
-    simulate_base(input_field, bc.col(i), alpha.col(i), dx, local_dt, n_rows,
-                  t0_c.row(i));
+    simulate_base(input_field, bc.col(i + 1), alpha.col(i), dx, local_dt,
+                  n_rows, t0_c.row(i));
     c.col(i) << input_field.transpose();
   }
 }
@@ -183,7 +183,7 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
 
   // first, iterate over first row
   for (int j = 0; j < n_cols; j++) {
-    boundary_condition tmp_bc = bc(0,j+1);
+    boundary_condition tmp_bc = bc(0, j + 1);
 
     if (tmp_bc.type == Diffusion::BC_CLOSED)
       continue;
@@ -193,7 +193,7 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
     y_values[2] = c(1, j);
 
     t0_c(0, j) = time_step * alpha(0, j) *
-                 (2*y_values[0] - 3 * y_values[1] + y_values[2]) / (dx * dx);
+                 (2 * y_values[0] - 3 * y_values[1] + y_values[2]) / (dx * dx);
   }
 
 // then iterate over inlet
@@ -214,7 +214,7 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
 
   // and finally over last row
   for (int j = 0; j < n_cols; j++) {
-    boundary_condition tmp_bc = bc(end+1,j+1);
+    boundary_condition tmp_bc = bc(end + 1, j + 1);
 
     if (tmp_bc.type == Diffusion::BC_CLOSED)
       continue;
@@ -224,7 +224,8 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
     y_values[2] = getBCFromFlux(tmp_bc, c(end, j), alpha(end, j));
 
     t0_c(end, j) = time_step * alpha(end, j) *
-                   (y_values[0] - 3 * y_values[1] + 2*y_values[2]) / (dx * dx);
+                   (y_values[0] - 3 * y_values[1] + 2 * y_values[2]) /
+                   (dx * dx);
   }
 
   return t0_c;
