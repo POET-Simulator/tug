@@ -28,9 +28,9 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
   diffu.setYDimensions(1, m);
 
-  // set inlet to higher concentration without setting bc
-  field[12] = 5 * std::pow(10, -3);
-
+  for (int i = 1; i <= n; i++) {
+    bc[(n + 2) * i] = {Diffusion::BC_CONSTANT, 5 * std::pow(10, -6)};
+  }
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);
 

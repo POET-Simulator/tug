@@ -1,9 +1,314 @@
-#+TITLE: Adi 2D Scheme
+#+TITLE: Numerical solution of diffusion equation in 2D with ADI Scheme
 #+LaTeX_CLASS_OPTIONS: [a4paper,10pt]
 #+LATEX_HEADER: \usepackage{fullpage}
+#+LATEX_HEADER: \usepackage{amsmath, systeme}
 #+OPTIONS: toc:nil
 
-* Input
+
+* Diffusion in 1D
+
+** Finite differences with nodes as cells' centres
+
+The 1D diffusion equation is:
+
+#+NAME: eqn:1
+\begin{align}
+\frac{\partial C }{\partial t} & = \frac{\partial}{\partial x} \left(\alpha \frac{\partial C }{\partial x} \right) \nonumber \\
+   & = \alpha \frac{\partial^2 C}{\partial x^2}
+\end{align}
+
+We aim at numerically solving [[eqn:1]] on a spatial grid such as:
+
+[[./grid_pqc.pdf]]
+
+The left boundary is defined on $x=0$ while the center of the first
+cell - which are the points constituting the finite difference nodes -
+is in $x=dx/2$, with $dx=L/n$.
+
+
+** The explicit FTCS scheme (as in PHREEQC)
+
+We start by discretizing [[eqn:1]] following an explicit Euler scheme and
+specifically a Forward Time, Centered Space finite difference. 
+
+For each cell index $i \in 1, \dots, n-1$ and assuming constant
+$\alpha$, we can write:
+
+#+NAME: eqn:2
+\begin{equation}\displaystyle
+   \frac{C_i^{t+1} -C_i^{t}}{\Delta t} = \alpha\frac{\frac{C^t_{i+1}-C^t_{i}}{\Delta x}-\frac{C^t_{i}-C^t_{i-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+In practice, we evaluate the first derivatives of $C$ w.r.t. $x$ on
+the boundaries of each cell (i.e., $(C_{i+1}-C_i)/\Delta x$ on the
+right boundary of the i-th cell and $(C_{i}-C_{i-1})/\Delta x$ on its
+left cell boundary) and then repeat the differentiation to get the
+second derivative of $C$ on the the cell centre $i$.
+
+This discretization works for all internal cells, but not for the
+domain boundaries ($i=0$ and $i=n$). To properly treat them, we need
+to account for the discrepancy in the discretization.
+
+For the first (left) cell, whose center is at $x=dx/2$, we can
+evaluate the left gradient with the left boundary using such distance,
+calling $l$ the numerical value of a constant boundary condition:
+
+#+NAME: eqn:3
+\begin{equation}\displaystyle
+\frac{C_0^{t+1} -C_0^{t}}{\Delta t} = \alpha\frac{\frac{C^t_{1}-C^t_{0}}{\Delta x}-
+\frac{C^t_{0}-l}{\frac{\Delta x}{2}}}{\Delta x}
+\end{equation}
+
+This expression, once developed, yields:
+
+#+NAME: eqn:4
+\begin{align}\displaystyle
+C_0^{t+1} & =  C_0^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^t_{1}-C^t_{0}- 2 C^t_{0}+2l \right) \nonumber \\
+          & =  C_0^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^t_{1}- 3 C^t_{0} +2l \right)
+\end{align}
+
+
+In case of constant right boundary, the finite difference of point
+$C_n$ - calling $r$ the right boundary value - is:
+
+#+NAME: eqn:5
+\begin{equation}\displaystyle
+\frac{C_n^{t+1} -C_n^t}{\Delta t} = \alpha\frac{\frac{r - C^t_{n}}{\frac{\Delta x}{2}}-
+\frac{C^t_{n}-C^t_{n-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+Which, developed, gives
+#+NAME: eqn:6
+\begin{align}\displaystyle
+C_n^{t+1} & =  C_n^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 2 C^t_{n} -C^t_{n} + C^t_{n-1} \right) \nonumber \\
+          & =  C_n^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2 r - 3 C^t_{n} + C^t_{n-1} \right)
+\end{align}
+
+If on the right boundary we have closed or Neumann condition, the left derivative in eq. [[eqn:5]]
+becomes zero and we are left with:
+
+
+#+NAME: eqn:7
+\begin{equation}\displaystyle
+C_n^{t+1} = C_n^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot (C^t_{n-1} - C^t_n)
+\end{equation}
+
+
+
+A similar treatment can be applied to the BTCS implicit scheme.
+
+** Implicit BTCS scheme
+
+First, we define the Backward Time difference:
+
+\begin{equation}
+    \frac{\partial C^{t+1} }{\partial t} = \frac{C^{t+1}_i - C^{t}_i}{\Delta t}
+\end{equation}
+
+Second the spatial derivative approximation, evaluated at time level $t+1$:
+
+#+NAME: eqn:secondderivative
+\begin{equation}
+    \frac{\partial^2 C^{t+1} }{\partial x^2} = \frac{\frac{C^{t+1}_{i+1}-C^{t+1}_{i}}{\Delta x}-\frac{C^{t+1}_{i}-C^{t+1}_{i-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+Taking the 1D diffusion equation from [[eqn:1]] and substituting each term by the
+equations given above leads to the following equation:
+
+
+# \begin{equation}\displaystyle
+#    \frac{C_i^{j+1} -C_i^{j}}{\Delta t} = \alpha\frac{\frac{C^{j+1}_{i+1}-C^{j+1}_{i}}{\Delta x}-\frac{C^{j+1}_{i}-C^{j+1}_{i-1}}{\Delta x}}{\Delta x}
+# \end{equation}
+
+# Since we are not able to solve this system w.r.t unknown values in $C^{j-1}$ we
+# are shifting each j by 1 to $j \to (j+1)$ and $(j-1) \to j$ which leads to:
+
+#+NAME: eqn:1DBTCS
+\begin{align}\displaystyle
+\frac{C_i^{t+1} - C_i^{t}}{\Delta t}    & = \alpha\frac{\frac{C^{t+1}_{i+1}-C^{t+1}_{i}}{\Delta x}-\frac{C^{t+1}_{i}-C^{t+1}_{i-1}}{\Delta x}}{\Delta x} \nonumber \\
+                                        & = \alpha\frac{C^{t+1}_{i-1} - 2C^{t+1}_{i} + C^{t+1}_{i+1}}{\Delta x^2}
+\end{align}
+
+This only applies to inlet cells with no ghost node as neighbor. For the left
+cell with its center at $\frac{dx}{2}$ and the constant concentration on the
+left ghost node called $l$ the equation goes as followed:
+
+\begin{equation}\displaystyle
+\frac{C_0^{t+1} -C_0^{t}}{\Delta t} = \alpha\frac{\frac{C^{t+1}_{1}-C^{t+1}_{0}}{\Delta x}-
+\frac{C^{t+1}_{0}-l}{\frac{\Delta x}{2}}}{\Delta x}
+\end{equation}
+
+This expression, once developed, yields:
+
+\begin{align}\displaystyle
+C_0^{t+1} & =  C_0^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^{t+1}_{1}-C^{t+1}_{0}- 2 C^{t+1}_{0}+2l \right) \nonumber \\
+          & =  C_0^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( C^{t+1}_{1}- 3 C^{t+1}_{0} +2l \right)
+\end{align}
+
+Now we define variable $s_x$ as followed:
+
+\begin{equation}
+    s_x = \frac{\alpha \cdot \Delta t}{\Delta x^2}
+\end{equation}
+
+Substituting with the new variable $s_x$ and reordering of terms leads to the equation applicable to our model:
+
+\begin{equation}\displaystyle
+    -C^t_0 = (2s_x) \cdot l + (-1 - 3s_x) \cdot C^{t+1}_0 + s_x \cdot C^{t+1}_1
+\end{equation}
+
+The right boundary follows the same scheme. We now want to show the equation for the rightmost inlet cell $C_n$ with right boundary value $r$:
+
+\begin{equation}\displaystyle
+\frac{C_n^{t+1} -C_n^{t}}{\Delta t} = \alpha\frac{\frac{r-C^{t+1}_{n}}{\frac{\Delta x}{2}}-
+\frac{C^{t+1}_{n}-C^{t+1}_{n-1}}{\Delta x}}{\Delta x}
+\end{equation}
+
+This expression, once developed, yields:
+
+\begin{align}\displaystyle
+C_n^{t+1} & =  C_n^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2r - 2C^{t+1}_{n} - C^{t+1}_{n} + C^{t+1}_{n-1} \right) \nonumber \\
+          & =  C_0^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot \left( 2r - 3C^{t+1}_{n} + C^{t+1}_{n-1} \right)
+\end{align}
+
+Now rearrange terms and substituting with $s_x$ leads to:
+
+\begin{equation}\displaystyle
+    -C^t_n = s_x \cdot C^{t+1}_{n-1} + (-1 - 3s_x) \cdot C^{t+1}_n + (2s_x) \cdot r
+\end{equation}
+
+*TODO*
+- Tridiagonal matrix filling
+
+#+LATEX: \clearpage
+
+* Diffusion in 2D: the Alternating Direction Implicit scheme
+
+
+In 2D, the diffusion equation (in absence of source terms) and
+assuming homogeneous but anisotropic diffusion coefficient
+$\alpha=(\alpha_x,\alpha_y)$ becomes:
+
+#+NAME: eqn:2d
+\begin{equation}
+\displaystyle  \frac{\partial C}{\partial t} = \alpha_x \frac{\partial^2 C}{\partial x^2} + \alpha_y\frac{\partial^2 C}{\partial y^2}
+\end{equation}
+
+** 2D ADI using BTCS scheme
+
+The Alternating Direction Implicit method consists in splitting the
+integration of eq. [[eqn:2d]] in two half-steps, each of which represents
+implicitly the derivatives in one direction, and explicitly in the
+other. Therefore we make use of second derivative operator defined in
+equation [[eqn:secondderivative]] in both $x$ and $y$ direction for half
+the time step $\Delta t$.
+
+Denoting $i$ the grid cell index along $x$ direction, $j$ the index in
+$y$ direction and $t$ as the time level, the spatially centered second
+derivatives can be written as:
+
+\begin{align}\displaystyle
+\frac{\partial^2 C^t_{i,j}}{\partial x^2} &= \frac{C^{t}_{i-1,j} - 2C^{t}_{i,j} + C^{t}_{i+1,j}}{\Delta x^2} \\
+\frac{\partial^2 C^t_{i,j}}{\partial y^2} &= \frac{C^{t}_{i,j-1} - 2C^{t}_{i,j} + C^{t}_{i,j+1}}{\Delta y^2}
+\end{align}
+
+The ADI scheme is formally defined by the equations:
+
+#+NAME: eqn:genADI
+\begin{equation}
+\systeme{ 
+  \displaystyle  \frac{C^{t+1/2}_{i,j}-C^t_{i,j}}{\Delta t/2}     = \displaystyle \alpha_x \frac{\partial^2 C^{t+1/2}_{i,j}}{\partial x^2} + \alpha_y \frac{\partial^2 C^{t}_{i,j}}{\partial y^2},
+  \displaystyle  \frac{C^{t+1}_{i,j}-C^{t+1/2}_{i,j}}{\Delta t/2} = \displaystyle \alpha_x \frac{\partial^2 C^{t+1/2}_{i,j}}{\partial x^2} + \alpha_y \frac{\partial^2 C^{t+1}_{i,j}}{\partial y^2}
+}
+\end{equation}
+
+\noindent The first of equations [[eqn:genADI]], which writes implicitly
+the spatial derivatives in $x$ direction, after bringing the $\Delta t
+/ 2$ terms on the right hand side and substituting $s_x=\frac{\alpha_x
+\cdot \Delta t}{2 \Delta x^2}$ and $s_y=\frac{\alpha_y\cdot\Delta
+t}{2\Delta y^2}$ reads:
+
+\begin{equation}\displaystyle
+C^{t+1/2}_{i,j}-C^t_{i,j} = s_x (C^{t+1/2}_{i-1,j} - 2C^{t+1/2}_{i,j} + C^{t+1/2}_{i+1,j}) + s_y (C^{t}_{i,j-1} - 2C^{t}_{i,j} + C^{t}_{i,j+1})
+\end{equation}
+
+\noindent Separating the known terms (at time level $t$) on the left
+hand side and the implicit terms (at time level $t+1/2$) on the right
+hand side, we get:
+
+#+NAME: eqn:sweepX
+\begin{equation}\displaystyle
+-C^t_{i,j} - s_y (C^{t}_{i,j-1} - 2C^{t}_{i,j} + C^{t}_{i,j+1}) = - C^{t+1/2}_{i,j} + s_x (C^{t+1/2}_{i-1,j} - 2C^{t+1/2}_{i,j} + C^{t+1/2}_{i+1,j}) 
+\end{equation}
+
+\noindent Equation [[eqn:sweepX]] can be solved with a BTCS scheme since
+it corresponds to a tridiagonal system of equations, and resolves the
+$C^{t+1/2}$ at each inner grid cell.
+
+The second of equations [[eqn:genADI]] can be treated the same way and
+yields:
+
+#+NAME: eqn:sweepY
+\begin{equation}\displaystyle
+-C^{t + 1/2}_{i,j} - s_x (C^{t + 1/2}_{i-1,j} - 2C^{t + 1/2}_{i,j} + C^{t + 1/2}_{i+1,j}) = - C^{t+1}_{i,j} + s_y (C^{t+1}_{i,j-1} - 2C^{t+1}_{i,j} + C^{t+1}_{i,j+1}) 
+\end{equation}
+
+This scheme only applies to inner cells, or else $\forall i,j \in [1,
+n-1] \times [1, n-1]$. Following an analogous treatment as for the 1D
+case, and noting $l_x$ and $l_y$ the constant left boundary values and
+$r_x$ and $r_y$ the right ones for each direction $x$ and $y$, we can
+modify equations [[eqn:sweepX]] for $i=0, j \in [1, n-1]$
+
+#+NAME: eqn:boundXleft
+\begin{equation}\displaystyle
+-C^t_{0,j} - s_y (C^{t}_{0,j-1} - 2C^{t}_{0,j} + C^{t}_{0,j+1}) = - C^{t+1/2}_{0,j} + s_x (C^{t+1/2}_{1,j} - 3C^{t+1/2}_{0,j} + 2 l_x) 
+\end{equation}
+
+\noindent Similarly for  $i=n, j \in [1, n-1]$:
+#+NAME: eqn:boundXright
+\begin{equation}\displaystyle
+-C^t_{n,j} - s_y (C^{t}_{n,j-1} - 2C^{t}_{n,j} + C^{t}_{n,j+1}) = - C^{t+1/2}_{n,j} + s_x (C^{t+1/2}_{n-1,j} - 3C^{t+1/2}_{n,j} + 2 r_x) 
+\end{equation}
+
+\noindent For $i=j=0$:
+#+NAME: eqn:bound00
+\begin{equation}\displaystyle
+-C^t_{0,0} - s_y (C^{t}_{0,1} - 3C^{t}_{0,0} + 2l_y) = - C^{t+1/2}_{0,0} + s_x (C^{t+1/2}_{1,0} - 3C^{t+1/2}_{0,0} + 2 l_x) 
+\end{equation}
+
+Analogous expressions are readily derived for all possible
+combinations of $i,j \in 0\times n$. In practice, wherever an index
+$i$ or $j$ is $0$ or $n$, the centered spatial derivatives in $x$ or
+$y$ directions must be substituted in relevant parts of the sweeping
+equations \textbf{in both the implicit or the explicit sides} of
+equations [[eqn:sweepX]] and [[eqn:sweepY]] by a term
+
+#+NAME: eqn:bound00
+\begin{equation}\displaystyle
+ s(C_{forw} - 3C + 2 bc) 
+\end{equation}
+\noindent where $bc$ is the boundary condition in the given direction,
+$s$ is either $s_x$ or $s_y$, and $C_{forw}$ indicates the contiguous
+cell opposite to the boundary. Alternatively, noting the second
+derivative operator as $\partial_{dir}^2$, we can write in compact
+form:
+
+\begin{equation}
+\systeme{
+  \displaystyle  \partial_x^2 C_{0,j} = 2l_x - 3C_{0,j} + C_{1,j} ,
+  \displaystyle  \partial_x^2 C_{n,j} = 2r_x - 3C_{n,j} + C_{n-1,j} ,
+  \displaystyle  \partial_y^2 C_{i,0} = 2l_y - 3C_{i,0} + C_{i,1} ,
+  \displaystyle  \partial_y^2 C_{i,n} = 2r_y - 3C_{i,n} + C_{i,n-1}
+}
+\end{equation}
+
+
+
+#+LATEX: \clearpage
+
+* Old stuff
+
+** Input
 
 - =c= $\rightarrow c$
   - containing current concentrations at each grid cell for species
@@ -18,7 +323,7 @@
   - size: $N \times M$
   - row-major
 
-* Internals
+** Internals
 
 - =A_matrix= $\rightarrow A$
   - coefficient matrix for linear equation system implemented as sparse matrix
@@ -34,7 +339,7 @@
   - size: $(N+2) \cdot M$
   - column-major (not relevant)
 
-* Calculation for $\frac{1}{2}$ timestep
+** Calculation for $\frac{1}{2}$ timestep
 
 ** Symbolic addressing of grid cells
 [[./grid.png]]
@@ -77,9 +382,6 @@ s_x(i,j) & \text{else}
 - Adressing would look like this: $(i,j) = b(i \cdot (N+2) + j)$
   - $\rightarrow$ for simplicity we will write $b(i,j)$
 
-
-
-
 *** Rules
 
 **** Ghost nodes
@@ -96,11 +398,11 @@ c(i,N-1) & \text{else}
 
 *** Inlet
 
-$p(i,j) = \frac{\Delta t}{2}\alpha(i,j)\frac{c(i-1,j) - 2\cdot c(i,j) + c(i+1,j)}{\Delta x^2}$[fn:1]
+$p(i,j) = \frac{\Delta t}{2}\alpha(i,j)\frac{c(i-1,j) - 2\cdot c(i,j) + c(i+1,j)}{\Delta x^2}$
+
+\noindent $p$ is called =t0_c= inside code
 
 $b(i,j) = \begin{cases}
 bc(i,j).\text{value} & \text{if } bc(i,N-1) = \text{constant} \\
 -c(i,j)-p(i,j) & \text{else}
 \end{cases}$
-
-[fn:1] $p$ is called =t0_c= inside code

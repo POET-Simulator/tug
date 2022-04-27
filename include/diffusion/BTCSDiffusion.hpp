@@ -135,16 +135,17 @@ private:
                  const BCMatrixRowMajor &bc, double time_step, double dx)
       -> DMatrixRowMajor;
 
-  void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,
-                         const DVectorRowMajor &alpha,
-                         const BCVectorRowMajor &bc, int size, double dx,
-                         double time_step);
+  static void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,
+                                const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc, int size, double dx,
+                                double time_step);
 
-  void fillVectorFromRow(Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
-                         const DVectorRowMajor &alpha,
-                         const BCVectorRowMajor &bc,
-                         const DVectorRowMajor &t0_c, int size, double dx,
-                         double time_step);
+  static void fillVectorFromRow(Eigen::VectorXd &b_vector,
+                                const DVectorRowMajor &c,
+                                const DVectorRowMajor &alpha,
+                                const BCVectorRowMajor &bc,
+                                const DVectorRowMajor &t0_c, int size,
+                                double dx, double time_step);
   void simulate3D(std::vector<double> &c);
 
   inline static auto getBCFromFlux(Diffusion::boundary_condition bc,

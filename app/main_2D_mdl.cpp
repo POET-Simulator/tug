@@ -1,7 +1,7 @@
+#include <algorithm> // for copy, max
+#include <cmath>
 #include <diffusion/BTCSDiffusion.hpp>
 #include <diffusion/BoundaryCondition.hpp>
-#include <algorithm>         // for copy, max
-#include <cmath>
 #include <iomanip>
 #include <iostream> // for std
 #include <vector>   // for vector
@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
   // create input + diffusion coefficients for each grid cell
   std::vector<double> alpha(n * m, 1 * pow(10, -1));
   std::vector<double> field(n * m, 0.);
-  std::vector<boundary_condition> bc(n*m, {0,0});
+  std::vector<boundary_condition> bc((n + 2) * (m + 2), {0, 0});
 
   field[125500] = 1;
 
@@ -31,13 +31,13 @@ int main(int argc, char *argv[]) {
   diffu.setYDimensions(1., m);
 
   // set the boundary condition for the left ghost cell to dirichlet
-  //diffu.setBoundaryCondition(250, 250, BTCSDiffusion::BC_CONSTANT, 1);
+  // diffu.setBoundaryCondition(250, 250, BTCSDiffusion::BC_CONSTANT, 1);
   // for (int d=0; d<5;d++){
   //     diffu.setBoundaryCondition(d, 0, BC_CONSTANT, .1);
   // }
   // diffu.setBoundaryCondition(1, 1, BTCSDiffusion::BC_CONSTANT, .1);
   // diffu.setBoundaryCondition(1, 1, BTCSDiffusion::BC_CONSTANT, .1);
-  
+
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);
 
@@ -45,9 +45,9 @@ int main(int argc, char *argv[]) {
 
   // First we output the initial state
   cout << 0;
-    
-  for (int i=0; i < m*n; i++) {
-      cout << "," << field[i];
+
+  for (int i = 0; i < m * n; i++) {
+    cout << "," << field[i];
   }
   cout << endl;
 
@@ -58,9 +58,9 @@ int main(int argc, char *argv[]) {
     cerr << "time elapsed: " << time << " seconds" << endl;
 
     cout << t;
-    
-    for (int i=0; i < m*n; i++) {
-        cout << "," << field[i];
+
+    for (int i = 0; i < m * n; i++) {
+      cout << "," << field[i];
     }
     cout << endl;
   }
