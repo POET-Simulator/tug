@@ -179,14 +179,15 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
 
   DMatrixRowMajor t0_c(n_rows, n_cols);
 
-  std::array<double, 3> y_values;
+  std::array<double, 3> y_values{};
 
   // first, iterate over first row
   for (int j = 0; j < n_cols; j++) {
     boundary_condition tmp_bc = bc(0, j + 1);
 
-    if (tmp_bc.type == Diffusion::BC_CLOSED)
+    if (tmp_bc.type == Diffusion::BC_CLOSED){
       continue;
+    }
 
     y_values[0] = getBCFromFlux(tmp_bc, c(0, j), alpha(0, j));
     y_values[1] = c(0, j);
@@ -216,8 +217,9 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
   for (int j = 0; j < n_cols; j++) {
     boundary_condition tmp_bc = bc(end + 1, j + 1);
 
-    if (tmp_bc.type == Diffusion::BC_CLOSED)
+    if (tmp_bc.type == Diffusion::BC_CLOSED) {
       continue;
+    }
 
     y_values[0] = c(end - 1, j);
     y_values[1] = c(end, j);
