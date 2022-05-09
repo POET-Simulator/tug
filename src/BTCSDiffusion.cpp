@@ -25,6 +25,8 @@
 #define omp_get_thread_num() 0
 #endif
 
+#define DOUBLE_MACHINE_EPSILON 1.93e-34
+
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
 Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
@@ -302,7 +304,8 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
     }
 
     double t0_c_j = time_step * alpha[j] * (t0_c[j] / (dx * dx));
-    b_vector[j + 1] = -c[j] - t0_c_j;
+    double value = (c[j] < DOUBLE_MACHINE_EPSILON ? .0 : c[j]);
+    b_vector[j + 1] = -value - t0_c_j;
   }
 
   // this is not correct currently.We will fix this when we are able to define
