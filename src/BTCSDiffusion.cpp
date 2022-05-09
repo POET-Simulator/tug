@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cstddef>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <ostream>
 #include <tuple>
@@ -24,7 +25,7 @@
 #define omp_get_thread_num() 0
 #endif
 
-#include <iostream>
+#define DOUBLE_MACHINE_EPSILON 1.93e-34
 
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
@@ -185,7 +186,7 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
   for (int j = 0; j < n_cols; j++) {
     boundary_condition tmp_bc = bc(0, j + 1);
 
-    if (tmp_bc.type == Diffusion::BC_CLOSED){
+    if (tmp_bc.type == Diffusion::BC_CLOSED) {
       continue;
     }
 
@@ -303,7 +304,8 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
     }
 
     double t0_c_j = time_step * alpha[j] * (t0_c[j] / (dx * dx));
-    b_vector[j + 1] = -c[j] - t0_c_j;
+    double value = (c[j] < DOUBLE_MACHINE_EPSILON ? .0 : c[j]);
+    b_vector[j + 1] = -value - t0_c_j;
   }
 
   // this is not correct currently.We will fix this when we are able to define
