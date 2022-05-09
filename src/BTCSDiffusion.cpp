@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cstddef>
 #include <iomanip>
+#include <iostream>
 #include <iterator>
 #include <ostream>
 #include <tuple>
@@ -23,8 +24,6 @@
 #else
 #define omp_get_thread_num() 0
 #endif
-
-#include <iostream>
 
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
@@ -185,7 +184,7 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
   for (int j = 0; j < n_cols; j++) {
     boundary_condition tmp_bc = bc(0, j + 1);
 
-    if (tmp_bc.type == Diffusion::BC_CLOSED){
+    if (tmp_bc.type == Diffusion::BC_CLOSED) {
       continue;
     }
 
