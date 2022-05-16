@@ -1,20 +1,88 @@
-#+TITLE: Diffusion module
+#+TITLE: BTCSDiffusion
 
-This is the according repository to the diffusion module we discussed earlier.
-With this readme I will document all my steps I've done and will do.
+#+BEGIN_CENTER
+A framework solving diffusion problems using BTCS approach.
+#+END_CENTER
 
-* Current State
+* About
 
-- 1D diffusion is possible by setting bc at left/right end +by hand+ by =setBoundaryCondition()= or use the
-  default value (Neumann with gradient 0)
-- +Always set concentrations/diffusion coefficients by using std::vecto+
-- Set concentrations of ghost zones by defining them via a list tuples.
-  + index 0 points to the left ghost zone
-  + index 1 to the right ghost zone
-- simple datastructure, which is currently just a class called *BTCSDiffusion*
+This project aims to provide a library for solving diffusion problems using the
+backward Euler method (BTCS) implemented in C++.
 
-* ToDos
+The library is built on top of [[https://eigen.tuxfamily.org/index.php?title=Main_Page][Eigen]], providing easy access to data structures
+and the linear equation solver.
 
-- [X] keep sparse matrix in memory
-- [-] allow different boundary conditions at the ends and also inside the grid
-- [ ] implement 2D diffusion
+We designed the API to be as much flexible as possible. Nearly every built-in,
+framework or third-party data structure can be used to model a problem, as long
+a pointer to continious memory can be providided.
+
+Also we provide basic parallelization by using [[https://www.openmp.org/][OpenMP]], which can be easily
+turned on/off during generation of makefiles.
+
+At the current state, only 1D diffusion problems on a regular grid can be solved
+reliably. The 2D solution is already implemented, but still returns wrong
+values. This will be fixed in the future.
+
+* Getting started
+
+As this diffusion module is designed as a framework library and makefile
+generation is done by [[https://cmake.org/][CMake]], you're good to go to also use CMake as your build
+toolkit. If you decide to not use CMake, you need to manually link your
+application/library to BTCSDiffusion.
+
+1. Create project directory.
+
+   #+BEGIN_SRC
+   $ mkdir sample_project && cd sample_project
+   #+END_SRC
+
+2. Clone this repository into path of choice project directory
+
+   #+BEGIN_SRC
+   $ git clone git@git.gfz-potsdam.de:mluebke/diffusion.git
+   #+END_SRC
+
+3. Add the following line into =CMakeLists.txt= file:
+
+   #+BEGIN_SRC
+   add_subdirectory(path_to_diffusion_module EXCLUDE_FROM_ALL)
+   #+END_SRC
+
+4. Write application/library using API of =BTCSDiffusion=.
+
+5. Link target application/library against =BTCSDiffusion=. Do this by adding
+   into according =CMakeLists.txt= file:
+
+   #+BEGIN_SRC
+   target_link_libraries(your_libapp BTCSDiffusion)
+   #+END_SRC
+
+6. Build your application/library with CMake.
+
+
+* Usage
+
+Setting up an enviroment to use the =BTCSDiffusion= module is divided into the
+following steps:
+
+1. Defining dimension of diffusion problem.
+2. Set grid sizes in according dimensions.
+3. Set the timestep to simulate.
+4. Defining boundary conditions.
+5. Run the simulation!
+
+This will run a simulation on the defined grid for one species. See the source
+code documentation of =BTCSDiffusion= and the examples in the =app/= directory
+for more information.
+
+* Roadmap
+
+- [X] 1D diffusion
+- [ ] 2D diffusion
+- [ ] 3D diffusion (?)
+- [ ] R-API
+- [ ] Python-API (?)
+- [ ] Testing
+
+* License
+TODO?
