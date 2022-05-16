@@ -24,7 +24,7 @@ public:
   /*!
    * Creates a diffusion module.
    *
-   * @param dim Number of dimensions. Should not be greater than 3 and not less
+   * \param dim Number of dimensions. Should not be greater than 3 and not less
    * than 1.
    */
   BTCSDiffusion(unsigned int dim);
@@ -32,8 +32,8 @@ public:
   /*!
    * Define the grid in x direction.
    *
-   * @param domain_size Size of the domain in x direction.
-   * @param n_grid_cells Number of grid cells in x direction the domain is
+   * \param domain_size Size of the domain in x direction.
+   * \param n_grid_cells Number of grid cells in x direction the domain is
    * divided to.
    */
   void setXDimensions(double domain_size, unsigned int n_grid_cells);
@@ -43,8 +43,8 @@ public:
    *
    * Throws an error if the module wasn't initialized at least as a 2D model.
    *
-   * @param domain_size Size of the domain in y direction.
-   * @param n_grid_cells Number of grid cells in y direction the domain is
+   * \param domain_size Size of the domain in y direction.
+   * \param n_grid_cells Number of grid cells in y direction the domain is
    * divided to.
    */
   void setYDimensions(double domain_size, unsigned int n_grid_cells);
@@ -54,8 +54,8 @@ public:
    *
    * Throws an error if the module wasn't initialized at least as a 3D model.
    *
-   * @param domain_size Size of the domain in z direction.
-   * @param n_grid_cells Number of grid cells in z direction the domain is
+   * \param domain_size Size of the domain in z direction.
+   * \param n_grid_cells Number of grid cells in z direction the domain is
    * divided to.
    */
   void setZDimensions(double domain_size, unsigned int n_grid_cells);
@@ -89,13 +89,13 @@ public:
   /*!
    * With given ghost zones simulate diffusion. Only 1D allowed at this moment.
    *
-   * @param c Pointer to continious memory describing the current concentration
+   * \param c Pointer to continious memory describing the current concentration
    * state of each grid cell.
-   * @param alpha Pointer to memory area of diffusion coefficients for each grid
+   * \param alpha Pointer to memory area of diffusion coefficients for each grid
    * element.
-   * @param bc Pointer to memory setting boundary conidition of each grid cell.
+   * \param bc Pointer to memory setting boundary conidition of each grid cell.
    *
-   * @return Time in seconds [s] used to simulate one iteration.
+   * \return Time in seconds [s] used to simulate one iteration.
    */
   auto simulate(double *c, double *alpha, Diffusion::boundary_condition *bc)
       -> double;
@@ -103,7 +103,7 @@ public:
   /*!
    * Set the timestep of the simulation
    *
-   * @param time_step Time step (in seconds ???)
+   * \param time_step Time step (in seconds ???)
    */
   void setTimestep(double time_step);
 
@@ -121,7 +121,7 @@ private:
 
   void simulate_base(DVectorRowMajor &c, const BCVectorRowMajor &bc,
                      const DVectorRowMajor &alpha, double dx, double time_step,
-                     int size, const DVectorRowMajor &t0_c);
+                     int size, const DVectorRowMajor &d_ortho);
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
@@ -131,7 +131,7 @@ private:
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   Eigen::Map<const BCMatrixRowMajor> &bc);
 
-  auto calc_t0_c(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
+  auto calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
                  const BCMatrixRowMajor &bc, double time_step, double dx)
       -> DMatrixRowMajor;
 
@@ -144,7 +144,7 @@ private:
                                 const DVectorRowMajor &c,
                                 const DVectorRowMajor &alpha,
                                 const BCVectorRowMajor &bc,
-                                const DVectorRowMajor &t0_c, int size,
+                                const DVectorRowMajor &d_ortho, int size,
                                 double dx, double time_step);
   void simulate3D(std::vector<double> &c);
 
