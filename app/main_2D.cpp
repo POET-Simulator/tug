@@ -1,5 +1,3 @@
-#include <algorithm> // for copy, max
-#include <cmath>
 #include <diffusion/BTCSDiffusion.hpp>
 #include <diffusion/BoundaryCondition.hpp>
 #include <iomanip>
@@ -18,8 +16,8 @@ int main(int argc, char *argv[]) {
   int m = 5;
 
   // create input + diffusion coefficients for each grid cell
-  std::vector<double> alpha(n * m, 1 * pow(10, -1));
-  std::vector<double> field(n * m, 1 * std::pow(10, -6));
+  std::vector<double> alpha(n * m, 1e-1);
+  std::vector<double> field(n * m, 1e-6);
   std::vector<boundary_condition> bc((n + 2) * (m + 2), {0, 0});
 
   // create instance of diffusion module
@@ -29,7 +27,7 @@ int main(int argc, char *argv[]) {
   diffu.setYDimensions(1, m);
 
   // set inlet to higher concentration without setting bc
-  field[12] = 5 * std::pow(10, -3);
+  field[12] = 5e-3;
 
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);

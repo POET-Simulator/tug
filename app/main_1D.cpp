@@ -1,8 +1,6 @@
 #include <diffusion/BTCSDiffusion.hpp>
 #include <diffusion/BoundaryCondition.hpp>
 
-#include <algorithm> // for copy, max
-#include <cmath>
 #include <iomanip>
 #include <iostream> // for std
 #include <vector>   // for vector
@@ -18,8 +16,8 @@ int main(int argc, char *argv[]) {
   int n = 20;
 
   // create input + diffusion coefficients for each grid cell
-  std::vector<double> alpha(n, 1 * pow(10, -1));
-  std::vector<double> field(n, 1 * std::pow(10, -6));
+  std::vector<double> alpha(n, 1e-1);
+  std::vector<double> field(n, 1e-6);
   std::vector<boundary_condition> bc(n + 2, {0, 0});
 
   // create instance of diffusion module
@@ -28,7 +26,7 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
 
   // set the boundary condition for the left ghost cell to dirichlet
-  bc[0] = {Diffusion::BC_CONSTANT, 5 * std::pow(10, -6)};
+  bc[0] = {Diffusion::BC_CONSTANT, 5e-6};
   // diffu.setBoundaryCondition(1, 0, BTCSDiffusion::BC_CONSTANT,
   //                            5. * std::pow(10, -6));
 
