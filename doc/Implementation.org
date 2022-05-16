@@ -1,0 +1,219 @@
+#+title: Implementation of 2D ADI BTCS
+#+LaTeX_CLASS_OPTIONS: [a4paper,10pt]
+#+LATEX_HEADER: \usepackage{fullpage}
+#+LATEX_HEADER: \usepackage{amsmath, systeme}
+#+OPTIONS: toc:nil
+
+* Introduction
+As described in [[./ADI_scheme.org]] the 1D-BTCS diffusion and the 2D-BTCS
+diffusion using the ADI scheme are currently implemented. In the following
+document the implementation is described.
+
+To access columns and rows of input vectors and matrices with ease and to use
+build-in solver algorithms we're using the [[https://eigen.tuxfamily.org/index.php?title=Main_Page][Eigen library]] inside the library.
+However, this not imply to use Eigen as the on-top data structure of the
+application. The API expects pointer to a continuous memory area, where
+concentrations, alpha and boundary conditions are stored. Those memory areas are
+mapped to the according Eigen data structure then.
+
+Solving a linear equation system requires an $A$ matrix and $b$ and $x$ vectors.
+All of them are also implemented using Eigen data structures, whereby the $A$
+matrix is implemented as a [[https://eigen.tuxfamily.org/dox/group__TutorialSparse.html][sparse matrix]].
+
+In the following all indices will start at 0.
+
+** Internal data structures
+
+During instantiating of an object the dimension size is required. According to
+that parameter all other parameters are stored inside the instance of the
+diffusion module and are set with the according getter and setters (see code
+documentation for more details). Stored values are:
+
+- grid dimension
+- time step $\Delta t$
+- number of grid cells $N$ in each direction
+- domain size $x$ or $y$ resp. in each direction
+- spatial discretization in each direction $\Delta x$ or $\Delta y$ resp.
+
+Whenever a value is changed through according setter, the private member
+function =updateInterals()= is called, updating all other dependent values.
+
+** Diffusion in 1D
+
+As described above to call =simulate()= properly, pointers to continuous memory
+containing the field with its concentrations, alphas and boundary conditions are
+required. The boundary condition data type is defined in the
+=BoundayCondition.hpp= header file. There are three assignable types:
+
+- =BC_CONSTANT= - constant/Dirichlet boundary condition with =value= set to a fixed value.
+- =BC_CLOSED= - closed/Neumann boundary condition with =value= set to a gradient of 0
+- =BC_FLUX= - flux/Chauchy boundary with =value= set to user defined gradient
+
+\noindent See the code documentation for more details on that. Defining the
+number of grid cells as $N$, the input values should have the following
+dimensions:
+
+- vector: field =c= $\to N$
+- vector: alpha =alpha= $\to N$
+- vector: boundary condition =bc= $\to N+2$, where =bc[0]= and =bc[N+1]=
+  describing the actual boundary condition on the left/right hand side. All
+  other values can be used to define constant inlet cells.
+
+All input values are mapped to Eigen vectors and passed to the =simulate1D()=
+function. With the only row (since we are just having a 1D vector) we will start
+the simulation by calling =simulate_base()=. There, a =SparseMatrix A= with a
+dimension of $N+1 \times N+1$ and a =VectorXd b= with a dimension of $N+1$ are
+created with, filled with according values and used to solve the LES by the
+built-in =SparseLU= solver of Eigen. The results are written to the =VectorXd x=
+and copied back to the memory area of =c=.
+
+*** Filling of sparse matrix =A=
+
+To fill the =A= matrix various information about the field are needed. This includes:
+
+- =alpha= for each cell of the field
+- =bc= for each cell of the field and boundary conditions
+- =size= of the field
+- =dx= as the $\Delta x$
+- =time_step= as the current time step size $\Delta t$
+
+We are using indices $j$ from $0 \to N+1$ to address the correct field of the
+boundary condition and $k$ from $0 \to N-1$ to address the according field of
+=alpha=
+
+First of all the left and right boundary condition are extracted from =bc=
+evaluated. Then we will set the left boundary condition to the linear equation
+system, which is the left boundary condition, to 1 ($A(0,0) = 1$). Now solving
+for the leftmost inlet is required. Each $sx = (\alpha_k \cdot \Delta t)/ \Delta
+x^2$ is stored in the same named variable for each index pointing to the current
+cell of the input/output field.
+
+- $A(1,0) = 2 \cdot sx$
+- $A(1,1) = -1 -3 \cdot sx$
+- $A(1,2) = sx$
+
+After that we will iterate until $k = N-2$ or $j = N-1$ is reached respectively
+and setting =A= with =alpha[k]= and =bc[j]= to the following values:
+
+- $A(j,j-1) = sx$
+- $A(j,j) = -1 -2 \cdot sx$
+- $A(j,j+1) = sx$
+
+Now the equation for the rightmost inlet cell is applied:
+
+- $A(N,N-1) = sx$
+- $A(N,N) = -1 -3 \cdot sx$
+- $A(N,N+1) = 2 \cdot sx$
+
+The right boundary condition is also set to $A(N+1,N+1) = 1$.
+
+A special case occurs if one cell of the input/output field is set to a constant
+value by setting the according =bc= field to =BC_CONSTANT=. Then, just the according
+element of the matrix is set to 1. For example cell $k=4$ is marked as
+constant will lead to $j = 5$ and $A(j,j) = 1$.
+
+*** Filling of vector =b=
+
+The right hand side of the equation system requires the following input values:
+
+- =c= as the input field
+- =alpha= for each cell of the grid
+- =bc= for each cell of the field and boundary conditions
+- =d_ortho= as the explicit parameter of left hand side of the equation for each cell of the field
+  (only interesting if using 2D ADI, otherwise this parameter is set to 0 for
+  all cells)
+- =size= of the field
+- =dx= as the $\Delta x$
+- =time_step= as the current time step size $\Delta t$
+
+Now we are able to iterating through the indices of $j$ from $0 \to N-1$ and
+filling up the =b= vector by applying the following rule:
+
+\begin{equation}\displaystyle
+b_{j+1} = \begin{cases}
+bc_{j+1}.\text{value} & bc_{j+1}.\text{type} = \texttt{BC\_CONSTANT} \\
+-\texttt{c}_j - \texttt{d\_ortho}_j & \text{else}
+\end{cases}
+\end{equation}
+
+\noindent With
+
+\begin{equation}\displaystyle
+\texttt{d\_ortho}_j = \Delta t \cdot \alpha_j \cdot (\frac{\bot d_j}{\Delta x^2})
+\end{equation}
+
+Both boundary conditions on the left and right side are assigned by either using
+a constant value or a derived value from a given gradient, depending on the
+assigned boundary condition type. Until now, only gradients of 0 (closed
+boundary condition) are supported. This leads to:
+
+\begin{equation}\displaystyle
+b_{0} = \begin{cases}
+bc_0.\text{value} & bc_0.\text{type} = \texttt{BC\_CONSTANT} \\
+c_0 & \text{else}
+\end{cases}
+\end{equation}
+
+\begin{equation}\displaystyle
+b_{N+1} = \begin{cases}
+bc_{N+1}.\text{value} & bc_{N+1}.\text{type} = \texttt{BC\_CONSTANT} \\
+c_{N-1} & \text{else}
+\end{cases}
+\end{equation}
+** Diffusion in 2D
+
+Simulating a 2D diffusion works in overall just like the 1D diffusion. Input
+parameters are should now be matrices or more precisly arrays, which can be
+interpreted as matrices, no matter if stored column or row wise. Defining the
+number of grid cells now as $N times M$, the input parameters should have the
+following dimensions:
+
+- vector: field =c= $\to N \times M$
+- vector: alpha =alpha= $\to N \times M$
+- vector: boundary condition =bc= $\to N+2 \times M+2$
+
+Those input pointers will now be interpreted as Eigen matrices for further use.
+In =simulate2D()= the matrix =d_ortho= is calculated in y-direction. Then, for
+each row of matrix =c= =simulate_base()= is called. The according row of
+=alpha=, =bc= and =d_ortho= are passed too and the time step is divided by two.
+Now the 2D problem is divided into an 1D problem. After each row the new
+resulting field is written back into the original memory area and serves as the
+input of the second simulation in the y-direction.
+
+For this, =d_ortho= will be recalculated, now in x-direction. Now, for every
+column of =c=, the correspondending column =alpha=, =bc= and =d_ortho= is passed
+to =simulate_base()= with also half the time step.
+
+Finally, the result of the simulation of each column get written back to =c= and
+the 2D simulation is finished.
+
+*** Calculation of =d_ortho=
+
+The function =cal_d_ortho= returns a matrix with the size of $N \times M$ with
+each cell holding the $\bot d$ value of a cell from =c= at the same index. This
+is done by first iterating over the first row from $0 \to N-1$. There, we apply
+the following rule:
+
+\begin{equation}\displaystyle
+\bot d_{0,j} = \begin{cases}
+\Delta t \cdot \alpha_{0,j} \cdot \left(\frac{2bc_{0,j+1}.\text{value} - 3 \cdot c_{0,j} + c_{1,j}}{\Delta x^2}\right) & bc_{0,j+1} = \texttt{BC\_CONSTANT} \\
+\Delta t \cdot \alpha_{0,j} \cdot \left(\frac{c_{0,j} - 2 \cdot c_{0,j} + c_{1,j}}{\Delta x^2}\right) & \text{else}
+\end{cases}
+\end{equation}
+
+\noindent Then we succeeding to the inner cells with $i = 1,\dots,M-2$ and $j =
+0,\dots,N-1$:
+
+\begin{equation}\displaystyle
+\bot d_{i,j} = \Delta t \cdot \alpha_{i,j} \cdot \left(\frac{c_{i-1,j} - 2 \cdot c_{i,j} + c_{i+1,j}}{\Delta x^2}\right)
+\end{equation}
+
+\noindent And lastly calculating the last row by applying the following rule for
+each $j = 0,\dots,N-1$:
+
+\begin{equation}\displaystyle
+\bot d_{M-1,j} = \begin{cases}
+\Delta t \cdot \alpha_{M-1,j} \cdot \left(c_{M-2,j} -3 \cdot c_{M-1,j} + 2\frac{bc_{M+1,j+1}.\text{value}}{\Delta x^2}\right) & bc_{M+1,j+1} = \texttt{BC\_CONSTANT} \\
+\Delta t \cdot \alpha_{M-1,j} \cdot \left(\frac{c_{M-2,j} - 2 \cdot c_{M-1,j} + c_{M-1,j}}{\Delta x^2}\right) & \text{else}
+\end{cases}
+\end{equation}

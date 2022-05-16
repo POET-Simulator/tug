@@ -91,7 +91,7 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
                                              const DVectorRowMajor &alpha,
                                              double dx, double time_step,
                                              int size,
-                                             const DVectorRowMajor &t0_c) {
+                                             const DVectorRowMajor &d_ortho) {
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
@@ -104,8 +104,7 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
   x_vector.resize(size + 2);
 
   fillMatrixFromRow(A_matrix, alpha, bc, size, dx, time_step);
-  fillVectorFromRow(b_vector, c, alpha, bc, Eigen::VectorXd::Constant(size, 0),
-                    size, dx, time_step);
+  fillVectorFromRow(b_vector, c, alpha, bc, d_ortho, size, dx, time_step);
 
   // start to solve
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
@@ -145,70 +144,68 @@ void Diffusion::BTCSDiffusion::simulate2D(
 
   double local_dt = this->time_step / BTCS_2D_DT_SIZE;
 
-  DMatrixRowMajor t0_c = calc_t0_c(c, alpha, bc, local_dt, dx);
+  DMatrixRowMajor d_ortho = calc_d_ortho(c, alpha, bc, local_dt, dx);
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
     simulate_base(input_field, bc.row(i + 1), alpha.row(i), dx, local_dt,
-                  n_cols, t0_c.row(i));
+                  n_cols, d_ortho.row(i));
     c.row(i) << input_field;
   }
 
   dx = this->deltas[1];
 
-  t0_c =
-      calc_t0_c(c.transpose(), alpha.transpose(), bc.transpose(), local_dt, dx);
+  d_ortho = calc_d_ortho(c.transpose(), alpha.transpose(), bc.transpose(),
+                         local_dt, dx);
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_cols; i++) {
     DVectorRowMajor input_field = c.col(i);
     simulate_base(input_field, bc.col(i + 1), alpha.col(i), dx, local_dt,
-                  n_rows, t0_c.row(i));
+                  n_rows, d_ortho.row(i));
     c.col(i) << input_field.transpose();
   }
 }
 
-auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
-                                         const DMatrixRowMajor &alpha,
-                                         const BCMatrixRowMajor &bc,
-                                         double time_step, double dx)
+auto Diffusion::BTCSDiffusion::calc_d_ortho(const DMatrixRowMajor &c,
+                                            const DMatrixRowMajor &alpha,
+                                            const BCMatrixRowMajor &bc,
+                                            double time_step, double dx)
     -> DMatrixRowMajor {
 
-  int n_rows = this->grid_cells[1];
-  int n_cols = this->grid_cells[0];
+  int n_rows = c.rows();
+  int n_cols = c.cols();
 
-  DMatrixRowMajor t0_c(n_rows, n_cols);
+  DMatrixRowMajor d_ortho(n_rows, n_cols);
 
   std::array<double, 3> y_values{};
 
   // first, iterate over first row
   for (int j = 0; j < n_cols; j++) {
     boundary_condition tmp_bc = bc(0, j + 1);
+    double sy = (time_step * alpha(0, j)) / (dx * dx);
 
-    if (tmp_bc.type == Diffusion::BC_CLOSED) {
-      continue;
-    }
-
-    y_values[0] = getBCFromFlux(tmp_bc, c(0, j), alpha(0, j));
+    y_values[0] = (tmp_bc.type == Diffusion::BC_CONSTANT
+                       ? tmp_bc.value
+                       : getBCFromFlux(tmp_bc, c(0, j), alpha(0, j)));
     y_values[1] = c(0, j);
     y_values[2] = c(1, j);
 
-    t0_c(0, j) = time_step * alpha(0, j) *
-                 (2 * y_values[0] - 3 * y_values[1] + y_values[2]) / (dx * dx);
+    d_ortho(0, j) = -sy * (2 * y_values[0] - 3 * y_values[1] + y_values[2]);
   }
 
 // then iterate over inlet
 #pragma omp parallel for private(y_values) schedule(dynamic)
   for (int i = 1; i < n_rows - 1; i++) {
     for (int j = 0; j < n_cols; j++) {
+      double sy = (time_step * alpha(i, j)) / (dx * dx);
 
       y_values[0] = c(i - 1, j);
       y_values[1] = c(i, j);
       y_values[2] = c(i + 1, j);
 
-      t0_c(i, j) = time_step * alpha(i, j) *
-                   (y_values[0] - 2 * y_values[1] + y_values[2]) / (dx * dx);
+      d_ortho(i, j) = -sy * (y_values[0] - 2 * y_values[1] + y_values[2]);
     }
   }
 
@@ -217,21 +214,18 @@ auto Diffusion::BTCSDiffusion::calc_t0_c(const DMatrixRowMajor &c,
   // and finally over last row
   for (int j = 0; j < n_cols; j++) {
     boundary_condition tmp_bc = bc(end + 1, j + 1);
-
-    if (tmp_bc.type == Diffusion::BC_CLOSED) {
-      continue;
-    }
+    double sy = (time_step * alpha(end, j)) / (dx * dx);
 
     y_values[0] = c(end - 1, j);
     y_values[1] = c(end, j);
-    y_values[2] = getBCFromFlux(tmp_bc, c(end, j), alpha(end, j));
+    y_values[2] = (tmp_bc.type == Diffusion::BC_CONSTANT
+                       ? tmp_bc.value
+                       : getBCFromFlux(tmp_bc, c(end, j), alpha(end, j)));
 
-    t0_c(end, j) = time_step * alpha(end, j) *
-                   (y_values[0] - 3 * y_values[1] + 2 * y_values[2]) /
-                   (dx * dx);
+    d_ortho(end, j) = -sy * (y_values[0] - 3 * y_values[1] + 2 * y_values[2]);
   }
 
-  return t0_c;
+  return d_ortho;
 }
 
 void Diffusion::BTCSDiffusion::fillMatrixFromRow(
@@ -285,7 +279,7 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 void Diffusion::BTCSDiffusion::fillVectorFromRow(
     Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
     const DVectorRowMajor &alpha, const BCVectorRowMajor &bc,
-    const DVectorRowMajor &t0_c, int size, double dx, double time_step) {
+    const DVectorRowMajor &d_ortho, int size, double dx, double time_step) {
 
   Diffusion::boundary_condition left = bc[0];
   Diffusion::boundary_condition right = bc[size + 1];
@@ -303,9 +297,7 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
       continue;
     }
 
-    double t0_c_j = time_step * alpha[j] * (t0_c[j] / (dx * dx));
-    double value = (c[j] < DOUBLE_MACHINE_EPSILON ? .0 : c[j]);
-    b_vector[j + 1] = -value - t0_c_j;
+    b_vector[j + 1] = -c[j] + d_ortho[j];
   }
 
   // this is not correct currently.We will fix this when we are able to define
