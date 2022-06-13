@@ -1,7 +1,4 @@
-set(HEADER_LIST "${BTCSDiffusion_SOURCE_DIR}/include/diffusion/BTCSDiffusion.hpp"
-  "${BTCSDiffusion_SOURCE_DIR}/include/diffusion/BoundaryCondition.hpp")
-
-add_library(BTCSDiffusion STATIC BTCSDiffusion.cpp ${HEADER_LIST})
+add_library(BTCSDiffusion STATIC BTCSDiffusion.cpp BTCSBoundaryCondition.cpp)
 
 target_link_libraries(BTCSDiffusion Eigen3::Eigen)
 

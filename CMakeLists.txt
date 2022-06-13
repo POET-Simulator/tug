@@ -29,5 +29,13 @@ if(USE_UNSAFE_MATH_OPT)
   add_compile_options(-ffast-math)
 endif()
 
+option(ENABLE_TESTING
+  "Run tests after succesfull compilation"
+  OFF)
+
 add_subdirectory(app)
 add_subdirectory(src)
+
+if(ENABLE_TESTING)
+  add_subdirectory(test)
+endif()

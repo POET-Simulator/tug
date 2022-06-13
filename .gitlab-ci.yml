@@ -3,36 +3,51 @@ image: sobc/gitlab-ci
 stages:
     - build
     - test
+    - run
     - static_analyze
     - dynamic_analyze
 
 before_script:
     - apt-get update && apt-get install -y libeigen3-dev
 
-build:
+build_debug:
+    stage: build
+    artifacts:
+        paths:
+            - debug/app/1D
+            - debug/app/2D
+        expire_in: 100s
+    script:
+        - mkdir debug && cd debug
+        - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTING=ON ..
+        - make -j$(nproc)
+
+build_release:
     stage: build
     artifacts:
         paths:
             - build/app/1D
             - build/app/2D
             - build/app/Comp2D
+            - build/test/test
         expire_in: 100s
     script:
         - mkdir build && cd build
-        - cmake -DCMAKE_BUILD_TYPE=Debug ..
-        - make
+        - cmake -DCMAKE_BUILD_TYPE=GenericOpt -DENABLE_TESTING=ON ..
+        - make -j$(nproc)
+
+test:
+    stage: test
+    script:
+        - ./build/test/test
 
 run_1D:
-    stage: test
-    dependencies: 
-        - build
+    stage: run
     script:
         - ./build/app/1D
 
 run_2D:
-    stage: test
-    dependencies: 
-       - build
+    stage: run
     script:
         - ./build/app/2D
 
@@ -46,11 +61,11 @@ lint:
 memcheck_1D:
     stage: dynamic_analyze
     script:
-        - cd build/app
+        - cd debug/app
         - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./1D 1>/dev/null
 
 memcheck_2D:
     stage: dynamic_analyze
     script:
-        - cd build/app
+        - cd debug/app
         - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./2D 1>/dev/null
