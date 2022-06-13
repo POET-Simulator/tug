@@ -1,7 +1,7 @@
 #ifndef BTCSDIFFUSION_H_
 #define BTCSDIFFUSION_H_
 
-#include "BoundaryCondition.hpp"
+#include "diffusion/BTCSBoundaryCondition.hpp"
 
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Map.h>
@@ -93,11 +93,11 @@ public:
    * state of each grid cell.
    * \param alpha Pointer to memory area of diffusion coefficients for each grid
    * element.
-   * \param bc Pointer to memory setting boundary conidition of each grid cell.
+   * \param bc Instance of boundary condition class with.
    *
    * \return Time in seconds [s] used to simulate one iteration.
    */
-  auto simulate(double *c, double *alpha, Diffusion::boundary_condition *bc)
+  auto simulate(double *c, double *alpha, const BTCSBoundaryCondition &bc)
       -> double;
 
   /*!
@@ -112,38 +112,31 @@ private:
       DMatrixRowMajor;
   typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
       DVectorRowMajor;
-  typedef Eigen::Matrix<Diffusion::boundary_condition, Eigen::Dynamic,
-                        Eigen::Dynamic, Eigen::RowMajor>
-      BCMatrixRowMajor;
-  typedef Eigen::Matrix<Diffusion::boundary_condition, 1, Eigen::Dynamic,
-                        Eigen::RowMajor>
-      BCVectorRowMajor;
 
-  void simulate_base(DVectorRowMajor &c, const BCVectorRowMajor &bc,
+  static void simulate_base(DVectorRowMajor &c, const bc_tuple &bc,
                      const DVectorRowMajor &alpha, double dx, double time_step,
                      int size, const DVectorRowMajor &d_ortho);
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
-                  Eigen::Map<const BCVectorRowMajor> &bc);
+                  const BTCSBoundaryCondition &bc);
 
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,
-                  Eigen::Map<const BCMatrixRowMajor> &bc);
+                  const BTCSBoundaryCondition &bc);
 
-  auto calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-                 const BCMatrixRowMajor &bc, double time_step, double dx)
-      -> DMatrixRowMajor;
+  static auto calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
+                    const BTCSBoundaryCondition &bc, bool transposed,
+                    double time_step, double dx) -> DMatrixRowMajor;
 
   static void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,
-                                const DVectorRowMajor &alpha,
-                                const BCVectorRowMajor &bc, int size, double dx,
-                                double time_step);
+                                const DVectorRowMajor &alpha, int size,
+                                double dx, double time_step);
 
   static void fillVectorFromRow(Eigen::VectorXd &b_vector,
                                 const DVectorRowMajor &c,
                                 const DVectorRowMajor &alpha,
-                                const BCVectorRowMajor &bc,
+                                const bc_tuple &bc,
                                 const DVectorRowMajor &d_ortho, int size,
                                 double dx, double time_step);
   void simulate3D(std::vector<double> &c);

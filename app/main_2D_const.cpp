@@ -1,5 +1,5 @@
+#include "diffusion/BTCSBoundaryCondition.hpp"
 #include <diffusion/BTCSDiffusion.hpp>
-#include <diffusion/BoundaryCondition.hpp>
 #include <iomanip>
 #include <iostream> // for std
 #include <vector>   // for vector
@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   // create input + diffusion coefficients for each grid cell
   std::vector<double> alpha(n * m, 1e-1);
   std::vector<double> field(n * m, 1e-6);
-  std::vector<boundary_condition> bc((n + 2) * (m + 2), {0, 0});
+  BTCSBoundaryCondition bc(n, m);
 
   // create instance of diffusion module
   BTCSDiffusion diffu(dim);
@@ -26,16 +26,20 @@ int main(int argc, char *argv[]) {
   diffu.setXDimensions(1, n);
   diffu.setYDimensions(1, m);
 
-  for (int i = 1; i <= n; i++) {
-    bc[(n + 2) * i] = {Diffusion::BC_CONSTANT, 5e-6};
-  }
+  boundary_condition input = {Diffusion::BC_TYPE_CONSTANT, 5e-6};
+
+  bc.setSide(BC_SIDE_LEFT, input);
+
+  // for (int i = 1; i <= n; i++) {
+  //   bc[(n + 2) * i] = {Diffusion::BC_CONSTANT, 5e-6};
+  // }
   // set timestep for simulation to 1 second
   diffu.setTimestep(1.);
 
   cout << setprecision(12);
 
   for (int t = 0; t < 10; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc.data());
+    diffu.simulate(field.data(), alpha.data(), bc);
 
     cout << "Iteration: " << t << "\n\n";
 

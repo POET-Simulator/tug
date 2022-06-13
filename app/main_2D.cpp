@@ -1,5 +1,5 @@
+#include "diffusion/BTCSBoundaryCondition.hpp"
 #include <diffusion/BTCSDiffusion.hpp>
-#include <diffusion/BoundaryCondition.hpp>
 #include <iomanip>
 #include <iostream> // for std
 #include <vector>   // for vector
@@ -16,39 +16,42 @@ int main(int argc, char *argv[]) {
   int m = 5;
 
   // create input + diffusion coefficients for each grid cell
-  std::vector<double> alpha(n * m, 1e-1);
-  std::vector<double> field(n * m, 1e-6);
-  std::vector<boundary_condition> bc((n + 2) * (m + 2), {0, 0});
+  std::vector<double> alpha(n * m, 1e-6);
+  std::vector<double> field(n * m, 0);
+  BTCSBoundaryCondition bc(n, m);
 
   // create instance of diffusion module
   BTCSDiffusion diffu(dim);
 
-  diffu.setXDimensions(1, n);
-  diffu.setYDimensions(1, m);
+  diffu.setXDimensions(n, n);
+  diffu.setYDimensions(m, m);
 
   // set inlet to higher concentration without setting bc
-  field[12] = 5e-3;
+  field[12] = 1;
 
   // set timestep for simulation to 1 second
-  diffu.setTimestep(1.);
+  diffu.setTimestep(1);
 
   cout << setprecision(12);
 
-  for (int t = 0; t < 10; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc.data());
+  for (int t = 0; t < 1000; t++) {
+    diffu.simulate(field.data(), alpha.data(), bc);
 
     cout << "Iteration: " << t << "\n\n";
+
+    double sum = 0;
 
     // iterate through rows
     for (int i = 0; i < m; i++) {
       // iterate through columns
       for (int j = 0; j < n; j++) {
         cout << left << std::setw(20) << field[i * n + j];
+        sum += field[i * n + j];
       }
       cout << "\n";
     }
 
-    cout << "\n" << endl;
+    cout << "sum: " << sum << "\n" << endl;
   }
 
   return 0;

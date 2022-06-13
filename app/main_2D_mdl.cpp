@@ -1,5 +1,5 @@
+#include "diffusion/BTCSBoundaryCondition.hpp"
 #include <diffusion/BTCSDiffusion.hpp>
-#include <diffusion/BoundaryCondition.hpp>
 #include <iomanip>
 #include <iostream> // for std
 #include <vector>   // for vector
@@ -16,9 +16,9 @@ int main(int argc, char *argv[]) {
   int m = 501;
 
   // create input + diffusion coefficients for each grid cell
-  std::vector<double> alpha(n * m, 1e-1);
+  std::vector<double> alpha(n * m, 1e-3);
   std::vector<double> field(n * m, 0.);
-  std::vector<boundary_condition> bc((n + 2) * (m + 2), {0, 0});
+  BTCSBoundaryCondition bc(n, m);
 
   field[125500] = 1;
 
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 
   // Now we simulate and output 8 steps à 1 sec
   for (int t = 1; t < 6; t++) {
-    double time = diffu.simulate(field.data(), alpha.data(), bc.data());
+    double time = diffu.simulate(field.data(), alpha.data(), bc);
 
     cerr << "time elapsed: " << time << " seconds" << endl;
 
