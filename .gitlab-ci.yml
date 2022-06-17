@@ -3,69 +3,31 @@ image: sobc/gitlab-ci
 stages:
     - build
     - test
-    - run
     - static_analyze
-    - dynamic_analyze
-
-before_script:
-    - apt-get update && apt-get install -y libeigen3-dev
-
-build_debug:
-    stage: build
-    artifacts:
-        paths:
-            - debug/app/1D
-            - debug/app/2D
-        expire_in: 100s
-    script:
-        - mkdir debug && cd debug
-        - cmake -DCMAKE_BUILD_TYPE=Debug -DENABLE_TESTING=ON ..
-        - make -j$(nproc)
 
 build_release:
-    stage: build
-    artifacts:
-        paths:
-            - build/app/1D
-            - build/app/2D
-            - build/app/Comp2D
-            - build/test/test
-        expire_in: 100s
-    script:
-        - mkdir build && cd build
-        - cmake -DCMAKE_BUILD_TYPE=GenericOpt -DENABLE_TESTING=ON ..
-        - make -j$(nproc)
+  before_script:
+    - apt-get update && apt-get install -y libeigen3-dev
+  stage: build
+  artifacts:
+      paths:
+          - build/test/test
+      expire_in: 100s
+  script:
+      - mkdir build && cd build
+      - cmake -DCMAKE_BUILD_TYPE=GenericOpt -DENABLE_TESTING=ON ..
+      - make -j$(nproc)
 
 test:
     stage: test
     script:
         - ./build/test/test
 
-run_1D:
-    stage: run
-    script:
-        - ./build/app/1D
-
-run_2D:
-    stage: run
-    script:
-        - ./build/app/2D
-
 lint:
-    stage: static_analyze
-    script:
-        - mkdir lint && cd lint
-        - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" ..
-        - make BTCSDiffusion
-
-memcheck_1D:
-    stage: dynamic_analyze
-    script:
-        - cd debug/app
-        - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./1D 1>/dev/null
-
-memcheck_2D:
-    stage: dynamic_analyze
-    script:
-        - cd debug/app
-        - valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all --track-origins=yes ./2D 1>/dev/null
+  before_script:
+    - apt-get update && apt-get install -y libeigen3-dev
+  stage: static_analyze
+  script:
+    - mkdir lint && cd lint
+    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" ..
+    - make BTCSDiffusion
