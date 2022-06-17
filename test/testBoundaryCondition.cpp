@@ -66,9 +66,20 @@ TEST_CASE("2D Boundary Condition") {
   }
 
   SUBCASE("call of setSide") {
-      CHECK_NOTHROW(bc.setSide(BC_SIDE_BOTTOM, bc_set));
-      CHECK_EQ(bc(BC_SIDE_BOTTOM, 1).value, bc_set.value);
-      CHECK_EQ(bc(BC_SIDE_BOTTOM, 1).type, bc_set.type);
+    CHECK_NOTHROW(bc.setSide(BC_SIDE_BOTTOM, bc_set));
+    CHECK_EQ(bc(BC_SIDE_BOTTOM, 1).value, bc_set.value);
+    CHECK_EQ(bc(BC_SIDE_BOTTOM, 1).type, bc_set.type);
+  }
+
+  SUBCASE("get and set of side") {
+    std::vector<boundary_condition> bc_vec;
+    CHECK_NOTHROW(bc_vec = bc.getSide(BC_SIDE_BOTTOM));
+    bc_vec[3] = {BC_TYPE_CONSTANT, 1e-5};
+    CHECK_NOTHROW(bc.setSide(BC_SIDE_BOTTOM, bc_vec));
+    CHECK_EQ(bc(BC_SIDE_BOTTOM, 3).type, BC_TYPE_CONSTANT);
+    CHECK_EQ(bc(BC_SIDE_BOTTOM, 3).value, 1e-5);
+
+    CHECK_EQ(bc(BC_SIDE_BOTTOM, 2).value, 0);
   }
 }
 
@@ -76,7 +87,8 @@ TEST_CASE("Boundary Condition helpers") {
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("return boundary condition skeleton") {
-    boundary_condition bc_test = BTCSBoundaryCondition::returnBoundaryCondition(bc_set.type, bc_set.value);
+    boundary_condition bc_test = BTCSBoundaryCondition::returnBoundaryCondition(
+        bc_set.type, bc_set.value);
     CHECK_EQ(bc_test.value, bc_set.value);
     CHECK_EQ(bc_test.type, bc_set.type);
   }

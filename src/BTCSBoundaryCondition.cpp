@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <bits/stdint-uintn.h>
 #include <diffusion/BTCSBoundaryCondition.hpp>
 #include <stdexcept>
+#include <vector>
 
 constexpr uint8_t DIM_1D = 2;
 constexpr uint8_t DIM_2D = 4;
@@ -30,6 +32,42 @@ void Diffusion::BTCSBoundaryCondition::setSide(
   for (int i = 0; i < maxsize; i++) {
     this->bc_internal[side * maxsize + i] = input_bc;
   }
+}
+
+void Diffusion::BTCSBoundaryCondition::setSide(
+    uint8_t side, std::vector<Diffusion::boundary_condition> &input_bc) {
+  if (this->dim == 1) {
+    throw std::invalid_argument("setSide requires at least a 2D grid");
+  }
+  if (side > 3) {
+    throw std::out_of_range("Invalid range for 2D grid");
+  }
+  if (input_bc.size() > this->maxsize) {
+    throw std::out_of_range(
+        "Input vector is greater than maximum excpected value");
+  }
+
+  for (int i = 0; i < input_bc.size(); i++) {
+    bc_internal[this->maxsize * side + i] = input_bc[i];
+  }
+}
+
+auto Diffusion::BTCSBoundaryCondition::getSide(uint8_t side)
+    -> std::vector<Diffusion::boundary_condition> {
+  if (this->dim == 1) {
+    throw std::invalid_argument("getSide requires at least a 2D grid");
+  }
+  if (side > 3) {
+    throw std::out_of_range("Invalid range for 2D grid");
+  }
+
+  std::vector<Diffusion::boundary_condition> out(this->maxsize);
+
+  for (int i = 0; i < this->maxsize; i++) {
+    out[i] = this->bc_internal[this->maxsize * side + i];
+  }
+
+  return out;
 }
 
 auto Diffusion::BTCSBoundaryCondition::col(uint32_t i) const
