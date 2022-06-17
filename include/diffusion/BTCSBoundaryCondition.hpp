@@ -97,6 +97,31 @@ public:
   void setSide(uint8_t side, boundary_condition &input_bc);
 
   /**
+   * Sets the boundary condition for a specific side of the grid.
+   *
+   * \param side Side for which the given boundary condition should be set.
+   * \param input_bc Vector of boundary conditions for specific side.
+   *
+   * \throws std::invalid_argument Indicates wrong dimensions of the grid.
+   * \throws std::out_of_range Indicates a out of range value for side or
+   * invalid size of input vector.
+   */
+  void setSide(uint8_t side, std::vector<boundary_condition> &input_bc);
+
+  /**
+   * Returns a vector of boundary conditions of given side. Can be used to set
+   * custom boundary conditions and set back via setSide() with vector input.
+   *
+   * \param side Side which boundary conditions should be returned
+   *
+   * \returns Vector of boundary conditions
+   *
+   * \throws std::invalid_argument If given dimension is less or equal to 1.
+   * \throws std::out_of_range Indicates a out of range value for side.
+   */
+  auto getSide(uint8_t side) -> std::vector<boundary_condition>;
+
+  /**
    * Get both boundary conditions of a given row (left and right).
    *
    * \param i Index of row
