@@ -158,6 +158,8 @@ private:
   std::vector<boundary_condition> bc_internal;
 
   uint8_t dim;
+
+  uint32_t sizes[2];
   uint32_t maxsize;
 
 public:
