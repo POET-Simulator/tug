@@ -1,8 +1,9 @@
 #include <algorithm>
 #include <bits/stdint-uintn.h>
-#include <diffusion/BTCSBoundaryCondition.hpp>
-#include <stdexcept>
 #include <vector>
+
+#include <diffusion/BTCSBoundaryCondition.hpp>
+#include <diffusion/BTCSUtils.hpp>
 
 constexpr uint8_t DIM_1D = 2;
 constexpr uint8_t DIM_2D = 4;
@@ -29,10 +30,10 @@ Diffusion::BTCSBoundaryCondition::BTCSBoundaryCondition(int x, int y) {
 void Diffusion::BTCSBoundaryCondition::setSide(
     uint8_t side, Diffusion::boundary_condition &input_bc) {
   if (this->dim == 1) {
-    throw std::invalid_argument("setSide requires at least a 2D grid");
+    throw_invalid_argument("setSide requires at least a 2D grid");
   }
   if (side > 3) {
-    throw std::out_of_range("Invalid range for 2D grid");
+    throw_out_of_range("Invalid range for 2D grid");
   }
 
   uint32_t size =
@@ -48,10 +49,10 @@ void Diffusion::BTCSBoundaryCondition::setSide(
 void Diffusion::BTCSBoundaryCondition::setSide(
     uint8_t side, std::vector<Diffusion::boundary_condition> &input_bc) {
   if (this->dim == 1) {
-    throw std::invalid_argument("setSide requires at least a 2D grid");
+    throw_invalid_argument("setSide requires at least a 2D grid");
   }
   if (side > 3) {
-    throw std::out_of_range("Invalid range for 2D grid");
+    throw_out_of_range("Invalid range for 2D grid");
   }
 
   uint32_t size =
@@ -60,8 +61,7 @@ void Diffusion::BTCSBoundaryCondition::setSide(
            : this->sizes[1]);
 
   if (input_bc.size() > size) {
-    throw std::out_of_range(
-        "Input vector is greater than maximum excpected value");
+    throw_out_of_range("Input vector is greater than maximum excpected value");
   }
 
   for (int i = 0; i < size; i++) {
@@ -72,10 +72,10 @@ void Diffusion::BTCSBoundaryCondition::setSide(
 auto Diffusion::BTCSBoundaryCondition::getSide(uint8_t side)
     -> std::vector<Diffusion::boundary_condition> {
   if (this->dim == 1) {
-    throw std::invalid_argument("getSide requires at least a 2D grid");
+    throw_invalid_argument("getSide requires at least a 2D grid");
   }
   if (side > 3) {
-    throw std::out_of_range("Invalid range for 2D grid");
+    throw_out_of_range("Invalid range for 2D grid");
   }
 
   uint32_t size =
@@ -95,10 +95,10 @@ auto Diffusion::BTCSBoundaryCondition::getSide(uint8_t side)
 auto Diffusion::BTCSBoundaryCondition::col(uint32_t i) const
     -> Diffusion::bc_tuple {
   if (this->dim == 1) {
-    throw std::invalid_argument("Access of column requires at least 2D grid");
+    throw_invalid_argument("Access of column requires at least 2D grid");
   }
   if (i >= this->sizes[1]) {
-    throw std::out_of_range("Index out of range");
+    throw_out_of_range("Index out of range");
   }
 
   return {this->bc_internal[BC_SIDE_TOP * this->maxsize + i],
@@ -108,7 +108,7 @@ auto Diffusion::BTCSBoundaryCondition::col(uint32_t i) const
 auto Diffusion::BTCSBoundaryCondition::row(uint32_t i) const
     -> Diffusion::bc_tuple {
   if (i >= this->sizes[0]) {
-    throw std::out_of_range("Index out of range");
+    throw_out_of_range("Index out of range");
   }
 
   return {this->bc_internal[BC_SIDE_LEFT * this->maxsize + i],
