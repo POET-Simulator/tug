@@ -13,7 +13,7 @@ Diffusion::BTCSBoundaryCondition::BTCSBoundaryCondition() {
   // this value is actually unused
   this->maxsize = 1;
 
-  this->sizes[0] = 2;
+  this->sizes[0] = 1;
   this->sizes[1] = 0;
 }
 
@@ -107,9 +107,6 @@ auto Diffusion::BTCSBoundaryCondition::col(uint32_t i) const
 
 auto Diffusion::BTCSBoundaryCondition::row(uint32_t i) const
     -> Diffusion::bc_tuple {
-  if (this->dim == 1) {
-    throw std::invalid_argument("Access of column requires at least 2D grid");
-  }
   if (i >= this->sizes[0]) {
     throw std::out_of_range("Index out of range");
   }
