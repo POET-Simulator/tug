@@ -19,9 +19,8 @@ a pointer to continious memory can be providided.
 Also we provide basic parallelization by using [[https://www.openmp.org/][OpenMP]], which can be easily
 turned on/off during generation of makefiles.
 
-At the current state, only 1D diffusion problems on a regular grid can be solved
-reliably. The 2D solution is already implemented, but still returns wrong
-values. This will be fixed in the future.
+At the current state, both 1D and @D diffusion problems on a regular grid with
+constant alpha for all grid cells can be solved reliably.
 
 * Getting started
 
