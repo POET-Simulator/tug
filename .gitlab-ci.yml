@@ -15,7 +15,7 @@ build_release:
       expire_in: 100s
   script:
       - mkdir build && cd build
-      - cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTING=ON ..
+      - cmake -DCMAKE_BUILD_TYPE=Release -DBTCS_ENABLE_TESTING=ON ..
       - make -j$(nproc)
 
 test:
