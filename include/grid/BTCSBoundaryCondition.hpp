@@ -12,9 +12,10 @@ typedef uint8_t bctype;
 namespace Diffusion {
 
 enum {
-  BC_TYPE_CLOSED,  /**< Defines a closed/Neumann boundary condition. */
-  BC_TYPE_FLUX,    /**< Defines a flux/Cauchy boundary condition. */
-  BC_TYPE_CONSTANT /**< Defines a constant/Dirichlet boundary condition. */
+  BC_TYPE_CLOSED,   /**< Defines a closed/Neumann boundary condition. */
+  BC_TYPE_FLUX,     /**< Defines a flux/Cauchy boundary condition. */
+  BC_TYPE_CONSTANT, /**< Defines a constant/Dirichlet boundary condition. */
+  BC_UNSET          /**< Indicates undefined boundary condition*/
 };
 
 enum {
@@ -23,7 +24,9 @@ enum {
   BC_SIDE_RIGHT, /**< Defines boundary conditions for the right side of the
                     grid. */
   BC_SIDE_TOP,   /**< Defines boundary conditions for the top of the grid. */
-  BC_SIDE_BOTTOM /**< Defines boundary conditions for the bottom of the grid. */
+  BC_SIDE_BOTTOM, /**< Defines boundary conditions for the bottom of the grid.
+                   */
+  BC_INNER
 };
 
 /**
@@ -40,6 +43,7 @@ typedef struct boundary_condition_s {
  * Represents both boundary conditions of a row/column.
  */
 typedef std::array<boundary_condition, 2> bc_tuple;
+typedef std::vector<boundary_condition> bc_vec;
 
 /**
  * Class to define the boundary condition of a grid.
@@ -49,8 +53,10 @@ public:
   /**
    *  Creates a new instance with two elements. Used when defining boundary
    *  conditions of 1D grids.
+   *
+   *  \param x Number of grid cells in x-direction
    */
-  BTCSBoundaryCondition();
+  BTCSBoundaryCondition(int x);
 
   /**
    * Creates a new instance with 4 * max(x,y) elements. Used to describe the
@@ -122,6 +128,24 @@ public:
   auto col_boundary(uint32_t i) const -> bc_tuple;
 
   /**
+   * Get a row of field and its inner boundary conditions.
+   *
+   * \param i Index of the row starting at 0.
+   *
+   * \returns Row of the inner boundary conditions of the field.
+   */
+  auto getInnerRow(uint32_t i) const -> bc_vec;
+
+  /**
+   * Get a column of field and its inner boundary conditions.
+   *
+   * \param i Index of the column starting at 0.
+   *
+   * \returns Column of the inner boundary conditions of the field.
+   */
+  auto getInnerCol(uint32_t i) const -> bc_vec;
+
+  /**
    * Create an instance of boundary_condition data type. Can be seen as a helper
    * function.
    *
@@ -137,12 +161,24 @@ public:
 private:
   std::vector<boundary_condition> bc_internal;
 
+  bc_vec special_cells;
+
   uint8_t dim;
 
   uint32_t sizes[2];
   uint32_t maxsize;
+  uint32_t maxindex;
+
+  enum { X_DIM, Y_DIM };
 
 public:
+  /**
+   * Returns the left/right boundary condition for 1D grid.
+   *
+   * \param side Side of the boundary condition to get.
+   *
+   * \returns Boundary condition
+   */
   boundary_condition operator()(uint8_t side) const {
     if (dim != 1) {
       throw std::invalid_argument(
@@ -154,7 +190,21 @@ public:
     return bc_internal[side];
   }
 
+  /**
+   * Returns the boundary condition of a given side for 2D grids.
+   *
+   * \param side Side of the boundary condition to get.
+   * \param i Index of the boundary condition.
+   *
+   * \returns Boundary condition
+   */
   boundary_condition operator()(uint8_t side, uint32_t i) const {
+    if (side == BC_INNER) {
+      if (i > maxindex) {
+        throw std::out_of_range("Index exceeds grid cell numbers");
+      }
+      return special_cells[i];
+    }
     if (dim != 2) {
       throw std::invalid_argument(
           "Only 2D grids support 2 parameters in operator");
@@ -165,6 +215,13 @@ public:
     return bc_internal[side * maxsize + i];
   }
 
+  /**
+   * Returns the left/right boundary condition for 1D grid.
+   *
+   * \param side Side of the boundary condition to get.
+   *
+   * \returns Boundary condition
+   */
   boundary_condition &operator()(uint8_t side) {
     if (dim != 1) {
       throw std::invalid_argument(
@@ -176,7 +233,21 @@ public:
     return bc_internal[side];
   }
 
+  /**
+   * Returns the boundary condition of a given side for 2D grids.
+   *
+   * \param side Side of the boundary condition to get.
+   * \param i Index of the boundary condition.
+   *
+   * \returns Boundary condition
+   */
   boundary_condition &operator()(uint8_t side, uint32_t i) {
+    if (side == BC_INNER) {
+      if (i > maxindex) {
+        throw std::out_of_range("Index exceeds grid cell numbers");
+      }
+      return special_cells[i];
+    }
     if (dim != 2) {
       throw std::invalid_argument("Explicit setting of bc value with 2 "
                                   "parameters is only supported for 2D grids");

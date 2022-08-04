@@ -7,7 +7,7 @@ using namespace Diffusion;
 
 TEST_CASE("1D Boundary Condition") {
 
-  BTCSBoundaryCondition bc;
+  BTCSBoundaryCondition bc(5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("valid get") { CHECK_EQ(bc(BC_SIDE_LEFT).value, 0); }
@@ -50,7 +50,7 @@ TEST_CASE("2D Boundary Condition") {
   SUBCASE("valid get") { CHECK_EQ(bc(BC_SIDE_LEFT, 0).value, 0); }
 
   SUBCASE("invalid get") {
-    CHECK_THROWS(bc(4, 0));
+    CHECK_THROWS(bc(5, 0));
     CHECK_THROWS(bc(BC_SIDE_LEFT));
   }
 
@@ -62,7 +62,7 @@ TEST_CASE("2D Boundary Condition") {
 
   SUBCASE("invalid set") {
     CHECK_THROWS(bc(BC_SIDE_LEFT) = bc_set);
-    CHECK_THROWS(bc(4, 0) = bc_set);
+    CHECK_THROWS(bc(5, 0) = bc_set);
   }
 
   SUBCASE("call of setSide") {

@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   std::vector<double> alpha(n, 1e-1);
   std::vector<double> field(n, 1e-6);
 
-  BTCSBoundaryCondition bc;
+  BTCSBoundaryCondition bc(n);
 
   // create instance of diffusion module
   BTCSDiffusion diffu(dim);
