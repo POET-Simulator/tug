@@ -187,11 +187,11 @@ public:
 
   boundary_condition &operator()(uint8_t side) {
     if (dim != 1) {
-      throw std::invalid_argument("Explicit setting of bc value with 2 "
-                                  "parameters is only supported for 2D grids");
+      throw std::invalid_argument(
+          "Only 1D grid support 1 parameter in operator");
     }
     if (side > 1) {
-      throw std::out_of_range("2D index out of range");
+      throw std::out_of_range("1D index out of range");
     }
     return bc_internal[side];
   }
