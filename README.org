@@ -77,11 +77,41 @@ for more information.
 * Roadmap
 
 - [X] 1D diffusion
-- [ ] 2D diffusion
+- [X] 2D diffusion
 - [ ] 3D diffusion (?)
-- [ ] R-API
-- [ ] Python-API (?)
-- [ ] Testing
+- [X] R-API (see [[https://git.gfz-potsdam.de/sec34/rcppbtcs][RcppBTCS]])
+- [-] Python-API (?)
+- [X] Testing
+
+* Contributing
+** *PLEASE NOTE*
+
+Starting with the preparations of v0.2 we would like to use more meaningful
+commit messages. A good practice can be found [[https://www.conventionalcommits.org/en/v1.0.0/][here]].
+
+** Workflow
+
+In this early stage of development every help is welcome. To do so, there are
+currently the following options:
+
+Given you have an account for this GFZ git instance:
+
+1. Fork this project, create a branch and push your changes. If your changes are
+   done or you feel the need for some feedback create a merge request with the
+   destination set to the *main* branch of this project.
+2. Ask for access to this repository. You most likelz will get access as a
+   developer which allows you to create branches and merge requests inside this
+   repository.
+
+If can't get access to this git instance:
+
+3. Download this repository and note down the SHA of the downloaded commit.
+   Apply your changes and send a mail to [[mailto:mluebke@gfz-potsdam.de][mluebke@gfz-potsdam.de]] or
+   [[mailto:delucia@gfz-potsdam.de][delucia@gfz-potsdam.de]] with the patch/diff compared to your starting point.
+   Please split different patch types (feature, fixes, improvements ...) into
+   seperate files. Also provide us the SHA of the commit you've downloaded.
+
+Thank you for your contributions in advance!
 
 * License
 TODO?
