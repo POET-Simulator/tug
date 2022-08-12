@@ -33,7 +33,6 @@ option(BTCS_ENABLE_TESTING
   "Run tests after succesfull compilation"
   OFF)
 
-add_subdirectory(app)
 add_subdirectory(src)
 
 if(BTCS_ENABLE_TESTING)
