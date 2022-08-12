@@ -1,4 +1,4 @@
-#include <diffusion/BTCSBoundaryCondition.hpp>
+#include <grid/BTCSBoundaryCondition.hpp>
 #include <doctest.h>
 
 using namespace Diffusion;

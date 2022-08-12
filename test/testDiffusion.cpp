@@ -1,5 +1,5 @@
 #include <bits/stdint-uintn.h>
-#include <diffusion/BTCSBoundaryCondition.hpp>
+#include <grid/BTCSBoundaryCondition.hpp>
 #include <diffusion/BTCSDiffusion.hpp>
 #include <doctest.h>
 #include <vector>

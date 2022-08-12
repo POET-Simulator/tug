@@ -1,7 +1,7 @@
 #ifndef BTCSDIFFUSION_H_
 #define BTCSDIFFUSION_H_
 
-#include "diffusion/BTCSBoundaryCondition.hpp"
+#include "grid/BTCSBoundaryCondition.hpp"
 
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Map.h>
