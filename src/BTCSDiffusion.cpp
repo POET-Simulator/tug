@@ -129,7 +129,7 @@ void Diffusion::BTCSDiffusion::simulate1D(
 
   DVectorRowMajor input_field = c.row(0);
 
-  simulate_base(input_field, bc.row(0), alpha, dx, time_step, size,
+  simulate_base(input_field, bc.row_boundary(0), alpha, dx, time_step, size,
                 Eigen::VectorXd::Constant(size, 0));
 
   c.row(0) << input_field;
@@ -150,7 +150,7 @@ void Diffusion::BTCSDiffusion::simulate2D(
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
-    simulate_base(input_field, bc.row(i), alpha.row(i), dx, local_dt, n_cols,
+    simulate_base(input_field, bc.row_boundary(i), alpha.row(i), dx, local_dt, n_cols,
                   d_ortho.row(i));
     c.row(i) << input_field;
   }
@@ -163,7 +163,7 @@ void Diffusion::BTCSDiffusion::simulate2D(
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_cols; i++) {
     DVectorRowMajor input_field = c.col(i);
-    simulate_base(input_field, bc.col(i), alpha.col(i), dx, local_dt, n_rows,
+    simulate_base(input_field, bc.col_boundary(i), alpha.col(i), dx, local_dt, n_rows,
                   d_ortho.row(i));
     c.col(i) << input_field.transpose();
   }

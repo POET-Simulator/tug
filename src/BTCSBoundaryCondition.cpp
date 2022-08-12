@@ -92,7 +92,7 @@ auto Diffusion::BTCSBoundaryCondition::getSide(uint8_t side)
   return out;
 }
 
-auto Diffusion::BTCSBoundaryCondition::col(uint32_t i) const
+auto Diffusion::BTCSBoundaryCondition::col_boundary(uint32_t i) const
     -> Diffusion::bc_tuple {
   if (this->dim == 1) {
     throw_invalid_argument("Access of column requires at least 2D grid");
@@ -105,7 +105,7 @@ auto Diffusion::BTCSBoundaryCondition::col(uint32_t i) const
           this->bc_internal[BC_SIDE_BOTTOM * this->maxsize + i]};
 }
 
-auto Diffusion::BTCSBoundaryCondition::row(uint32_t i) const
+auto Diffusion::BTCSBoundaryCondition::row_boundary(uint32_t i) const
     -> Diffusion::bc_tuple {
   if (i >= this->sizes[0]) {
     throw_out_of_range("Index out of range");

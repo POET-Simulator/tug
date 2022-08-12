@@ -30,15 +30,15 @@ TEST_CASE("1D Boundary Condition") {
 
   SUBCASE("valid row getter") {
     bc(BC_SIDE_LEFT) = bc_set;
-    bc_tuple tup = bc.row(0);
+    bc_tuple tup = bc.row_boundary(0);
 
     CHECK_EQ(tup[0].value, BC_CONST_VALUE);
     CHECK_EQ(tup[1].value, 0);
   }
 
   SUBCASE("invalid row and col getter") {
-    CHECK_THROWS(bc.row(1));
-    CHECK_THROWS(bc.col(0));
+    CHECK_THROWS(bc.row_boundary(1));
+    CHECK_THROWS(bc.col_boundary(0));
   }
 }
 
