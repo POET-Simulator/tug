@@ -11,40 +11,20 @@ typedef uint8_t bctype;
 
 namespace Diffusion {
 
-/**
- * Defines a closed/Neumann boundary condition.
- */
-static const bctype BC_TYPE_CLOSED = 0;
+enum {
+  BC_TYPE_CLOSED,  /**< Defines a closed/Neumann boundary condition. */
+  BC_TYPE_FLUX,    /**< Defines a flux/Cauchy boundary condition. */
+  BC_TYPE_CONSTANT /**< Defines a constant/Dirichlet boundary condition. */
+};
 
-/**
- * Defines a flux/Cauchy boundary condition.
- */
-static const bctype BC_TYPE_FLUX = 1;
-
-/**
- * Defines a constant/Dirichlet boundary condition.
- */
-static const bctype BC_TYPE_CONSTANT = 2;
-
-/**
- * Defines boundary conditions for the left side of the grid.
- */
-static const uint8_t BC_SIDE_LEFT = 0;
-
-/**
- * Defines boundary conditions for the right side of the grid.
- */
-static const uint8_t BC_SIDE_RIGHT = 1;
-
-/**
- * Defines boundary conditions for the top of the grid.
- */
-static const uint8_t BC_SIDE_TOP = 2;
-
-/**
- * Defines boundary conditions for the bottom of the grid.
- */
-static const uint8_t BC_SIDE_BOTTOM = 3;
+enum {
+  BC_SIDE_LEFT,  /**< Defines boundary conditions for the left side of the grid.
+                  */
+  BC_SIDE_RIGHT, /**< Defines boundary conditions for the right side of the
+                    grid. */
+  BC_SIDE_TOP,   /**< Defines boundary conditions for the top of the grid. */
+  BC_SIDE_BOTTOM /**< Defines boundary conditions for the bottom of the grid. */
+};
 
 /**
  * Defines the boundary condition type and according value.
@@ -57,7 +37,7 @@ typedef struct boundary_condition_s {
 } boundary_condition;
 
 /**
- * Internal use only.
+ * Represents both boundary conditions of a row/column.
  */
 typedef std::array<boundary_condition, 2> bc_tuple;
 
@@ -129,7 +109,7 @@ public:
    * \returns Left and right boundary values as an array (defined as data
    * type bc_tuple).
    */
-  auto row(uint32_t i) const -> bc_tuple;
+  auto row_boundary(uint32_t i) const -> bc_tuple;
 
   /**
    * Get both boundary conditions of a given column (top and bottom).
@@ -139,7 +119,7 @@ public:
    * \returns Top and bottom boundary values as an array (defined as data
    * type bc_tuple).
    */
-  auto col(uint32_t i) const -> bc_tuple;
+  auto col_boundary(uint32_t i) const -> bc_tuple;
 
   /**
    * Create an instance of boundary_condition data type. Can be seen as a helper
