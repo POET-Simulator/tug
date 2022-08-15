@@ -113,9 +113,11 @@ private:
   typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
       DVectorRowMajor;
 
-  static void simulate_base(DVectorRowMajor &c, const bc_tuple &bc,
-                     const DVectorRowMajor &alpha, double dx, double time_step,
-                     int size, const DVectorRowMajor &d_ortho);
+  static void simulate_base(DVectorRowMajor &c, const bc_tuple &bc_ghosts,
+                            const bc_vec &bc_inner,
+                            const DVectorRowMajor &alpha, double dx,
+                            double time_step, int size,
+                            const DVectorRowMajor &d_ortho);
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
@@ -125,18 +127,21 @@ private:
                   Eigen::Map<const DMatrixRowMajor> &alpha,
                   const BTCSBoundaryCondition &bc);
 
-  static auto calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-                    const BTCSBoundaryCondition &bc, bool transposed,
-                    double time_step, double dx) -> DMatrixRowMajor;
+  static auto calc_d_ortho(const DMatrixRowMajor &c,
+                           const DMatrixRowMajor &alpha,
+                           const BTCSBoundaryCondition &bc, bool transposed,
+                           double time_step, double dx) -> DMatrixRowMajor;
 
   static void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,
-                                const DVectorRowMajor &alpha, int size,
-                                double dx, double time_step);
+                                const DVectorRowMajor &alpha,
+                                const bc_vec &bc_inner, int size, double dx,
+                                double time_step);
 
   static void fillVectorFromRow(Eigen::VectorXd &b_vector,
                                 const DVectorRowMajor &c,
                                 const DVectorRowMajor &alpha,
-                                const bc_tuple &bc,
+                                const bc_tuple &bc_ghosts,
+                                const bc_vec &bc_inner,
                                 const DVectorRowMajor &d_ortho, int size,
                                 double dx, double time_step);
   void simulate3D(std::vector<double> &c);

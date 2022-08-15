@@ -1,4 +1,5 @@
 #include "diffusion/BTCSDiffusion.hpp"
+#include "BTCSUtils.hpp"
 #include "grid/BTCSBoundaryCondition.hpp"
 
 #include <Eigen/SparseLU>
@@ -87,12 +88,10 @@ void Diffusion::BTCSDiffusion::updateInternals() {
     deltas[i] = (double)domain_size[i] / grid_cells[i];
   }
 }
-void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
-                                             const Diffusion::bc_tuple &bc,
-                                             const DVectorRowMajor &alpha,
-                                             double dx, double time_step,
-                                             int size,
-                                             const DVectorRowMajor &d_ortho) {
+void Diffusion::BTCSDiffusion::simulate_base(
+    DVectorRowMajor &c, const Diffusion::bc_tuple &bc_ghosts,
+    const Diffusion::bc_vec &bc_inner, const DVectorRowMajor &alpha, double dx,
+    double time_step, int size, const DVectorRowMajor &d_ortho) {
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
@@ -104,8 +103,9 @@ void Diffusion::BTCSDiffusion::simulate_base(DVectorRowMajor &c,
   b_vector.resize(size + 2);
   x_vector.resize(size + 2);
 
-  fillMatrixFromRow(A_matrix, alpha, size, dx, time_step);
-  fillVectorFromRow(b_vector, c, alpha, bc, d_ortho, size, dx, time_step);
+  fillMatrixFromRow(A_matrix, alpha, bc_inner, size, dx, time_step);
+  fillVectorFromRow(b_vector, c, alpha, bc_ghosts, bc_inner, d_ortho, size, dx,
+                    time_step);
 
   // start to solve
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
@@ -129,8 +129,8 @@ void Diffusion::BTCSDiffusion::simulate1D(
 
   DVectorRowMajor input_field = c.row(0);
 
-  simulate_base(input_field, bc.row_boundary(0), alpha, dx, time_step, size,
-                Eigen::VectorXd::Constant(size, 0));
+  simulate_base(input_field, bc.row_boundary(0), bc.getInnerRow(0), alpha, dx,
+                time_step, size, Eigen::VectorXd::Constant(size, 0));
 
   c.row(0) << input_field;
 }
@@ -150,8 +150,8 @@ void Diffusion::BTCSDiffusion::simulate2D(
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_rows; i++) {
     DVectorRowMajor input_field = c.row(i);
-    simulate_base(input_field, bc.row_boundary(i), alpha.row(i), dx, local_dt, n_cols,
-                  d_ortho.row(i));
+    simulate_base(input_field, bc.row_boundary(i), bc.getInnerRow(i),
+                  alpha.row(i), dx, local_dt, n_cols, d_ortho.row(i));
     c.row(i) << input_field;
   }
 
@@ -163,8 +163,8 @@ void Diffusion::BTCSDiffusion::simulate2D(
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < n_cols; i++) {
     DVectorRowMajor input_field = c.col(i);
-    simulate_base(input_field, bc.col_boundary(i), alpha.col(i), dx, local_dt, n_rows,
-                  d_ortho.row(i));
+    simulate_base(input_field, bc.col_boundary(i), bc.getInnerCol(i),
+                  alpha.col(i), dx, local_dt, n_rows, d_ortho.row(i));
     c.col(i) << input_field.transpose();
   }
 }
@@ -174,8 +174,10 @@ auto Diffusion::BTCSDiffusion::calc_d_ortho(
     const Diffusion::BTCSBoundaryCondition &bc, bool transposed,
     double time_step, double dx) -> DMatrixRowMajor {
 
-  uint8_t upper = (transposed ? Diffusion::BC_SIDE_LEFT : Diffusion::BC_SIDE_TOP);
-  uint8_t lower = (transposed ? Diffusion::BC_SIDE_RIGHT : Diffusion::BC_SIDE_BOTTOM);
+  uint8_t upper =
+      (transposed ? Diffusion::BC_SIDE_LEFT : Diffusion::BC_SIDE_TOP);
+  uint8_t lower =
+      (transposed ? Diffusion::BC_SIDE_RIGHT : Diffusion::BC_SIDE_BOTTOM);
 
   int n_rows = c.rows();
   int n_cols = c.cols();
@@ -233,7 +235,7 @@ auto Diffusion::BTCSDiffusion::calc_d_ortho(
 
 void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     Eigen::SparseMatrix<double> &A_matrix, const DVectorRowMajor &alpha,
-    int size, double dx, double time_step) {
+    const Diffusion::bc_vec &bc_inner, int size, double dx, double time_step) {
 
   double sx = 0;
 
@@ -241,12 +243,26 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 
   A_matrix.insert(0, 0) = 1;
 
-  sx = (alpha[0] * time_step) / (dx * dx);
-  A_matrix.insert(1, 1) = -1. - 3. * sx;
-  A_matrix.insert(1, 0) = 2. * sx;
-  A_matrix.insert(1, 2) = sx;
+  if (bc_inner[0].type != BC_UNSET) {
+    if (bc_inner[0].type != BC_TYPE_CONSTANT)
+      throw_invalid_argument("Inner boundary conditions with other type than "
+                             "BC_TYPE_CONSTANT are currently not supported.");
+    A_matrix.insert(1, 1) = 1;
+  } else {
+    sx = (alpha[0] * time_step) / (dx * dx);
+    A_matrix.insert(1, 1) = -1. - 3. * sx;
+    A_matrix.insert(1, 0) = 2. * sx;
+    A_matrix.insert(1, 2) = sx;
+  }
 
   for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
+    if (bc_inner[k].type != BC_UNSET) {
+      if (bc_inner[k].type != BC_TYPE_CONSTANT)
+        throw_invalid_argument("Inner boundary conditions with other type than "
+                               "BC_TYPE_CONSTANT are currently not supported.");
+      A_matrix.insert(j, j) = 1;
+      continue;
+    }
     sx = (alpha[k] * time_step) / (dx * dx);
 
     A_matrix.insert(j, j) = -1. - 2. * sx;
@@ -254,10 +270,17 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(j, (j + 1)) = sx;
   }
 
-  sx = (alpha[size - 1] * time_step) / (dx * dx);
-  A_matrix.insert(A_size - 2, A_size - 2) = -1. - 3. * sx;
-  A_matrix.insert(A_size - 2, A_size - 3) = sx;
-  A_matrix.insert(A_size - 2, A_size - 1) = 2. * sx;
+  if (bc_inner[size - 1].type != BC_UNSET) {
+    if (bc_inner[size - 1].type != BC_TYPE_CONSTANT)
+      throw_invalid_argument("Inner boundary conditions with other type than "
+                             "BC_TYPE_CONSTANT are currently not supported.");
+    A_matrix.insert(A_size - 2, A_size - 2) = 1;
+  } else {
+    sx = (alpha[size - 1] * time_step) / (dx * dx);
+    A_matrix.insert(A_size - 2, A_size - 2) = -1. - 3. * sx;
+    A_matrix.insert(A_size - 2, A_size - 3) = sx;
+    A_matrix.insert(A_size - 2, A_size - 1) = 2. * sx;
+  }
 
   A_matrix.insert(A_size - 1, A_size - 1) = 1;
 }
@@ -265,7 +288,8 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 void Diffusion::BTCSDiffusion::fillVectorFromRow(
     Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
     const DVectorRowMajor &alpha, const bc_tuple &bc,
-    const DVectorRowMajor &d_ortho, int size, double dx, double time_step) {
+    const Diffusion::bc_vec &bc_inner, const DVectorRowMajor &d_ortho, int size,
+    double dx, double time_step) {
 
   Diffusion::boundary_condition left = bc[0];
   Diffusion::boundary_condition right = bc[1];
@@ -276,6 +300,13 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
   int b_size = b_vector.size();
 
   for (int j = 0; j < size; j++) {
+    if (bc_inner[j].type != BC_UNSET) {
+      if (bc_inner[j].type != BC_TYPE_CONSTANT)
+        throw_invalid_argument("Inner boundary conditions with other type than "
+                               "BC_TYPE_CONSTANT are currently not supported.");
+      b_vector[j + 1] = bc_inner[j].value;
+      continue;
+    }
     b_vector[j + 1] = -c[j] + d_ortho[j];
   }
 
