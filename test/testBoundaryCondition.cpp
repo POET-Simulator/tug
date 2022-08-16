@@ -93,3 +93,105 @@ TEST_CASE("Boundary Condition helpers") {
     CHECK_EQ(bc_test.type, bc_set.type);
   }
 }
+
+TEST_CASE("1D special inner grid cells") {
+  BTCSBoundaryCondition bc(5);
+  boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
+
+  SUBCASE("valid set") {
+    CHECK_NOTHROW(bc(BC_INNER, 0) = bc_set);
+  }
+
+  SUBCASE("valid get") {
+    bc(BC_INNER, 0) = bc_set;
+    CHECK_EQ(bc(BC_INNER, 0).type, bc_set.type);
+  }
+
+  SUBCASE("invalid get") {
+    CHECK_EQ(bc(BC_INNER, 1).type, BC_UNSET);
+    CHECK_THROWS(bc(BC_INNER, 5));
+  }
+
+  SUBCASE("invalid set") {
+    CHECK_THROWS(bc(BC_INNER, 5) = bc_set);
+  }
+
+  SUBCASE("valid row getter") {
+    bc(BC_INNER, 1) = bc_set;
+
+    bc_vec ret = bc.getInnerRow(0);
+
+    CHECK_EQ(ret[0].type, BC_UNSET);
+    CHECK_EQ(ret[1].type, bc_set.type);
+  }
+
+  SUBCASE("invalid row getter") {
+    CHECK_THROWS(bc.getInnerRow(1));
+  }
+
+  SUBCASE("invalid col getter") {
+    CHECK_THROWS(bc.getInnerCol(0));
+  }
+
+}
+
+TEST_CASE("2D special inner grid cells") {
+  BTCSBoundaryCondition bc(5,5);
+  boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
+
+  SUBCASE("valid set") {
+    CHECK_NOTHROW(bc(BC_INNER, 0) = bc_set);
+  }
+
+  SUBCASE("valid get") {
+    bc(BC_INNER, 0) = bc_set;
+    CHECK_EQ(bc(BC_INNER, 0).type, bc_set.type);
+  }
+
+  SUBCASE("invalid get") {
+    CHECK_EQ(bc(BC_INNER, 1).type, BC_UNSET);
+    CHECK_THROWS(bc(BC_INNER, 25));
+  }
+
+  SUBCASE("invalid set") {
+    CHECK_THROWS(bc(BC_INNER, 25) = bc_set);
+  }
+
+  SUBCASE("valid row getter") {
+    bc(BC_INNER, 0) = bc_set;
+    bc(BC_INNER, 6) = bc_set;
+
+    bc_vec ret = bc.getInnerRow(0);
+
+    CHECK_EQ(ret[0].type, bc_set.type);
+    CHECK_EQ(ret[1].type, BC_UNSET);
+
+    ret = bc.getInnerRow(1);
+
+    CHECK_EQ(ret[0].type, BC_UNSET);
+    CHECK_EQ(ret[1].type, bc_set.type);
+  }
+
+  SUBCASE("valid col getter") {
+    bc(BC_INNER, 1) = bc_set;
+    bc(BC_INNER, 5) = bc_set;
+
+    bc_vec ret = bc.getInnerCol(0);
+
+    CHECK_EQ(ret[0].type, BC_UNSET);
+    CHECK_EQ(ret[1].type, bc_set.type);
+
+    ret = bc.getInnerCol(1);
+
+    CHECK_EQ(ret[0].type, bc_set.type);
+    CHECK_EQ(ret[1].type, BC_UNSET);
+  }
+
+  SUBCASE("invalid row getter") {
+    CHECK_THROWS(bc.getInnerRow(5));
+  }
+
+  SUBCASE("invalid col getter") {
+    CHECK_THROWS(bc.getInnerCol(5));
+  }
+}
