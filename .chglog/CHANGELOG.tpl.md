@@ -18,14 +18,6 @@
 {{ end }}
 {{ end -}}
 
-{{- if .MergeCommits -}}
-### Merge Requests
-
-{{ range .MergeCommits -}}
-* {{ .Header }}
-{{ end }}
-{{ end -}}
-
 {{- if .NoteGroups -}}
 {{ range .NoteGroups -}}
 ### {{ .Title }}

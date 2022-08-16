@@ -12,16 +12,21 @@ options:
     #     - perf
     #     - refactor
   commit_groups:
-    # title_maps:
-    #   feat: Features
-    #   fix: Bug Fixes
-    #   perf: Performance Improvements
-    #   refactor: Code Refactoring
+    title_maps:
+      feat: Features
+      fix: Bug Fixes
+      perf: Performance Improvements
+      refactor: Code Refactoring
+      chore: Housework
+      build: Build System
+      docs: Documentation
+      style: Code Style
+      test: Testing
   header:
-    pattern: "^((\\w+)\\s.*)$"
+    pattern: "^(\\w*)\\:\\s(.*)$"
     pattern_maps:
-      - Subject
       - Type
+      - Subject
   notes:
     keywords:
       - BREAKING CHANGE
