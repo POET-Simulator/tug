@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "grid/BTCSBoundaryCondition.hpp"
-#include "diffusion/BTCSUtils.hpp"
+#include "BTCSUtils.hpp"
 
 constexpr uint8_t DIM_1D = 2;
 constexpr uint8_t DIM_2D = 4;
