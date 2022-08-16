@@ -1,7 +1,7 @@
 #include <bits/stdint-uintn.h>
 #include <grid/BTCSBoundaryCondition.hpp>
 #include <diffusion/BTCSDiffusion.hpp>
-#include <doctest.h>
+#include <doctest/doctest.h>
 #include <vector>
 
 using namespace Diffusion;

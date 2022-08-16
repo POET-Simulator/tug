@@ -1,5 +1,5 @@
 #include <grid/BTCSBoundaryCondition.hpp>
-#include <doctest.h>
+#include <doctest/doctest.h>
 
 using namespace Diffusion;
 
