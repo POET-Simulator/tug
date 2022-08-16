@@ -1,7 +1,7 @@
 #include <bits/stdint-uintn.h>
-#include <grid/BTCSBoundaryCondition.hpp>
 #include <diffusion/BTCSDiffusion.hpp>
 #include <doctest/doctest.h>
+#include <grid/BTCSBoundaryCondition.hpp>
 #include <vector>
 
 using namespace Diffusion;
@@ -121,5 +121,45 @@ TEST_CASE(
         FAIL("Concentration below is greater than above @ cell ", j * N + i);
       }
     }
+  }
+}
+
+TEST_CASE("2D closed boundaries, 1 constant cell in the middle") {
+  std::vector<double> field(N * M, 0);
+  double val = 1e-2;
+
+  BTCSDiffusion diffu = setupDiffu(N, M);
+  BTCSBoundaryCondition bc(N, M);
+
+  field[MID] = val;
+  bc(BC_INNER, MID) = {BC_TYPE_CONSTANT, val};
+
+  uint32_t max_iterations = 100;
+
+  double sum = val;
+
+  for (int t = 0; t < max_iterations; t++) {
+    diffu.simulate(field.data(), alpha.data(), bc);
+
+    CHECK_EQ(field[MID], val);
+
+    double new_sum = .0;
+
+    for (int i = 0; i < M; i++) {
+      // iterate through columns
+      for (int j = 0; j < N; j++) {
+        new_sum += field[i * N + j];
+      }
+    }
+
+    if (sum > new_sum) {
+      CAPTURE(sum);
+      CAPTURE(new_sum);
+      FAIL("Sum of concentrations is equal or lower than to previous iteration "
+           "after iteration ",
+           t + 1);
+    }
+
+    sum = new_sum;
   }
 }
