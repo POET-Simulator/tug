@@ -244,9 +244,10 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   A_matrix.insert(0, 0) = 1;
 
   if (bc_inner[0].type != BC_UNSET) {
-    if (bc_inner[0].type != BC_TYPE_CONSTANT)
+    if (bc_inner[0].type != BC_TYPE_CONSTANT) {
       throw_invalid_argument("Inner boundary conditions with other type than "
                              "BC_TYPE_CONSTANT are currently not supported.");
+    }
     A_matrix.insert(1, 1) = 1;
   } else {
     sx = (alpha[0] * time_step) / (dx * dx);
@@ -257,9 +258,10 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 
   for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
     if (bc_inner[k].type != BC_UNSET) {
-      if (bc_inner[k].type != BC_TYPE_CONSTANT)
+      if (bc_inner[k].type != BC_TYPE_CONSTANT) {
         throw_invalid_argument("Inner boundary conditions with other type than "
                                "BC_TYPE_CONSTANT are currently not supported.");
+      }
       A_matrix.insert(j, j) = 1;
       continue;
     }
@@ -271,9 +273,10 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   }
 
   if (bc_inner[size - 1].type != BC_UNSET) {
-    if (bc_inner[size - 1].type != BC_TYPE_CONSTANT)
+    if (bc_inner[size - 1].type != BC_TYPE_CONSTANT) {
       throw_invalid_argument("Inner boundary conditions with other type than "
                              "BC_TYPE_CONSTANT are currently not supported.");
+    }
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
   } else {
     sx = (alpha[size - 1] * time_step) / (dx * dx);

@@ -2,8 +2,8 @@
 #include <bits/stdint-uintn.h>
 #include <vector>
 
-#include "grid/BTCSBoundaryCondition.hpp"
 #include "BTCSUtils.hpp"
+#include "grid/BTCSBoundaryCondition.hpp"
 
 constexpr uint8_t DIM_1D = 2;
 constexpr uint8_t DIM_2D = 4;
@@ -126,10 +126,8 @@ auto Diffusion::BTCSBoundaryCondition::getInnerRow(uint32_t i) const -> bc_vec {
     throw_out_of_range("Index is out of range");
   }
 
-  bc_vec::const_iterator start =
-      this->special_cells.begin() + (i * this->sizes[Y_DIM]);
-  bc_vec::const_iterator end =
-      this->special_cells.begin() + ((i + 1) * this->sizes[Y_DIM]);
+  auto start = this->special_cells.begin() + (i * this->sizes[Y_DIM]);
+  auto end = this->special_cells.begin() + ((i + 1) * this->sizes[Y_DIM]);
 
   bc_vec row(start, end);
 
@@ -139,7 +137,8 @@ auto Diffusion::BTCSBoundaryCondition::getInnerRow(uint32_t i) const -> bc_vec {
 auto Diffusion::BTCSBoundaryCondition::getInnerCol(uint32_t i) const -> bc_vec {
   if (this->dim != 2) {
     throw_invalid_argument("getInnerCol is only applicable for 2D grids");
-  } else if (i >= this->sizes[X_DIM]) {
+  }
+  if (i >= this->sizes[X_DIM]) {
     throw_out_of_range("Index is out of range");
   }
 
