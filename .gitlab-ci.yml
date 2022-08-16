@@ -7,7 +7,7 @@ stages:
 
 build_release:
   before_script:
-    - apt-get update && apt-get install -y libeigen3-dev
+    - apt-get update && apt-get install -y libeigen3-dev git
   stage: build
   artifacts:
       paths:
