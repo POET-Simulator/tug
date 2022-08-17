@@ -2,8 +2,8 @@
 #include <bits/stdint-uintn.h>
 #include <vector>
 
-#include "BTCSUtils.hpp"
-#include "grid/BTCSBoundaryCondition.hpp"
+#include "../BTCSUtils.hpp"
+#include "grid/BoundaryCondition.hpp"
 
 constexpr uint8_t DIM_1D = 2;
 constexpr uint8_t DIM_2D = 4;

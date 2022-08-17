@@ -1,5 +1,5 @@
-add_library(BTCSBoundary STATIC BTCSBoundaryCondition.cpp)
-add_library(BTCSDiffusion STATIC BTCSDiffusion.cpp)
+add_library(BTCSBoundary grid/BoundaryCondition.cpp)
+add_library(BTCSDiffusion BTCSDiffusion.cpp)
 
 target_include_directories(BTCSBoundary PUBLIC ../include)
 

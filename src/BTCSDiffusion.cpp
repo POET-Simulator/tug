@@ -1,6 +1,6 @@
 #include "diffusion/BTCSDiffusion.hpp"
 #include "BTCSUtils.hpp"
-#include "grid/BTCSBoundaryCondition.hpp"
+#include "grid/BoundaryCondition.hpp"
 
 #include <Eigen/SparseLU>
 

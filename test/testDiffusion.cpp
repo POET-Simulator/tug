@@ -1,7 +1,7 @@
 #include <bits/stdint-uintn.h>
 #include <diffusion/BTCSDiffusion.hpp>
 #include <doctest/doctest.h>
-#include <grid/BTCSBoundaryCondition.hpp>
+#include <grid/BoundaryCondition.hpp>
 #include <vector>
 
 using namespace tug::boundary_condition;

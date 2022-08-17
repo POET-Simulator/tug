@@ -1,4 +1,4 @@
-#include <grid/BTCSBoundaryCondition.hpp>
+#include <grid/BoundaryCondition.hpp>
 #include <doctest/doctest.h>
 
 using namespace tug::boundary_condition;
