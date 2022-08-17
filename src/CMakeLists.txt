@@ -1,9 +1,6 @@
-add_library(BTCSBoundary grid/BoundaryCondition.cpp)
-add_library(BTCSDiffusion BTCSDiffusion.cpp)
+add_library(BTCSDiffusion BTCSDiffusion.cpp grid/BoundaryCondition.cpp)
 
-target_include_directories(BTCSBoundary PUBLIC ../include)
-
-target_link_libraries(BTCSDiffusion Eigen3::Eigen BTCSBoundary)
+target_link_libraries(BTCSDiffusion Eigen3::Eigen)
 
 if(BTCS_USE_OPENMP AND OpenMP_CXX_FOUND)
   target_link_libraries(BTCSDiffusion OpenMP::OpenMP_CXX)
