@@ -13,7 +13,9 @@
 #include <type_traits>
 #include <vector>
 
-namespace Diffusion {
+namespace tug {
+namespace diffusion {
+
 /*!
  * Class implementing a solution for a 1/2/3D diffusion equation using backward
  * euler.
@@ -97,7 +99,8 @@ public:
    *
    * \return Time in seconds [s] used to simulate one iteration.
    */
-  auto simulate(double *c, double *alpha, const BTCSBoundaryCondition &bc)
+  auto simulate(double *c, double *alpha,
+                const tug::boundary_condition::BTCSBoundaryCondition &bc)
       -> double;
 
   /*!
@@ -113,42 +116,43 @@ private:
   typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
       DVectorRowMajor;
 
-  static void simulate_base(DVectorRowMajor &c, const bc_tuple &bc_ghosts,
-                            const bc_vec &bc_inner,
+  static void simulate_base(DVectorRowMajor &c,
+                            const tug::boundary_condition::bc_tuple &bc_ghosts,
+                            const tug::boundary_condition::bc_vec &bc_inner,
                             const DVectorRowMajor &alpha, double dx,
                             double time_step, int size,
                             const DVectorRowMajor &d_ortho);
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
-                  const BTCSBoundaryCondition &bc);
+                  const tug::boundary_condition::BTCSBoundaryCondition &bc);
 
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,
-                  const BTCSBoundaryCondition &bc);
+                  const tug::boundary_condition::BTCSBoundaryCondition &bc);
 
-  static auto calc_d_ortho(const DMatrixRowMajor &c,
-                           const DMatrixRowMajor &alpha,
-                           const BTCSBoundaryCondition &bc, bool transposed,
-                           double time_step, double dx) -> DMatrixRowMajor;
+  static auto
+  calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
+               const tug::boundary_condition::BTCSBoundaryCondition &bc,
+               bool transposed, double time_step, double dx) -> DMatrixRowMajor;
 
   static void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,
                                 const DVectorRowMajor &alpha,
-                                const bc_vec &bc_inner, int size, double dx,
-                                double time_step);
+                                const tug::boundary_condition::bc_vec &bc_inner,
+                                int size, double dx, double time_step);
 
-  static void fillVectorFromRow(Eigen::VectorXd &b_vector,
-                                const DVectorRowMajor &c,
-                                const DVectorRowMajor &alpha,
-                                const bc_tuple &bc_ghosts,
-                                const bc_vec &bc_inner,
-                                const DVectorRowMajor &d_ortho, int size,
-                                double dx, double time_step);
+  static void
+  fillVectorFromRow(Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
+                    const DVectorRowMajor &alpha,
+                    const tug::boundary_condition::bc_tuple &bc_ghosts,
+                    const tug::boundary_condition::bc_vec &bc_inner,
+                    const DVectorRowMajor &d_ortho, int size, double dx,
+                    double time_step);
   void simulate3D(std::vector<double> &c);
 
-  inline static auto getBCFromFlux(Diffusion::boundary_condition bc,
-                                   double neighbor_c, double neighbor_alpha)
-      -> double;
+  inline static auto
+  getBCFromFlux(tug::boundary_condition::boundary_condition bc,
+                double neighbor_c, double neighbor_alpha) -> double;
 
   void updateInternals();
 
@@ -159,5 +163,6 @@ private:
   std::vector<double> domain_size;
   std::vector<double> deltas;
 };
-} // namespace Diffusion
+} // namespace diffusion
+} // namespace tug
 #endif // BTCSDIFFUSION_H_

@@ -31,7 +31,7 @@ constexpr double DOUBLE_MACHINE_EPSILON = 1.93e-34;
 
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
-Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
+tug::diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
 
   grid_cells.resize(dim, 1);
   domain_size.resize(dim, 1);
@@ -40,58 +40,59 @@ Diffusion::BTCSDiffusion::BTCSDiffusion(unsigned int dim) : grid_dim(dim) {
   this->time_step = 0;
 }
 
-void Diffusion::BTCSDiffusion::setXDimensions(double domain_size,
-                                              unsigned int n_grid_cells) {
+void tug::diffusion::BTCSDiffusion::setXDimensions(double domain_size,
+                                                   unsigned int n_grid_cells) {
   this->domain_size[0] = domain_size;
   this->grid_cells[0] = n_grid_cells;
 
   updateInternals();
 }
 
-void Diffusion::BTCSDiffusion::setYDimensions(double domain_size,
-                                              unsigned int n_grid_cells) {
+void tug::diffusion::BTCSDiffusion::setYDimensions(double domain_size,
+                                                   unsigned int n_grid_cells) {
   this->domain_size[1] = domain_size;
   this->grid_cells[1] = n_grid_cells;
 
   updateInternals();
 }
 
-void Diffusion::BTCSDiffusion::setZDimensions(double domain_size,
-                                              unsigned int n_grid_cells) {
+void tug::diffusion::BTCSDiffusion::setZDimensions(double domain_size,
+                                                   unsigned int n_grid_cells) {
   this->domain_size[2] = domain_size;
   this->grid_cells[2] = n_grid_cells;
 
   updateInternals();
 }
 
-auto Diffusion::BTCSDiffusion::getXGridCellsN() -> unsigned int {
+auto tug::diffusion::BTCSDiffusion::getXGridCellsN() -> unsigned int {
   return this->grid_cells[0];
 }
-auto Diffusion::BTCSDiffusion::getYGridCellsN() -> unsigned int {
+auto tug::diffusion::BTCSDiffusion::getYGridCellsN() -> unsigned int {
   return this->grid_cells[1];
 }
-auto Diffusion::BTCSDiffusion::getZGridCellsN() -> unsigned int {
+auto tug::diffusion::BTCSDiffusion::getZGridCellsN() -> unsigned int {
   return this->grid_cells[2];
 }
-auto Diffusion::BTCSDiffusion::getXDomainSize() -> double {
+auto tug::diffusion::BTCSDiffusion::getXDomainSize() -> double {
   return this->domain_size[0];
 }
-auto Diffusion::BTCSDiffusion::getYDomainSize() -> double {
+auto tug::diffusion::BTCSDiffusion::getYDomainSize() -> double {
   return this->domain_size[1];
 }
-auto Diffusion::BTCSDiffusion::getZDomainSize() -> double {
+auto tug::diffusion::BTCSDiffusion::getZDomainSize() -> double {
   return this->domain_size[2];
 }
 
-void Diffusion::BTCSDiffusion::updateInternals() {
+void tug::diffusion::BTCSDiffusion::updateInternals() {
   for (int i = 0; i < grid_dim; i++) {
     deltas[i] = (double)domain_size[i] / grid_cells[i];
   }
 }
-void Diffusion::BTCSDiffusion::simulate_base(
-    DVectorRowMajor &c, const Diffusion::bc_tuple &bc_ghosts,
-    const Diffusion::bc_vec &bc_inner, const DVectorRowMajor &alpha, double dx,
-    double time_step, int size, const DVectorRowMajor &d_ortho) {
+void tug::diffusion::BTCSDiffusion::simulate_base(
+    DVectorRowMajor &c, const tug::boundary_condition::bc_tuple &bc_ghosts,
+    const tug::boundary_condition::bc_vec &bc_inner,
+    const DVectorRowMajor &alpha, double dx, double time_step, int size,
+    const DVectorRowMajor &d_ortho) {
 
   Eigen::SparseMatrix<double> A_matrix;
   Eigen::VectorXd b_vector;
@@ -119,9 +120,9 @@ void Diffusion::BTCSDiffusion::simulate_base(
   c = x_vector.segment(1, size);
 }
 
-void Diffusion::BTCSDiffusion::simulate1D(
+void tug::diffusion::BTCSDiffusion::simulate1D(
     Eigen::Map<DVectorRowMajor> &c, Eigen::Map<const DVectorRowMajor> &alpha,
-    const Diffusion::BTCSBoundaryCondition &bc) {
+    const tug::boundary_condition::BTCSBoundaryCondition &bc) {
 
   int size = this->grid_cells[0];
   double dx = this->deltas[0];
@@ -135,9 +136,9 @@ void Diffusion::BTCSDiffusion::simulate1D(
   c.row(0) << input_field;
 }
 
-void Diffusion::BTCSDiffusion::simulate2D(
+void tug::diffusion::BTCSDiffusion::simulate2D(
     Eigen::Map<DMatrixRowMajor> &c, Eigen::Map<const DMatrixRowMajor> &alpha,
-    const Diffusion::BTCSBoundaryCondition &bc) {
+    const tug::boundary_condition::BTCSBoundaryCondition &bc) {
 
   int n_rows = this->grid_cells[1];
   int n_cols = this->grid_cells[0];
@@ -169,15 +170,15 @@ void Diffusion::BTCSDiffusion::simulate2D(
   }
 }
 
-auto Diffusion::BTCSDiffusion::calc_d_ortho(
+auto tug::diffusion::BTCSDiffusion::calc_d_ortho(
     const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-    const Diffusion::BTCSBoundaryCondition &bc, bool transposed,
+    const tug::boundary_condition::BTCSBoundaryCondition &bc, bool transposed,
     double time_step, double dx) -> DMatrixRowMajor {
 
-  uint8_t upper =
-      (transposed ? Diffusion::BC_SIDE_LEFT : Diffusion::BC_SIDE_TOP);
-  uint8_t lower =
-      (transposed ? Diffusion::BC_SIDE_RIGHT : Diffusion::BC_SIDE_BOTTOM);
+  uint8_t upper = (transposed ? tug::boundary_condition::BC_SIDE_LEFT
+                              : tug::boundary_condition::BC_SIDE_TOP);
+  uint8_t lower = (transposed ? tug::boundary_condition::BC_SIDE_RIGHT
+                              : tug::boundary_condition::BC_SIDE_BOTTOM);
 
   int n_rows = c.rows();
   int n_cols = c.cols();
@@ -188,10 +189,10 @@ auto Diffusion::BTCSDiffusion::calc_d_ortho(
 
   // first, iterate over first row
   for (int j = 0; j < n_cols; j++) {
-    boundary_condition tmp_bc = bc(upper, j);
+    tug::boundary_condition::boundary_condition tmp_bc = bc(upper, j);
     double sy = (time_step * alpha(0, j)) / (dx * dx);
 
-    y_values[0] = (tmp_bc.type == Diffusion::BC_TYPE_CONSTANT
+    y_values[0] = (tmp_bc.type == tug::boundary_condition::BC_TYPE_CONSTANT
                        ? tmp_bc.value
                        : getBCFromFlux(tmp_bc, c(0, j), alpha(0, j)));
     y_values[1] = c(0, j);
@@ -218,12 +219,12 @@ auto Diffusion::BTCSDiffusion::calc_d_ortho(
 
   // and finally over last row
   for (int j = 0; j < n_cols; j++) {
-    boundary_condition tmp_bc = bc(lower, j);
+    tug::boundary_condition::boundary_condition tmp_bc = bc(lower, j);
     double sy = (time_step * alpha(end, j)) / (dx * dx);
 
     y_values[0] = c(end - 1, j);
     y_values[1] = c(end, j);
-    y_values[2] = (tmp_bc.type == Diffusion::BC_TYPE_CONSTANT
+    y_values[2] = (tmp_bc.type == tug::boundary_condition::BC_TYPE_CONSTANT
                        ? tmp_bc.value
                        : getBCFromFlux(tmp_bc, c(end, j), alpha(end, j)));
 
@@ -233,9 +234,10 @@ auto Diffusion::BTCSDiffusion::calc_d_ortho(
   return d_ortho;
 }
 
-void Diffusion::BTCSDiffusion::fillMatrixFromRow(
+void tug::diffusion::BTCSDiffusion::fillMatrixFromRow(
     Eigen::SparseMatrix<double> &A_matrix, const DVectorRowMajor &alpha,
-    const Diffusion::bc_vec &bc_inner, int size, double dx, double time_step) {
+    const tug::boundary_condition::bc_vec &bc_inner, int size, double dx,
+    double time_step) {
 
   double sx = 0;
 
@@ -243,8 +245,8 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
 
   A_matrix.insert(0, 0) = 1;
 
-  if (bc_inner[0].type != BC_UNSET) {
-    if (bc_inner[0].type != BC_TYPE_CONSTANT) {
+  if (bc_inner[0].type != tug::boundary_condition::BC_UNSET) {
+    if (bc_inner[0].type != tug::boundary_condition::BC_TYPE_CONSTANT) {
       throw_invalid_argument("Inner boundary conditions with other type than "
                              "BC_TYPE_CONSTANT are currently not supported.");
     }
@@ -257,8 +259,8 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   }
 
   for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
-    if (bc_inner[k].type != BC_UNSET) {
-      if (bc_inner[k].type != BC_TYPE_CONSTANT) {
+    if (bc_inner[k].type != tug::boundary_condition::BC_UNSET) {
+      if (bc_inner[k].type != tug::boundary_condition::BC_TYPE_CONSTANT) {
         throw_invalid_argument("Inner boundary conditions with other type than "
                                "BC_TYPE_CONSTANT are currently not supported.");
       }
@@ -272,8 +274,8 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
     A_matrix.insert(j, (j + 1)) = sx;
   }
 
-  if (bc_inner[size - 1].type != BC_UNSET) {
-    if (bc_inner[size - 1].type != BC_TYPE_CONSTANT) {
+  if (bc_inner[size - 1].type != tug::boundary_condition::BC_UNSET) {
+    if (bc_inner[size - 1].type != tug::boundary_condition::BC_TYPE_CONSTANT) {
       throw_invalid_argument("Inner boundary conditions with other type than "
                              "BC_TYPE_CONSTANT are currently not supported.");
     }
@@ -288,23 +290,24 @@ void Diffusion::BTCSDiffusion::fillMatrixFromRow(
   A_matrix.insert(A_size - 1, A_size - 1) = 1;
 }
 
-void Diffusion::BTCSDiffusion::fillVectorFromRow(
+void tug::diffusion::BTCSDiffusion::fillVectorFromRow(
     Eigen::VectorXd &b_vector, const DVectorRowMajor &c,
-    const DVectorRowMajor &alpha, const bc_tuple &bc,
-    const Diffusion::bc_vec &bc_inner, const DVectorRowMajor &d_ortho, int size,
-    double dx, double time_step) {
+    const DVectorRowMajor &alpha, const tug::boundary_condition::bc_tuple &bc,
+    const tug::boundary_condition::bc_vec &bc_inner,
+    const DVectorRowMajor &d_ortho, int size, double dx, double time_step) {
 
-  Diffusion::boundary_condition left = bc[0];
-  Diffusion::boundary_condition right = bc[1];
+  tug::boundary_condition::boundary_condition left = bc[0];
+  tug::boundary_condition::boundary_condition right = bc[1];
 
-  bool left_constant = (left.type == Diffusion::BC_TYPE_CONSTANT);
-  bool right_constant = (right.type == Diffusion::BC_TYPE_CONSTANT);
+  bool left_constant = (left.type == tug::boundary_condition::BC_TYPE_CONSTANT);
+  bool right_constant =
+      (right.type == tug::boundary_condition::BC_TYPE_CONSTANT);
 
   int b_size = b_vector.size();
 
   for (int j = 0; j < size; j++) {
-    if (bc_inner[j].type != BC_UNSET) {
-      if (bc_inner[j].type != BC_TYPE_CONSTANT)
+    if (bc_inner[j].type != tug::boundary_condition::BC_UNSET) {
+      if (bc_inner[j].type != tug::boundary_condition::BC_TYPE_CONSTANT)
         throw_invalid_argument("Inner boundary conditions with other type than "
                                "BC_TYPE_CONSTANT are currently not supported.");
       b_vector[j + 1] = bc_inner[j].value;
@@ -323,13 +326,13 @@ void Diffusion::BTCSDiffusion::fillVectorFromRow(
                       : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
 }
 
-void Diffusion::BTCSDiffusion::setTimestep(double time_step) {
+void tug::diffusion::BTCSDiffusion::setTimestep(double time_step) {
   this->time_step = time_step;
 }
 
-auto Diffusion::BTCSDiffusion::simulate(
-    double *c, double *alpha, const Diffusion::BTCSBoundaryCondition &bc)
-    -> double {
+auto tug::diffusion::BTCSDiffusion::simulate(
+    double *c, double *alpha,
+    const tug::boundary_condition::BTCSBoundaryCondition &bc) -> double {
 
   std::chrono::high_resolution_clock::time_point start =
       std::chrono::high_resolution_clock::now();
@@ -359,16 +362,15 @@ auto Diffusion::BTCSDiffusion::simulate(
   return duration.count();
 }
 
-inline auto Diffusion::BTCSDiffusion::getBCFromFlux(boundary_condition bc,
-                                                    double neighbor_c,
-                                                    double neighbor_alpha)
-    -> double {
+inline auto tug::diffusion::BTCSDiffusion::getBCFromFlux(
+    tug::boundary_condition::boundary_condition bc, double neighbor_c,
+    double neighbor_alpha) -> double {
 
   double val = 0;
 
-  if (bc.type == Diffusion::BC_TYPE_CLOSED) {
+  if (bc.type == tug::boundary_condition::BC_TYPE_CLOSED) {
     val = neighbor_c;
-  } else if (bc.type == Diffusion::BC_TYPE_FLUX) {
+  } else if (bc.type == tug::boundary_condition::BC_TYPE_FLUX) {
     // TODO
     //  val = bc[index].value;
   } else {

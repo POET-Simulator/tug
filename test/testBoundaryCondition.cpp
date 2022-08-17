@@ -1,7 +1,7 @@
 #include <grid/BTCSBoundaryCondition.hpp>
 #include <doctest/doctest.h>
 
-using namespace Diffusion;
+using namespace tug::boundary_condition;
 
 #define BC_CONST_VALUE 1e-5
 

@@ -4,7 +4,8 @@
 #include <grid/BTCSBoundaryCondition.hpp>
 #include <vector>
 
-using namespace Diffusion;
+using namespace tug::boundary_condition;
+using namespace tug::diffusion;
 
 #define DIMENSION 2
 #define N 51

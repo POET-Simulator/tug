@@ -9,7 +9,8 @@
 
 typedef uint8_t bctype;
 
-namespace Diffusion {
+namespace tug {
+namespace boundary_condition {
 
 enum {
   BC_TYPE_CLOSED,   /**< Defines a closed/Neumann boundary condition. */
@@ -259,6 +260,6 @@ public:
   }
 };
 
-} // namespace Diffusion
-
+} // namespace boundary_condition
+} // namespace tug
 #endif // BOUNDARYCONDITION_H_
