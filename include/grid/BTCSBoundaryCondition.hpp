@@ -49,7 +49,7 @@ typedef std::vector<boundary_condition> bc_vec;
 /**
  * Class to define the boundary condition of a grid.
  */
-class BTCSBoundaryCondition {
+class BoundaryCondition {
 public:
   /**
    *  Creates a new instance with two elements. Used when defining boundary
@@ -57,7 +57,7 @@ public:
    *
    *  \param x Number of grid cells in x-direction
    */
-  BTCSBoundaryCondition(int x);
+  BoundaryCondition(int x);
 
   /**
    * Creates a new instance with 4 * max(x,y) elements. Used to describe the
@@ -69,7 +69,7 @@ public:
    * \param y Number of grid cells in y-direction
    *
    */
-  BTCSBoundaryCondition(int x, int y);
+  BoundaryCondition(int x, int y);
 
   /**
    * Sets the boundary condition for a specific side of the grid.

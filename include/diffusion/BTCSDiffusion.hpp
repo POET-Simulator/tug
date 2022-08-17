@@ -100,7 +100,7 @@ public:
    * \return Time in seconds [s] used to simulate one iteration.
    */
   auto simulate(double *c, double *alpha,
-                const tug::boundary_condition::BTCSBoundaryCondition &bc)
+                const tug::boundary_condition::BoundaryCondition &bc)
       -> double;
 
   /*!
@@ -125,15 +125,15 @@ private:
 
   void simulate1D(Eigen::Map<DVectorRowMajor> &c,
                   Eigen::Map<const DVectorRowMajor> &alpha,
-                  const tug::boundary_condition::BTCSBoundaryCondition &bc);
+                  const tug::boundary_condition::BoundaryCondition &bc);
 
   void simulate2D(Eigen::Map<DMatrixRowMajor> &c,
                   Eigen::Map<const DMatrixRowMajor> &alpha,
-                  const tug::boundary_condition::BTCSBoundaryCondition &bc);
+                  const tug::boundary_condition::BoundaryCondition &bc);
 
   static auto
   calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-               const tug::boundary_condition::BTCSBoundaryCondition &bc,
+               const tug::boundary_condition::BoundaryCondition &bc,
                bool transposed, double time_step, double dx) -> DMatrixRowMajor;
 
   static void fillMatrixFromRow(Eigen::SparseMatrix<double> &A_matrix,

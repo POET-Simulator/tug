@@ -31,7 +31,7 @@ TEST_CASE("closed boundaries - 1 concentration to 1 - rest 0") {
   field[MID] = 1;
 
   BTCSDiffusion diffu = setupDiffu(N, M);
-  BTCSBoundaryCondition bc(N, M);
+  BoundaryCondition bc(N, M);
 
   uint32_t iterations = 1000;
   double sum = 0;
@@ -60,7 +60,7 @@ TEST_CASE("constant boundaries (0) - 1 concentration to 1 - rest 0") {
   field[MID] = 1;
 
   BTCSDiffusion diffu = setupDiffu(N, M);
-  BTCSBoundaryCondition bc(N, M);
+  BoundaryCondition bc(N, M);
 
   boundary_condition input = {BC_TYPE_CONSTANT, 0};
 
@@ -96,12 +96,12 @@ TEST_CASE(
   std::vector<double> field(N * M, 0);
 
   BTCSDiffusion diffu = setupDiffu(N, M);
-  BTCSBoundaryCondition bc(N, M);
+  BoundaryCondition bc(N, M);
 
   boundary_condition top =
-      BTCSBoundaryCondition::returnBoundaryCondition(BC_TYPE_CONSTANT, 1);
+      BoundaryCondition::returnBoundaryCondition(BC_TYPE_CONSTANT, 1);
   boundary_condition bottom =
-      BTCSBoundaryCondition::returnBoundaryCondition(BC_TYPE_CONSTANT, 0);
+      BoundaryCondition::returnBoundaryCondition(BC_TYPE_CONSTANT, 0);
 
   bc.setSide(BC_SIDE_TOP, top);
   bc.setSide(BC_SIDE_BOTTOM, bottom);
@@ -130,7 +130,7 @@ TEST_CASE("2D closed boundaries, 1 constant cell in the middle") {
   double val = 1e-2;
 
   BTCSDiffusion diffu = setupDiffu(N, M);
-  BTCSBoundaryCondition bc(N, M);
+  BoundaryCondition bc(N, M);
 
   field[MID] = val;
   bc(BC_INNER, MID) = {BC_TYPE_CONSTANT, val};

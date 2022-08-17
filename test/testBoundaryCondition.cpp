@@ -7,7 +7,7 @@ using namespace tug::boundary_condition;
 
 TEST_CASE("1D Boundary Condition") {
 
-  BTCSBoundaryCondition bc(5);
+  BoundaryCondition bc(5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("valid get") { CHECK_EQ(bc(BC_SIDE_LEFT).value, 0); }
@@ -44,7 +44,7 @@ TEST_CASE("1D Boundary Condition") {
 
 TEST_CASE("2D Boundary Condition") {
 
-  BTCSBoundaryCondition bc(5, 5);
+  BoundaryCondition bc(5, 5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("valid get") { CHECK_EQ(bc(BC_SIDE_LEFT, 0).value, 0); }
@@ -87,7 +87,7 @@ TEST_CASE("Boundary Condition helpers") {
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("return boundary condition skeleton") {
-    boundary_condition bc_test = BTCSBoundaryCondition::returnBoundaryCondition(
+    boundary_condition bc_test = BoundaryCondition::returnBoundaryCondition(
         bc_set.type, bc_set.value);
     CHECK_EQ(bc_test.value, bc_set.value);
     CHECK_EQ(bc_test.type, bc_set.type);
@@ -95,7 +95,7 @@ TEST_CASE("Boundary Condition helpers") {
 }
 
 TEST_CASE("1D special inner grid cells") {
-  BTCSBoundaryCondition bc(5);
+  BoundaryCondition bc(5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("valid set") {
@@ -136,7 +136,7 @@ TEST_CASE("1D special inner grid cells") {
 }
 
 TEST_CASE("2D special inner grid cells") {
-  BTCSBoundaryCondition bc(5,5);
+  BoundaryCondition bc(5,5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
   SUBCASE("valid set") {

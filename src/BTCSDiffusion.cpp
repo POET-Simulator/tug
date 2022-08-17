@@ -122,7 +122,7 @@ void tug::diffusion::BTCSDiffusion::simulate_base(
 
 void tug::diffusion::BTCSDiffusion::simulate1D(
     Eigen::Map<DVectorRowMajor> &c, Eigen::Map<const DVectorRowMajor> &alpha,
-    const tug::boundary_condition::BTCSBoundaryCondition &bc) {
+    const tug::boundary_condition::BoundaryCondition &bc) {
 
   int size = this->grid_cells[0];
   double dx = this->deltas[0];
@@ -138,7 +138,7 @@ void tug::diffusion::BTCSDiffusion::simulate1D(
 
 void tug::diffusion::BTCSDiffusion::simulate2D(
     Eigen::Map<DMatrixRowMajor> &c, Eigen::Map<const DMatrixRowMajor> &alpha,
-    const tug::boundary_condition::BTCSBoundaryCondition &bc) {
+    const tug::boundary_condition::BoundaryCondition &bc) {
 
   int n_rows = this->grid_cells[1];
   int n_cols = this->grid_cells[0];
@@ -172,7 +172,7 @@ void tug::diffusion::BTCSDiffusion::simulate2D(
 
 auto tug::diffusion::BTCSDiffusion::calc_d_ortho(
     const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-    const tug::boundary_condition::BTCSBoundaryCondition &bc, bool transposed,
+    const tug::boundary_condition::BoundaryCondition &bc, bool transposed,
     double time_step, double dx) -> DMatrixRowMajor {
 
   uint8_t upper = (transposed ? tug::boundary_condition::BC_SIDE_LEFT
@@ -332,7 +332,7 @@ void tug::diffusion::BTCSDiffusion::setTimestep(double time_step) {
 
 auto tug::diffusion::BTCSDiffusion::simulate(
     double *c, double *alpha,
-    const tug::boundary_condition::BTCSBoundaryCondition &bc) -> double {
+    const tug::boundary_condition::BoundaryCondition &bc) -> double {
 
   std::chrono::high_resolution_clock::time_point start =
       std::chrono::high_resolution_clock::now();

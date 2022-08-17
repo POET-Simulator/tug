@@ -8,7 +8,7 @@
 constexpr uint8_t DIM_1D = 2;
 constexpr uint8_t DIM_2D = 4;
 
-tug::boundary_condition::BTCSBoundaryCondition::BTCSBoundaryCondition(int x) {
+tug::boundary_condition::BoundaryCondition::BoundaryCondition(int x) {
   this->bc_internal.resize(DIM_1D, {0, 0});
   this->special_cells.resize(x, {BC_UNSET, 0});
   this->dim = 1;
@@ -21,7 +21,7 @@ tug::boundary_condition::BTCSBoundaryCondition::BTCSBoundaryCondition(int x) {
   this->maxindex = x - 1;
 }
 
-tug::boundary_condition::BTCSBoundaryCondition::BTCSBoundaryCondition(int x,
+tug::boundary_condition::BoundaryCondition::BoundaryCondition(int x,
                                                                       int y) {
   this->maxsize = (x >= y ? x : y);
   this->bc_internal.resize(DIM_2D * maxsize, {0, 0});
@@ -34,7 +34,7 @@ tug::boundary_condition::BTCSBoundaryCondition::BTCSBoundaryCondition(int x,
   this->maxindex = (x * y) - 1;
 }
 
-void tug::boundary_condition::BTCSBoundaryCondition::setSide(
+void tug::boundary_condition::BoundaryCondition::setSide(
     uint8_t side, tug::boundary_condition::boundary_condition &input_bc) {
   if (this->dim == 1) {
     throw_invalid_argument("setSide requires at least a 2D grid");
@@ -53,7 +53,7 @@ void tug::boundary_condition::BTCSBoundaryCondition::setSide(
   }
 }
 
-void tug::boundary_condition::BTCSBoundaryCondition::setSide(
+void tug::boundary_condition::BoundaryCondition::setSide(
     uint8_t side,
     std::vector<tug::boundary_condition::boundary_condition> &input_bc) {
   if (this->dim == 1) {
@@ -77,7 +77,7 @@ void tug::boundary_condition::BTCSBoundaryCondition::setSide(
   }
 }
 
-auto tug::boundary_condition::BTCSBoundaryCondition::getSide(uint8_t side)
+auto tug::boundary_condition::BoundaryCondition::getSide(uint8_t side)
     -> std::vector<tug::boundary_condition::boundary_condition> {
   if (this->dim == 1) {
     throw_invalid_argument("getSide requires at least a 2D grid");
@@ -100,7 +100,7 @@ auto tug::boundary_condition::BTCSBoundaryCondition::getSide(uint8_t side)
   return out;
 }
 
-auto tug::boundary_condition::BTCSBoundaryCondition::col_boundary(
+auto tug::boundary_condition::BoundaryCondition::col_boundary(
     uint32_t i) const -> tug::boundary_condition::bc_tuple {
   if (this->dim == 1) {
     throw_invalid_argument("Access of column requires at least 2D grid");
@@ -113,7 +113,7 @@ auto tug::boundary_condition::BTCSBoundaryCondition::col_boundary(
           this->bc_internal[BC_SIDE_BOTTOM * this->maxsize + i]};
 }
 
-auto tug::boundary_condition::BTCSBoundaryCondition::row_boundary(
+auto tug::boundary_condition::BoundaryCondition::row_boundary(
     uint32_t i) const -> tug::boundary_condition::bc_tuple {
   if (i >= this->sizes[X_DIM]) {
     throw_out_of_range("Index out of range");
@@ -123,7 +123,7 @@ auto tug::boundary_condition::BTCSBoundaryCondition::row_boundary(
           this->bc_internal[BC_SIDE_RIGHT * this->maxsize + i]};
 }
 
-auto tug::boundary_condition::BTCSBoundaryCondition::getInnerRow(
+auto tug::boundary_condition::BoundaryCondition::getInnerRow(
     uint32_t i) const -> bc_vec {
   if (i >= this->sizes[X_DIM]) {
     throw_out_of_range("Index is out of range");
@@ -137,7 +137,7 @@ auto tug::boundary_condition::BTCSBoundaryCondition::getInnerRow(
   return row;
 }
 
-auto tug::boundary_condition::BTCSBoundaryCondition::getInnerCol(
+auto tug::boundary_condition::BoundaryCondition::getInnerCol(
     uint32_t i) const -> bc_vec {
   if (this->dim != 2) {
     throw_invalid_argument("getInnerCol is only applicable for 2D grids");
