@@ -2,7 +2,7 @@ style: gitlab
 template: CHANGELOG.tpl.md
 info:
   title: CHANGELOG
-  repository_url: https://git.gfz-potsdam.de/sec34/btcsdiffusion
+  repository_url: https://git.gfz-potsdam.de/sec34/tug
 options:
   commits:
     # filters:
@@ -22,6 +22,7 @@ options:
       docs: Documentation
       style: Code Style
       test: Testing
+      ci: Continious Integration
   header:
     pattern: "^(\\w*)\\:\\s(.*)$"
     pattern_maps:
