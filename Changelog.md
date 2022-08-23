@@ -1,6 +1,6 @@
 
 <a name="v0.2"></a>
-## [v0.2](https://git.gfz-potsdam.de/sec34/btcsdiffusion/compare/v0.1...v0.2) (2022-08-16)
+## [v0.2](https://git.gfz-potsdam.de/sec34/tug/compare/v0.1...v0.2) (2022-08-16)
 
 ### Build System
 
