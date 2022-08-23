@@ -12,4 +12,4 @@ FetchContent_MakeAvailable(DocTest)
 #target_include_directories(doctest INTERFACE doctest)
 
 add_executable(test setup.cpp testBoundaryCondition.cpp testDiffusion.cpp)
-target_link_libraries(test doctest BTCSDiffusion)
+target_link_libraries(test doctest tug)

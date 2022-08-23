@@ -1,9 +1,9 @@
-add_library(BTCSDiffusion BTCSDiffusion.cpp grid/BoundaryCondition.cpp)
+add_library(tug BTCSDiffusion.cpp grid/BoundaryCondition.cpp)
 
-target_link_libraries(BTCSDiffusion Eigen3::Eigen)
+target_link_libraries(tug Eigen3::Eigen)
 
-if(BTCS_USE_OPENMP AND OpenMP_CXX_FOUND)
-  target_link_libraries(BTCSDiffusion OpenMP::OpenMP_CXX)
+if(TUG_USE_OPENMP AND OpenMP_CXX_FOUND)
+  target_link_libraries(tug OpenMP::OpenMP_CXX)
 endif()
 
-target_include_directories(BTCSDiffusion PUBLIC ../include)
+target_include_directories(tug PUBLIC ../include)

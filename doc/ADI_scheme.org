@@ -19,7 +19,7 @@ The 1D diffusion equation is:
 
 We aim at numerically solving [[eqn:1]] on a spatial grid such as:
 
-[[./grid_pqc.pdf]]
+[[./images/grid_pqc.pdf]]
 
 The left boundary is defined on $x=0$ while the center of the first
 cell - which are the points constituting the finite difference nodes -
@@ -92,7 +92,6 @@ becomes zero and we are left with:
 \begin{equation}\displaystyle
 C_n^{t+1} = C_n^{t} + \frac{\alpha \cdot \Delta t}{\Delta x^2} \cdot (C^t_{n-1} - C^t_n)
 \end{equation}
-
 
 
 A similar treatment can be applied to the BTCS implicit scheme.
