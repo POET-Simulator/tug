@@ -31,7 +31,7 @@ endif()
 
 option(TUG_ENABLE_TESTING
   "Run tests after succesfull compilation"
-  OFF)
+  ON)
 
 add_subdirectory(src)
 

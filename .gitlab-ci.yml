@@ -11,7 +11,7 @@ build_release:
   stage: build
   artifacts:
       paths:
-          - build/test/test
+          - build/test/testTug
       expire_in: 100s
   script:
       - mkdir build && cd build
