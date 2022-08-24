@@ -15,14 +15,13 @@ tug::boundary_condition::BoundaryCondition::BoundaryCondition(int x) {
   // this value is actually unused
   this->maxsize = 1;
 
-  this->sizes[X_DIM] = 1;
-  this->sizes[Y_DIM] = x;
+  this->sizes[X_DIM] = x;
+  this->sizes[Y_DIM] = 1;
 
   this->maxindex = x - 1;
 }
 
-tug::boundary_condition::BoundaryCondition::BoundaryCondition(int x,
-                                                                      int y) {
+tug::boundary_condition::BoundaryCondition::BoundaryCondition(int x, int y) {
   this->maxsize = (x >= y ? x : y);
   this->bc_internal.resize(DIM_2D * maxsize, {0, 0});
   this->special_cells.resize(x * y, {BC_UNSET, 0});
@@ -45,8 +44,8 @@ void tug::boundary_condition::BoundaryCondition::setSide(
 
   uint32_t size = (side == tug::boundary_condition::BC_SIDE_LEFT ||
                            side == tug::boundary_condition::BC_SIDE_RIGHT
-                       ? this->sizes[X_DIM]
-                       : this->sizes[Y_DIM]);
+                       ? this->sizes[Y_DIM]
+                       : this->sizes[X_DIM]);
 
   for (uint32_t i = 0; i < size; i++) {
     this->bc_internal[side * maxsize + i] = input_bc;
@@ -65,8 +64,8 @@ void tug::boundary_condition::BoundaryCondition::setSide(
 
   uint32_t size = (side == tug::boundary_condition::BC_SIDE_LEFT ||
                            side == tug::boundary_condition::BC_SIDE_RIGHT
-                       ? this->sizes[X_DIM]
-                       : this->sizes[Y_DIM]);
+                       ? this->sizes[Y_DIM]
+                       : this->sizes[X_DIM]);
 
   if (input_bc.size() > size) {
     throw_out_of_range("Input vector is greater than maximum excpected value");
@@ -88,8 +87,8 @@ auto tug::boundary_condition::BoundaryCondition::getSide(uint8_t side)
 
   uint32_t size = (side == tug::boundary_condition::BC_SIDE_LEFT ||
                            side == tug::boundary_condition::BC_SIDE_RIGHT
-                       ? this->sizes[X_DIM]
-                       : this->sizes[Y_DIM]);
+                       ? this->sizes[Y_DIM]
+                       : this->sizes[X_DIM]);
 
   std::vector<tug::boundary_condition::boundary_condition> out(size);
 
@@ -100,12 +99,12 @@ auto tug::boundary_condition::BoundaryCondition::getSide(uint8_t side)
   return out;
 }
 
-auto tug::boundary_condition::BoundaryCondition::col_boundary(
-    uint32_t i) const -> tug::boundary_condition::bc_tuple {
+auto tug::boundary_condition::BoundaryCondition::col_boundary(uint32_t i) const
+    -> tug::boundary_condition::bc_tuple {
   if (this->dim == 1) {
     throw_invalid_argument("Access of column requires at least 2D grid");
   }
-  if (i >= this->sizes[Y_DIM]) {
+  if (i >= this->sizes[X_DIM]) {
     throw_out_of_range("Index out of range");
   }
 
@@ -113,9 +112,9 @@ auto tug::boundary_condition::BoundaryCondition::col_boundary(
           this->bc_internal[BC_SIDE_BOTTOM * this->maxsize + i]};
 }
 
-auto tug::boundary_condition::BoundaryCondition::row_boundary(
-    uint32_t i) const -> tug::boundary_condition::bc_tuple {
-  if (i >= this->sizes[X_DIM]) {
+auto tug::boundary_condition::BoundaryCondition::row_boundary(uint32_t i) const
+    -> tug::boundary_condition::bc_tuple {
+  if (i >= this->sizes[Y_DIM]) {
     throw_out_of_range("Index out of range");
   }
 
@@ -123,22 +122,22 @@ auto tug::boundary_condition::BoundaryCondition::row_boundary(
           this->bc_internal[BC_SIDE_RIGHT * this->maxsize + i]};
 }
 
-auto tug::boundary_condition::BoundaryCondition::getInnerRow(
-    uint32_t i) const -> bc_vec {
-  if (i >= this->sizes[X_DIM]) {
+auto tug::boundary_condition::BoundaryCondition::getInnerRow(uint32_t i) const
+    -> bc_vec {
+  if (i >= this->sizes[Y_DIM]) {
     throw_out_of_range("Index is out of range");
   }
 
-  auto start = this->special_cells.begin() + (i * this->sizes[Y_DIM]);
-  auto end = this->special_cells.begin() + ((i + 1) * this->sizes[Y_DIM]);
+  auto start = this->special_cells.begin() + (i * this->sizes[X_DIM]);
+  auto end = this->special_cells.begin() + ((i + 1) * this->sizes[X_DIM]);
 
   bc_vec row(start, end);
 
   return row;
 }
 
-auto tug::boundary_condition::BoundaryCondition::getInnerCol(
-    uint32_t i) const -> bc_vec {
+auto tug::boundary_condition::BoundaryCondition::getInnerCol(uint32_t i) const
+    -> bc_vec {
   if (this->dim != 2) {
     throw_invalid_argument("getInnerCol is only applicable for 2D grids");
   }
@@ -147,9 +146,9 @@ auto tug::boundary_condition::BoundaryCondition::getInnerCol(
   }
 
   bc_vec col;
-  col.reserve(this->sizes[X_DIM]);
+  col.reserve(this->sizes[Y_DIM]);
 
-  for (int j = 0; j < this->sizes[X_DIM]; i += this->sizes[Y_DIM], j++) {
+  for (int j = 0; j < this->sizes[Y_DIM]; i += this->sizes[X_DIM], j++) {
     col[j] = this->special_cells[i];
   }
 
