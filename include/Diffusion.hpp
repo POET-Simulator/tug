@@ -2,6 +2,7 @@
 #define DIFFUSION_H_
 
 #include "BoundaryCondition.hpp"
+#include "Solver.hpp"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <array>
@@ -15,19 +16,80 @@ namespace diffusion {
  * Defines grid dimensions and boundary conditions.
  */
 typedef struct {
-  uint32_t grid_cells[3];
-  double domain_size[3];
-  bc::BoundaryCondition *bc;
+  uint32_t
+      grid_cells[3];     /**< Count of grid cells in each of the 3 directions.*/
+  double domain_size[3]; /**< Domain sizes in each of the 3 directions.*/
+  bc::BoundaryCondition *bc; /**< Boundary conditions for the grid.*/
 } TugGrid;
 
 /**
  * Besides containing the grid structure it holds also information about the
  * desired time step to simulate and which solver to use.
  */
-typedef struct {
-  double time_step;
-  Eigen::VectorXd (*solver)(Eigen::SparseMatrix<double>, Eigen::VectorXd);
-  TugGrid grid;
+typedef struct tug_input_s {
+  double time_step; /**< Time step which should be simulated by diffusion.*/
+  Eigen::VectorXd (*solver)(Eigen::SparseMatrix<double>, Eigen::VectorXd) =
+      tug::solver::ThomasAlgorithm; /**< Solver function to use.*/
+  TugGrid grid;                     /**< Grid specification.*/
+
+  /**
+   * Set the desired time step for diffusion simulation.
+   *
+   * \param dt Time step in seconds.
+   */
+  void setTimestep(double dt) { time_step = dt; }
+
+  /**
+   * Set the count of grid cells in each dimension.
+   *
+   * \param x Count of grid cells in x direction.
+   * \param y Count of grid cells in y direction.
+   * \param z Count of grid cells in z direction.
+   */
+  void setGridCellN(uint32_t x, uint32_t y = 0, uint32_t z = 0) {
+    grid.grid_cells[0] = x;
+    grid.grid_cells[1] = y;
+    grid.grid_cells[2] = z;
+  }
+
+  /**
+   * Set the domain size of the grid in each direction.
+
+   * \param Domain size in x direction.
+   * \param Domain size in y direction.
+   * \param Domain size in z direction.
+   */
+  void setDomainSize(double x, double y = 0, double z = 0) {
+    grid.domain_size[0] = x;
+    grid.domain_size[1] = y;
+    grid.domain_size[2] = z;
+  }
+
+  /**
+   * Set boundary conditions for grid instance.
+   *
+   * \param bc Boundary conditions to be set.
+   */
+  void setBoundaryCondition(bc::BoundaryCondition &bc) { grid.bc = &bc; }
+
+  /**
+   * Retrieve the set boundary condition from grid instance.
+   *
+   * \return Boundary condition object if boundary conditions were set,
+   * otherwise NULL.
+   */
+  auto getBoundaryCondition() -> bc::BoundaryCondition { return *(grid.bc); }
+
+  /**
+   * Set the solver function.
+   *
+   * \param f_in Pointer to function which takes a sparse matrix and a vector as
+   * input and returns another vector.
+   */
+  void setSolverFunction(Eigen::VectorXd (*f_in)(Eigen::SparseMatrix<double>,
+                                                 Eigen::VectorXd)) {
+    solver = f_in;
+  }
 } TugInput;
 
 /**

@@ -18,16 +18,10 @@ static std::vector<double> alpha(N *M, 1e-3);
 static TugInput setupDiffu(BoundaryCondition &bc) {
   TugInput diffu;
 
-  diffu.time_step = 1.;
-  diffu.solver = tug::solver::ThomasAlgorithm;
-
-  diffu.grid.grid_cells[0] = N;
-  diffu.grid.grid_cells[1] = M;
-
-  diffu.grid.domain_size[0] = N;
-  diffu.grid.domain_size[1] = M;
-
-  diffu.grid.bc = &bc;
+  diffu.setTimestep(1);
+  diffu.setGridCellN(N, M);
+  diffu.setDomainSize(N, M);
+  diffu.setBoundaryCondition(bc);
 
   return diffu;
 }
