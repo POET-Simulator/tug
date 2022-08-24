@@ -21,7 +21,7 @@ build_release:
 test:
     stage: test
     script:
-        - ./build/test/test
+        - ./build/test/testTug
 
 lint:
   before_script:

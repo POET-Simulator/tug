@@ -8,8 +8,10 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(DocTest)
 
-#add_library(doctest INTERFACE)
-#target_include_directories(doctest INTERFACE doctest)
+add_executable(testTug setup.cpp testBoundaryCondition.cpp testDiffusion.cpp)
+target_link_libraries(testTug doctest tug)
 
-add_executable(test setup.cpp testBoundaryCondition.cpp testDiffusion.cpp)
-target_link_libraries(test doctest tug)
+add_custom_target(check
+    COMMAND $<TARGET_FILE:testTug>
+    DEPENDS testTug
+)
