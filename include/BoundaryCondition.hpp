@@ -166,7 +166,7 @@ private:
 
   uint8_t dim;
 
-  uint32_t sizes[2];
+  std::array<uint32_t, 2> sizes;
   uint32_t maxsize;
   uint32_t maxindex;
 
@@ -260,6 +260,6 @@ public:
   }
 };
 
-} // namespace boundary_condition
+} // namespace bc
 } // namespace tug
 #endif // BOUNDARYCONDITION_H_

@@ -4,8 +4,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-auto tug::solver::EigenLU(const Eigen::SparseMatrix<double> A_matrix,
-                          const Eigen::VectorXd b_vector) -> Eigen::VectorXd {
+auto tug::solver::EigenLU(const Eigen::SparseMatrix<double> &A_matrix,
+                          const Eigen::VectorXd &b_vector) -> Eigen::VectorXd {
 
   Eigen::SparseLU<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int>>
       solver;
@@ -18,8 +18,8 @@ auto tug::solver::EigenLU(const Eigen::SparseMatrix<double> A_matrix,
   return solver.solve(b_vector);
 }
 
-auto tug::solver::ThomasAlgorithm(const Eigen::SparseMatrix<double> A_matrix,
-                                  const Eigen::VectorXd b_vector)
+auto tug::solver::ThomasAlgorithm(const Eigen::SparseMatrix<double> &A_matrix,
+                                  const Eigen::VectorXd &b_vector)
     -> Eigen::VectorXd {
   uint32_t n = b_vector.size();
 

@@ -1,5 +1,6 @@
 #include <Diffusion.hpp>
 #include <Solver.hpp>
+#include <array>
 #include <iostream>
 
 #include <Eigen/Dense>
@@ -7,6 +8,7 @@
 #include <Eigen/src/Core/Matrix.h>
 #include <bits/stdint-uintn.h>
 #include <chrono>
+#include <vector>
 
 #include "BoundaryCondition.hpp"
 #include "TugUtils.hpp"
@@ -17,12 +19,16 @@
 #define omp_get_thread_num() 0
 #endif
 
-#define init_delta(in, out, dim)                                               \
-  ({                                                                           \
-    for (uint8_t i = 0; i < dim; i++) {                                        \
-      out[i] = (double)in.domain_size[i] / in.grid_cells[i];                   \
-    }                                                                          \
-  })
+inline auto
+init_delta(const std::array<double, tug::diffusion::MAX_ARR_SIZE> &domain_size,
+           const std::array<uint32_t, tug::diffusion::MAX_ARR_SIZE> &grid_cells,
+           const uint8_t dim) -> std::vector<double> {
+  std::vector<double> out(dim);
+  for (uint8_t i = 0; i < dim; i++) {
+    out[i] = (double)(domain_size.at(i) / grid_cells.at(i));
+  }
+  return out;
+}
 
 namespace {
 enum { GRID_1D = 1, GRID_2D, GRID_3D };
@@ -30,10 +36,10 @@ enum { GRID_1D = 1, GRID_2D, GRID_3D };
 constexpr int BTCS_MAX_DEP_PER_CELL = 3;
 constexpr int BTCS_2D_DT_SIZE = 2;
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-    DMatrixRowMajor;
-typedef Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>
-    DVectorRowMajor;
+using DMatrixRowMajor =
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using DVectorRowMajor =
+    Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>;
 
 inline auto getBCFromFlux(tug::bc::boundary_condition bc, double neighbor_c,
                           double neighbor_alpha) -> double {
@@ -192,9 +198,10 @@ auto fillVectorFromRow(const DVectorRowMajor &c, const DVectorRowMajor &alpha,
 
   for (int j = 0; j < size; j++) {
     if (bc_inner[j].type != tug::bc::BC_UNSET) {
-      if (bc_inner[j].type != tug::bc::BC_TYPE_CONSTANT)
+      if (bc_inner[j].type != tug::bc::BC_TYPE_CONSTANT) {
         throw_invalid_argument("Inner boundary conditions with other type than "
                                "BC_TYPE_CONSTANT are currently not supported.");
+      }
       b_vector[j + 1] = bc_inner[j].value;
       continue;
     }
@@ -215,10 +222,10 @@ auto fillVectorFromRow(const DVectorRowMajor &c, const DVectorRowMajor &alpha,
 
 auto setupBTCSAndSolve(
     DVectorRowMajor &c, const tug::bc::bc_tuple bc_ghost,
-    const tug::bc::bc_vec bc_inner, const DVectorRowMajor &alpha, double dx,
+    const tug::bc::bc_vec &bc_inner, const DVectorRowMajor &alpha, double dx,
     double time_step, int size, const DVectorRowMajor &d_ortho,
-    Eigen::VectorXd (*solver)(Eigen::SparseMatrix<double>, Eigen::VectorXd))
-    -> DVectorRowMajor {
+    Eigen::VectorXd (*solver)(const Eigen::SparseMatrix<double> &,
+                              const Eigen::VectorXd &)) -> DVectorRowMajor {
 
   const Eigen::SparseMatrix<double> A_matrix =
       fillMatrixFromRow(alpha, bc_inner, size, dx, time_step);
@@ -241,14 +248,17 @@ auto tug::diffusion::BTCS_1D(const tug::diffusion::TugInput &input_param,
 
   auto start = time_marker();
 
-  const tug::bc::BoundaryCondition bc = *input_param.grid.bc;
-  double deltas[GRID_1D];
-
-  init_delta(input_param.grid, deltas, GRID_1D);
-
   uint32_t size = input_param.grid.grid_cells[0];
+
+  auto deltas = init_delta(input_param.grid.domain_size,
+                           input_param.grid.grid_cells, GRID_1D);
   double dx = deltas[0];
+
   double time_step = input_param.time_step;
+
+  const tug::bc::BoundaryCondition bc =
+      (input_param.grid.bc != nullptr ? *input_param.grid.bc
+                                      : tug::bc::BoundaryCondition(size));
 
   Eigen::Map<DVectorRowMajor> c_in(field, size);
   Eigen::Map<const DVectorRowMajor> alpha_in(alpha, size);
@@ -271,16 +281,20 @@ auto tug::diffusion::ADI_2D(const tug::diffusion::TugInput &input_param,
 
   auto start = time_marker();
 
-  tug::bc::BoundaryCondition bc = *input_param.grid.bc;
-  double deltas[GRID_2D];
-
-  init_delta(input_param.grid, deltas, GRID_2D);
-
   uint32_t n_cols = input_param.grid.grid_cells[0];
   uint32_t n_rows = input_param.grid.grid_cells[1];
+
+  auto deltas = init_delta(input_param.grid.domain_size,
+                           input_param.grid.grid_cells, GRID_2D);
   double dx = deltas[0];
   double dy = deltas[1];
+
   double local_dt = input_param.time_step / BTCS_2D_DT_SIZE;
+
+  tug::bc::BoundaryCondition bc =
+      (input_param.grid.bc != nullptr
+           ? *input_param.grid.bc
+           : tug::bc::BoundaryCondition(n_cols, n_rows));
 
   Eigen::Map<DMatrixRowMajor> c_in(field, n_rows, n_cols);
   Eigen::Map<const DMatrixRowMajor> alpha_in(alpha, n_rows, n_cols);

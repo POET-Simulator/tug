@@ -15,13 +15,12 @@ using namespace tug::diffusion;
 
 static std::vector<double> alpha(N *M, 1e-3);
 
-static TugInput setupDiffu(BoundaryCondition &bc) {
+static TugInput setupDiffu() {
   TugInput diffu;
 
   diffu.setTimestep(1);
   diffu.setGridCellN(N, M);
   diffu.setDomainSize(N, M);
-  diffu.setBoundaryCondition(bc);
 
   return diffu;
 }
@@ -33,7 +32,7 @@ TEST_CASE("closed boundaries - 1 concentration to 1 - rest 0") {
 
   BoundaryCondition bc(N, M);
 
-  TugInput diffu = setupDiffu(bc);
+  TugInput diffu = setupDiffu();
 
   uint32_t iterations = 1000;
   double sum = 0;
@@ -68,7 +67,8 @@ TEST_CASE("constant boundaries (0) - 1 concentration to 1 - rest 0") {
   bc.setSide(BC_SIDE_TOP, input);
   bc.setSide(BC_SIDE_BOTTOM, input);
 
-  TugInput diffu = setupDiffu(bc);
+  TugInput diffu = setupDiffu();
+  diffu.setBoundaryCondition(bc);
 
   uint32_t max_iterations = 20000;
   bool reached = false;
@@ -106,7 +106,8 @@ TEST_CASE(
   bc.setSide(BC_SIDE_TOP, top);
   bc.setSide(BC_SIDE_BOTTOM, bottom);
 
-  TugInput diffu = setupDiffu(bc);
+  TugInput diffu = setupDiffu();
+  diffu.setBoundaryCondition(bc);
 
   uint32_t max_iterations = 100;
 
@@ -136,7 +137,8 @@ TEST_CASE("2D closed boundaries, 1 constant cell in the middle") {
   field[MID] = val;
   bc(BC_INNER, MID) = {BC_TYPE_CONSTANT, val};
 
-  TugInput diffu = setupDiffu(bc);
+  TugInput diffu = setupDiffu();
+  diffu.setBoundaryCondition(bc);
 
   uint32_t max_iterations = 100;
 

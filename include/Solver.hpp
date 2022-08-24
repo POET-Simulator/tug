@@ -18,8 +18,8 @@ namespace solver {
  *
  * \return Solution represented as vector.
  */
-auto EigenLU(const Eigen::SparseMatrix<double> A_matrix,
-             const Eigen::VectorXd b_vector) -> Eigen::VectorXd;
+auto EigenLU(const Eigen::SparseMatrix<double> &A_matrix,
+             const Eigen::VectorXd &b_vector) -> Eigen::VectorXd;
 
 /**
  * Solving linear equation system with brutal implementation of the Thomas
@@ -32,8 +32,8 @@ auto EigenLU(const Eigen::SparseMatrix<double> A_matrix,
  *
  * \return Solution represented as vector.
  */
-auto ThomasAlgorithm(const Eigen::SparseMatrix<double> A_matrix,
-                     const Eigen::VectorXd b_vector) -> Eigen::VectorXd;
+auto ThomasAlgorithm(const Eigen::SparseMatrix<double> &A_matrix,
+                     const Eigen::VectorXd &b_vector) -> Eigen::VectorXd;
 
 } // namespace solver
 } // namespace tug

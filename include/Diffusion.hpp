@@ -12,14 +12,17 @@
 namespace tug {
 namespace diffusion {
 
+constexpr uint8_t MAX_ARR_SIZE = 3;
+
 /**
  * Defines grid dimensions and boundary conditions.
  */
-typedef struct {
-  uint32_t
-      grid_cells[3];     /**< Count of grid cells in each of the 3 directions.*/
-  double domain_size[3]; /**< Domain sizes in each of the 3 directions.*/
-  bc::BoundaryCondition *bc; /**< Boundary conditions for the grid.*/
+typedef struct tug_grid_s {
+  std::array<uint32_t, MAX_ARR_SIZE>
+      grid_cells; /**< Count of grid cells in each of the 3 directions.*/
+  std::array<double, MAX_ARR_SIZE>
+      domain_size; /**< Domain sizes in each of the 3 directions.*/
+  bc::BoundaryCondition *bc = NULL; /**< Boundary conditions for the grid.*/
 } TugGrid;
 
 /**
@@ -28,7 +31,8 @@ typedef struct {
  */
 typedef struct tug_input_s {
   double time_step; /**< Time step which should be simulated by diffusion.*/
-  Eigen::VectorXd (*solver)(Eigen::SparseMatrix<double>, Eigen::VectorXd) =
+  Eigen::VectorXd (*solver)(const Eigen::SparseMatrix<double> &,
+                            const Eigen::VectorXd &) =
       tug::solver::ThomasAlgorithm; /**< Solver function to use.*/
   TugGrid grid;                     /**< Grid specification.*/
 
@@ -86,8 +90,9 @@ typedef struct tug_input_s {
    * \param f_in Pointer to function which takes a sparse matrix and a vector as
    * input and returns another vector.
    */
-  void setSolverFunction(Eigen::VectorXd (*f_in)(Eigen::SparseMatrix<double>,
-                                                 Eigen::VectorXd)) {
+  void
+  setSolverFunction(Eigen::VectorXd (*f_in)(const Eigen::SparseMatrix<double> &,
+                                            const Eigen::VectorXd &)) {
     solver = f_in;
   }
 } TugInput;
