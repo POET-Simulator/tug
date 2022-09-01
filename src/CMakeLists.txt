@@ -1,4 +1,4 @@
-add_library(tug BTCSDiffusion.cpp grid/BoundaryCondition.cpp)
+add_library(tug BTCS.cpp BoundaryCondition.cpp Solver.cpp)
 
 target_link_libraries(tug Eigen3::Eigen)
 

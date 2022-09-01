@@ -1,10 +1,11 @@
+#include "Diffusion.hpp"
+#include "Solver.hpp"
+#include <BoundaryCondition.hpp>
 #include <bits/stdint-uintn.h>
-#include <diffusion/BTCSDiffusion.hpp>
 #include <doctest/doctest.h>
-#include <grid/BoundaryCondition.hpp>
 #include <vector>
 
-using namespace tug::boundary_condition;
+using namespace tug::bc;
 using namespace tug::diffusion;
 
 #define DIMENSION 2
@@ -14,13 +15,19 @@ using namespace tug::diffusion;
 
 static std::vector<double> alpha(N *M, 1e-3);
 
-static BTCSDiffusion setupDiffu(uint32_t n, uint32_t m) {
-  BTCSDiffusion diffu(DIMENSION);
+static TugInput setupDiffu(BoundaryCondition &bc) {
+  TugInput diffu;
 
-  diffu.setXDimensions(n, n);
-  diffu.setYDimensions(m, m);
+  diffu.time_step = 1.;
+  diffu.solver = tug::solver::ThomasAlgorithm;
 
-  diffu.setTimestep(1.);
+  diffu.grid.grid_cells[0] = N;
+  diffu.grid.grid_cells[1] = M;
+
+  diffu.grid.domain_size[0] = N;
+  diffu.grid.domain_size[1] = M;
+
+  diffu.grid.bc = &bc;
 
   return diffu;
 }
@@ -30,23 +37,22 @@ TEST_CASE("closed boundaries - 1 concentration to 1 - rest 0") {
 
   field[MID] = 1;
 
-  BTCSDiffusion diffu = setupDiffu(N, M);
   BoundaryCondition bc(N, M);
+
+  TugInput diffu = setupDiffu(bc);
 
   uint32_t iterations = 1000;
   double sum = 0;
 
   for (int t = 0; t < iterations; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc);
+    ADI_2D(diffu, field.data(), alpha.data());
+  }
 
-    if (t == iterations - 1) {
-      // iterate through rows
-      for (int i = 0; i < M; i++) {
-        // iterate through columns
-        for (int j = 0; j < N; j++) {
-          sum += field[i * N + j];
-        }
-      }
+  // iterate through rows
+  for (int i = 0; i < M; i++) {
+    // iterate through columns
+    for (int j = 0; j < N; j++) {
+      sum += field[i * N + j];
     }
   }
   CAPTURE(sum);
@@ -59,7 +65,6 @@ TEST_CASE("constant boundaries (0) - 1 concentration to 1 - rest 0") {
 
   field[MID] = 1;
 
-  BTCSDiffusion diffu = setupDiffu(N, M);
   BoundaryCondition bc(N, M);
 
   boundary_condition input = {BC_TYPE_CONSTANT, 0};
@@ -69,13 +74,15 @@ TEST_CASE("constant boundaries (0) - 1 concentration to 1 - rest 0") {
   bc.setSide(BC_SIDE_TOP, input);
   bc.setSide(BC_SIDE_BOTTOM, input);
 
+  TugInput diffu = setupDiffu(bc);
+
   uint32_t max_iterations = 20000;
   bool reached = false;
 
   int t = 0;
 
   for (t = 0; t < max_iterations; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc);
+    ADI_2D(diffu, field.data(), alpha.data());
 
     if (field[N * M - 1] > 1e-15) {
       reached = true;
@@ -95,7 +102,6 @@ TEST_CASE(
     "constant top and bottom (1 and 0) - left and right closed - 0 inlet") {
   std::vector<double> field(N * M, 0);
 
-  BTCSDiffusion diffu = setupDiffu(N, M);
   BoundaryCondition bc(N, M);
 
   boundary_condition top =
@@ -106,10 +112,12 @@ TEST_CASE(
   bc.setSide(BC_SIDE_TOP, top);
   bc.setSide(BC_SIDE_BOTTOM, bottom);
 
+  TugInput diffu = setupDiffu(bc);
+
   uint32_t max_iterations = 100;
 
   for (int t = 0; t < max_iterations; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc);
+    ADI_2D(diffu, field.data(), alpha.data());
   }
 
   for (int i = 0; i < N; i++) {
@@ -129,18 +137,19 @@ TEST_CASE("2D closed boundaries, 1 constant cell in the middle") {
   std::vector<double> field(N * M, 0);
   double val = 1e-2;
 
-  BTCSDiffusion diffu = setupDiffu(N, M);
   BoundaryCondition bc(N, M);
 
   field[MID] = val;
   bc(BC_INNER, MID) = {BC_TYPE_CONSTANT, val};
+
+  TugInput diffu = setupDiffu(bc);
 
   uint32_t max_iterations = 100;
 
   double sum = val;
 
   for (int t = 0; t < max_iterations; t++) {
-    diffu.simulate(field.data(), alpha.data(), bc);
+    ADI_2D(diffu, field.data(), alpha.data());
 
     CHECK_EQ(field[MID], val);
 

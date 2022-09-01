@@ -10,7 +10,7 @@
 typedef uint8_t bctype;
 
 namespace tug {
-namespace boundary_condition {
+namespace bc {
 
 enum {
   BC_TYPE_CLOSED,   /**< Defines a closed/Neumann boundary condition. */
