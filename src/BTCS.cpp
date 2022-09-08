@@ -1,7 +1,8 @@
-#include <Diffusion.hpp>
-#include <Solver.hpp>
 #include <array>
 #include <iostream>
+#include <tug/BoundaryCondition.hpp>
+#include <tug/Diffusion.hpp>
+#include <tug/Solver.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
@@ -10,7 +11,6 @@
 #include <chrono>
 #include <vector>
 
-#include "BoundaryCondition.hpp"
 #include "TugUtils.hpp"
 
 #ifdef _OPENMP

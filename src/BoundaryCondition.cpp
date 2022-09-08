@@ -1,8 +1,8 @@
 #include <algorithm>
 #include <bits/stdint-uintn.h>
+#include <tug/BoundaryCondition.hpp>
 #include <vector>
 
-#include "BoundaryCondition.hpp"
 #include "TugUtils.hpp"
 
 constexpr uint8_t DIM_1D = 2;

@@ -1,5 +1,5 @@
 #include <bits/stdint-uintn.h>
-#include <Solver.hpp>
+#include <tug/Solver.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>

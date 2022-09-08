@@ -1,5 +1,5 @@
-#include <BoundaryCondition.hpp>
 #include <doctest/doctest.h>
+#include <tug/BoundaryCondition.hpp>
 
 using namespace tug::bc;
 

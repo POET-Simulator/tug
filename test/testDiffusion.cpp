@@ -1,8 +1,8 @@
-#include "Diffusion.hpp"
-#include "Solver.hpp"
-#include <BoundaryCondition.hpp>
 #include <bits/stdint-uintn.h>
 #include <doctest/doctest.h>
+#include <tug/BoundaryCondition.hpp>
+#include <tug/Diffusion.hpp>
+#include <tug/Solver.hpp>
 #include <vector>
 
 using namespace tug::bc;
