@@ -11,6 +11,7 @@
 
 ### Code Refactoring
 
+* move includes into subdirectory 'tug'
 * move BoundaryCondition header and source
 * rename BoundaryCondition class
 * rename and expand namespace
@@ -35,6 +36,7 @@
 
 ### Housework
 
+* remove unneeded test file
 * update Changelog link to new name
 * Change URL of repo and and description for CI
 * moved Comp*.R to scripts/
