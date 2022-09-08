@@ -1,3 +1,57 @@
+<a name="v0.3"></a>
+## [v0.3](https://git.gfz-potsdam.de/sec34/tug/compare/v0.2...v0.3) (2022-09-08)
+
+### Bug Fixes
+
+* grid dimensions were stored and accessed incorrectly
+
+### Build System
+
+* remove BoundaryCondition as extra library
+
+### Code Refactoring
+
+* move BoundaryCondition header and source
+* rename BoundaryCondition class
+* rename and expand namespace
+
+### Continious Integration
+
+* linting needs to be triggered manually now
+
+### Doc
+
+* remove old stuff from ADI documentation
+
+### Documentation
+
+* Update and extending README
+
+### Features
+
+* allow undefined boundary conditions
+* add helper functions to TugInput struct
+* Remove class BTCSDiffusion
+
+### Housework
+
+* update Changelog link to new name
+* Change URL of repo and and description for CI
+* moved Comp*.R to scripts/
+
+### Performance Improvements
+
+* represent inner boundary conditions with a std::map
+
+### Testing
+
+* enable building of tests per default
+* add target `check`
+
+### BREAKING CHANGE
+
+Functionality is now provided by function calls and
+scheme generation is decoupled from LEqS solving.
 
 <a name="v0.2"></a>
 ## [v0.2](https://git.gfz-potsdam.de/sec34/tug/compare/v0.1...v0.2) (2022-08-16)
