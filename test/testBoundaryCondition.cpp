@@ -98,22 +98,22 @@ TEST_CASE("1D special inner grid cells") {
   BoundaryCondition bc(5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
-  SUBCASE("valid set") { CHECK_NOTHROW(bc(BC_INNER, 0) = bc_set); }
+  SUBCASE("valid set") { CHECK_NOTHROW(bc.setInnerBC(bc_set, 0, 0)); }
 
   SUBCASE("valid get") {
-    bc(BC_INNER, 0) = bc_set;
-    CHECK_EQ(bc(BC_INNER, 0).type, bc_set.type);
+    bc.setInnerBC(bc_set, 0, 0);
+    CHECK_EQ(bc.getInnerBC(0, 0).type, bc_set.type);
   }
 
   SUBCASE("invalid get") {
-    CHECK_EQ(bc(BC_INNER, 1).type, BC_UNSET);
-    CHECK_THROWS(bc(BC_INNER, 5));
+    CHECK_EQ(bc.getInnerBC(1, 0).type, BC_UNSET);
+    CHECK_THROWS(bc.getInnerBC(0, 1));
   }
 
-  SUBCASE("invalid set") { CHECK_THROWS(bc(BC_INNER, 5) = bc_set); }
+  SUBCASE("invalid set") { CHECK_THROWS(bc.setInnerBC(bc_set, 0, 1)); }
 
   SUBCASE("valid row getter") {
-    bc(BC_INNER, 1) = bc_set;
+    bc.setInnerBC(bc_set, 1, 0);
 
     bc_vec ret = bc.getInnerRow(0);
 
@@ -130,23 +130,23 @@ TEST_CASE("2D special inner grid cells") {
   BoundaryCondition bc(5, 5);
   boundary_condition bc_set = {BC_TYPE_CONSTANT, BC_CONST_VALUE};
 
-  SUBCASE("valid set") { CHECK_NOTHROW(bc(BC_INNER, 0) = bc_set); }
+  SUBCASE("valid set") { CHECK_NOTHROW(bc.setInnerBC(bc_set, 0, 0)); }
 
   SUBCASE("valid get") {
-    bc(BC_INNER, 0) = bc_set;
-    CHECK_EQ(bc(BC_INNER, 0).type, bc_set.type);
+    bc.setInnerBC(bc_set, 0, 0);
+    CHECK_EQ(bc.getInnerBC(0, 0).type, bc_set.type);
   }
 
   SUBCASE("invalid get") {
-    CHECK_EQ(bc(BC_INNER, 1).type, BC_UNSET);
-    CHECK_THROWS(bc(BC_INNER, 25));
+    CHECK_EQ(bc.getInnerBC(1, 0).type, BC_UNSET);
+    CHECK_THROWS(bc.getInnerBC(5, 5));
   }
 
-  SUBCASE("invalid set") { CHECK_THROWS(bc(BC_INNER, 25) = bc_set); }
+  SUBCASE("invalid set") { CHECK_THROWS(bc.setInnerBC(bc_set, 5, 5)); }
 
   SUBCASE("valid row getter") {
-    bc(BC_INNER, 0) = bc_set;
-    bc(BC_INNER, 6) = bc_set;
+    bc.setInnerBC(bc_set, 0, 0);
+    bc.setInnerBC(bc_set, 1, 1);
 
     bc_vec ret = bc.getInnerRow(0);
 
@@ -160,8 +160,8 @@ TEST_CASE("2D special inner grid cells") {
   }
 
   SUBCASE("valid col getter") {
-    bc(BC_INNER, 1) = bc_set;
-    bc(BC_INNER, 5) = bc_set;
+    bc.setInnerBC(bc_set, 0, 1);
+    bc.setInnerBC(bc_set, 1, 0);
 
     bc_vec ret = bc.getInnerCol(0);
 
@@ -171,6 +171,22 @@ TEST_CASE("2D special inner grid cells") {
     ret = bc.getInnerCol(1);
 
     CHECK_EQ(ret[0].type, bc_set.type);
+    CHECK_EQ(ret[1].type, BC_UNSET);
+  }
+
+  SUBCASE("unset boundary condition") {
+    bc.setInnerBC(bc_set, 0, 0);
+    bc.setInnerBC(bc_set, 1, 1);
+    bc.unsetInnerBC(1, 1);
+
+    bc_vec ret = bc.getInnerRow(1);
+
+    CHECK_EQ(ret[0].type, BC_UNSET);
+    CHECK_EQ(ret[1].type, BC_UNSET);
+
+    ret = bc.getInnerCol(1);
+
+    CHECK_EQ(ret[0].type, BC_UNSET);
     CHECK_EQ(ret[1].type, BC_UNSET);
   }
 

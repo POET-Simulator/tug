@@ -10,7 +10,6 @@ constexpr uint8_t DIM_2D = 4;
 
 tug::bc::BoundaryCondition::BoundaryCondition(int x) {
   this->bc_internal.resize(DIM_1D, {0, 0});
-  this->special_cells.resize(x, {BC_UNSET, 0});
   this->dim = 1;
   // this value is actually unused
   this->maxsize = 1;
@@ -24,7 +23,6 @@ tug::bc::BoundaryCondition::BoundaryCondition(int x) {
 tug::bc::BoundaryCondition::BoundaryCondition(int x, int y) {
   this->maxsize = (x >= y ? x : y);
   this->bc_internal.resize(DIM_2D * maxsize, {0, 0});
-  this->special_cells.resize(x * y, {BC_UNSET, 0});
   this->dim = 2;
 
   this->sizes[X_DIM] = x;
@@ -126,10 +124,25 @@ auto tug::bc::BoundaryCondition::getInnerRow(uint32_t i) const -> bc_vec {
     throw_out_of_range("Index is out of range");
   }
 
-  auto start = this->special_cells.begin() + (i * this->sizes[X_DIM]);
-  auto end = this->special_cells.begin() + ((i + 1) * this->sizes[X_DIM]);
+  bc_vec row(this->sizes[X_DIM], {tug::bc::BC_UNSET, 0});
 
-  bc_vec row(start, end);
+  if (this->inner_cells.empty()) {
+    return row;
+  }
+
+  uint32_t index_min = i * this->sizes[X_DIM];
+  uint32_t index_max = ((i + 1) * this->sizes[X_DIM]) - 1;
+
+  for (auto const &cell : this->inner_cells) {
+    if (cell.first < index_min) {
+      continue;
+    }
+    if (cell.first > index_max) {
+      break;
+    }
+
+    row[cell.first - index_min] = cell.second;
+  }
 
   return row;
 }
@@ -142,12 +155,55 @@ auto tug::bc::BoundaryCondition::getInnerCol(uint32_t i) const -> bc_vec {
     throw_out_of_range("Index is out of range");
   }
 
-  bc_vec col;
-  col.reserve(this->sizes[Y_DIM]);
+  bc_vec col(this->sizes[Y_DIM], {tug::bc::BC_UNSET, 0});
 
-  for (int j = 0; j < this->sizes[Y_DIM]; i += this->sizes[X_DIM], j++) {
-    col[j] = this->special_cells[i];
+  if (this->inner_cells.empty()) {
+    return col;
+  }
+
+  for (auto const &cell : this->inner_cells) {
+    if (cell.first % this->sizes[X_DIM] == i) {
+      col[cell.first / this->sizes[X_DIM]] = cell.second;
+    }
   }
 
   return col;
+}
+
+void tug::bc::BoundaryCondition::setInnerBC(boundary_condition bc, int x,
+                                            int y = 0) {
+  if (x >= this->sizes[X_DIM] || y >= this->sizes[Y_DIM]) {
+    throw_out_of_range("One input parameter is out of range");
+  }
+  uint32_t index = x * this->sizes[Y_DIM] + y;
+  auto it = this->inner_cells.find(index);
+
+  if (it != this->inner_cells.end()) {
+    it->second = bc;
+    return;
+  }
+
+  this->inner_cells.insert({index, bc});
+}
+
+void tug::bc::BoundaryCondition::unsetInnerBC(int x, int y) {
+  uint32_t index = x * this->sizes[Y_DIM] + y;
+  this->inner_cells.erase(index);
+}
+
+auto tug::bc::BoundaryCondition::getInnerBC(int x, int y = 0)
+    -> boundary_condition {
+  if (x >= this->sizes[X_DIM] || y >= this->sizes[Y_DIM]) {
+    throw_out_of_range("One input parameter is out of range");
+  }
+
+  uint32_t index = x * this->sizes[Y_DIM] + y;
+
+  auto it = this->inner_cells.find(index);
+
+  if (it != this->inner_cells.end()) {
+    return it->second;
+  }
+
+  return {tug::bc::BC_UNSET, 0};
 }

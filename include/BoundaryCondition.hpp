@@ -3,6 +3,7 @@
 
 #include <array>
 #include <bits/stdint-uintn.h>
+#include <map>
 #include <stdexcept>
 #include <stdint.h>
 #include <vector>
@@ -129,6 +130,31 @@ public:
   auto col_boundary(uint32_t i) const -> bc_tuple;
 
   /**
+   * Sets one cell of the inner grid to a given boundary condition.
+   *
+   * \param bc Boundary condition to be set.
+   * \param x Index of grid cell in x direction.
+   * \param y Index of grid cell in y direction.
+   */
+  void setInnerBC(boundary_condition bc, int x, int y);
+
+  /**
+   * Unsets a previously set inner boundary condition.
+   *
+   * \param x Index of grid cell in x direction.
+   * \param y Index of grid cell in y direction.
+   */
+  void unsetInnerBC(int x, int y);
+
+  /**
+   * Returns the current boundary condition set for specific inner grid cell.
+   *
+   * \param x Index of grid cell in x direction.
+   * \param y Index of grid cell in y direction.
+   */
+  auto getInnerBC(int x, int y) -> boundary_condition;
+
+  /**
    * Get a row of field and its inner boundary conditions.
    *
    * \param i Index of the row starting at 0.
@@ -162,7 +188,7 @@ public:
 private:
   std::vector<boundary_condition> bc_internal;
 
-  bc_vec special_cells;
+  std::map<uint32_t, boundary_condition> inner_cells;
 
   uint8_t dim;
 
@@ -200,12 +226,6 @@ public:
    * \returns Boundary condition
    */
   boundary_condition operator()(uint8_t side, uint32_t i) const {
-    if (side == BC_INNER) {
-      if (i > maxindex) {
-        throw std::out_of_range("Index exceeds grid cell numbers");
-      }
-      return special_cells[i];
-    }
     if (dim != 2) {
       throw std::invalid_argument(
           "Only 2D grids support 2 parameters in operator");
@@ -243,12 +263,6 @@ public:
    * \returns Boundary condition
    */
   boundary_condition &operator()(uint8_t side, uint32_t i) {
-    if (side == BC_INNER) {
-      if (i > maxindex) {
-        throw std::out_of_range("Index exceeds grid cell numbers");
-      }
-      return special_cells[i];
-    }
     if (dim != 2) {
       throw std::invalid_argument("Explicit setting of bc value with 2 "
                                   "parameters is only supported for 2D grids");

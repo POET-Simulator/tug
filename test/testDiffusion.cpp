@@ -135,7 +135,7 @@ TEST_CASE("2D closed boundaries, 1 constant cell in the middle") {
   BoundaryCondition bc(N, M);
 
   field[MID] = val;
-  bc(BC_INNER, MID) = {BC_TYPE_CONSTANT, val};
+  bc.setInnerBC({BC_TYPE_CONSTANT, val}, N / 2, M / 2);
 
   TugInput diffu = setupDiffu();
   diffu.setBoundaryCondition(bc);
