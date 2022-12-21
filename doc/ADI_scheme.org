@@ -419,8 +419,8 @@ approximation of $\frac{\partial}{\partial x} \left(\alpha(x)
 \begin{aligned}
    \frac{C^{t+1/2}_{i,j}-C^{t    }_{i,j}}{\Delta t/2} = & \frac{1}{\Delta x^2} \left[ \alpha_{i+1/2,j} C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C^{t+1/2}_{i,j} + \alpha_{i-1/2,j} C^{t+1/2}_{i-1,j}\right] + \\
    & \frac{1}{\Delta y^2} \left[ \alpha_{i,j+1/2}C^{t}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^t_{i} + \alpha_{i,j-1/2}C^{t}_{i,j-1}\right]\\ 
-\frac{C^{t+1  }_{i,j}-C^{t+1/2}_{i,j}}{\Delta t/2} = &  \frac{1}{\Delta x^2} \left[ \alpha_{i+1/2,j}C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C_{i} + \alpha_{i-1/2,j}C^{t+1/2}_{i-1,j}\right] + \\
-   & \frac{1}{\Delta y^2} \left[ \alpha_{i,j+1/2}C^{t+1}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^{t+1}_{i,j} + \alpha_{i,j-1/2}C^{t+1}_{i,j-1}\right] 
+\frac{C^{t+1  }_{i,j}-C^{t+1/2}_{i,j}}{\Delta t/2} = &  \frac{1}{\Delta y^2} \left[ \alpha_{i+1/2,j}C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C_{i} + \alpha_{i-1/2,j}C^{t+1/2}_{i-1,j}\right] + \\
+   & \frac{1}{\Delta x^2} \left[ \alpha_{i,j+1/2}C^{t+1}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^{t+1}_{i,j} + \alpha_{i,j-1/2}C^{t+1}_{i,j-1}\right] 
 \end{aligned}
 \right.
 \end{equation}
@@ -432,9 +432,9 @@ explicit terms, the two sweeps become:
 \begin{equation}
 \left\{
 \begin{aligned}
--S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 + S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  - S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} = & \\
+-S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 + S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  - S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} = \quad & \\
  S_y \alpha^y_{i,j+1/2} C^{t    }_{i,j+1} + (1 - S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t    }_{i,j}  + S_y \alpha^y_{i,j-1/2} C^{t    }_{i,j-1} & \\[1em]
--S_y \alpha^y_{i,j+1/2} C^{t+1  }_{i,j+1} + (1 + S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t+1  }_{i,j}  - S_y \alpha^y_{i,j-1/2} C^{t+1  }_{i,j-1} = & \\
+-S_y \alpha^y_{i,j+1/2} C^{t+1  }_{i,j+1} + (1 + S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t+1  }_{i,j}  - S_y \alpha^y_{i,j-1/2} C^{t+1  }_{i,j-1} = \qquad & \\
  S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 - S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  + S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} 
 \end{aligned}
 \right.

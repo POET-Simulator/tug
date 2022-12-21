@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2022-12-21 13:47:00 delucia"
+## Time-stamp: "Last modified 2022-12-21 18:47:13 delucia"
 
 ## Brutal implementation of 2D ADI scheme
 ## Square NxN grid with dx=dy=1
@@ -319,21 +319,25 @@ n <- 51
 field <- matrix(0, n, n)
 alphas <- matrix(1E-3*runif(n*n, 1,1.2), n, n)
 
+alphas1 <- matrix(1E-5, n, 25)
+alphas2 <- matrix(1E-5, n, 26)
+
+alphas <- cbind(alphas1, alphas2)
 
 ## for (i in seq(1,nrow(alphas)))
 ##     alphas[i,] <- seq(1E-7,1E-3, length=n)
 
 #diag(alphas) <- rep(1E-2, n)
 
-adih  <- ADIHetDir(field=field, dt=10, iter=100, alpha=alphas)
-adi2  <- ADI(n=n, dt=10, iter=100, alpha=1E-3)
+adih  <- ADIHetDir(field=field, dt=10, iter=200, alpha=alphas)
+adi2  <- ADI(n=n, dt=10, iter=200, alpha=1E-5)
 
 
 par(mfrow=c(1,3))
 image(adi2[[length(adi2)]])
 image(adih[[length(adih)]])
 points(0.5,0.5, col="red",pch=4)
-plot(adih1[[length(adih1)]], adi2[[length(adi2)]], pch=4, log="xy")
+plot(adih[[length(adih)]], adi2[[length(adi2)]], pch=4, log="xy")
 abline(0,1)
 
 
@@ -345,5 +349,6 @@ adi2
 
 par(mfrow=c(1,2))
 image(alphas)
-image(adih1[[length(adih1)]])
+points(0.5,0.5, col="red",pch=4)
+image(adih[[length(adih)]])
 points(0.5,0.5, col="red",pch=4)
