@@ -316,6 +316,8 @@ be rewritten:
 \frac{\partial C }{\partial t} & = \frac{\partial}{\partial x} \left(\alpha(x) \frac{\partial C }{\partial x} \right)
 \end{align}
 
+** Discretization of the equation using chain rule
+
 \noindent From the product rule for derivatives we obtain:
 
 #+NAME: eqn:product
@@ -381,4 +383,59 @@ terms (at time level $t+1/2$) on the left hand side we obtain:
 
 \noindent If the diffusion coefficients are constant,
 $A_{i,j}=B_{i,j}=\alpha$ and the scheme reverts to the homogeneous
-case.
+case. Problem with this discretization is that the terms in $A_{ij}$
+and $B_{ij}$ can be negative depending on the derivative of the
+diffusion coefficient, resulting in unphysical values for the
+concentrations.
+
+** Direct discretization
+
+As noted in literature (LeVeque and Numerical Recipes) a better way is
+to discretize directly the physical problem ([[eqn:hetdiff]]) at points
+halfway between grid points:
+
+\begin{align*}
+\begin{cases}
+\displaystyle \alpha(x_{i+1/2}) \frac{\partial C }{\partial x}(x_{i+1/2}) & \displaystyle = \alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right) \\
+\displaystyle \alpha(x_{i-1/2}) \frac{\partial C }{\partial x}(x_{i-1/2}) & \displaystyle = \alpha_{i-1/2} \left( \frac{C_{i} -C_{i-1}}{\Delta x} \right) 
+\end{cases}
+\end{align*}
+
+\noindent A further differentiation gives us the centered
+approximation of $\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)$:
+
+\begin{align*}
+\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)(x_i) & \simeq \frac{1}{\Delta x}\left[\alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right) - \alpha_{i-1/2} \left( \frac{C_{i} -C_{i-1}}{\Delta x} \right) \right]\\
+&\displaystyle =\frac{1}{\Delta x^2} \left[ \alpha_{i+1/2}C_{i+1} - (\alpha_{i+1/2}+\alpha_{i-1/2}) C_{i} + \alpha_{i-1/2}C_{i-1}\right]
+\end{align*}
+
+\noindent The ADI scheme with this approach becomes:
+
+#+NAME: eqn:genADI_hetdir
+\begin{equation}
+\left\{
+\begin{aligned}
+   \frac{C^{t+1/2}_{i,j}-C^{t    }_{i,j}}{\Delta t/2} = & \frac{1}{\Delta x^2} \left[ \alpha_{i+1/2,j} C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C^{t+1/2}_{i,j} + \alpha_{i-1/2,j} C^{t+1/2}_{i-1,j}\right] + \\
+   & \frac{1}{\Delta y^2} \left[ \alpha_{i,j+1/2}C^{t}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^t_{i} + \alpha_{i,j-1/2}C^{t}_{i,j-1}\right]\\ 
+\frac{C^{t+1  }_{i,j}-C^{t+1/2}_{i,j}}{\Delta t/2} = &  \frac{1}{\Delta x^2} \left[ \alpha_{i+1/2,j}C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C_{i} + \alpha_{i-1/2,j}C^{t+1/2}_{i-1,j}\right] + \\
+   & \frac{1}{\Delta y^2} \left[ \alpha_{i,j+1/2}C^{t+1}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^{t+1}_{i,j} + \alpha_{i,j-1/2}C^{t+1}_{i,j-1}\right] 
+\end{aligned}
+\right.
+\end{equation}
+
+\noindent Doing the usual algebra and separating implicit from
+explicit terms, the two sweeps become:
+
+#+NAME: eqn:sweepX_hetdir
+\begin{equation}
+\left\{
+\begin{aligned}
+-S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 + S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  - S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} = & \\
+ S_y \alpha^y_{i,j+1/2} C^{t    }_{i,j+1} + (1 - S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t    }_{i,j}  + S_y \alpha^y_{i,j-1/2} C^{t    }_{i,j-1} & \\[1em]
+-S_y \alpha^y_{i,j+1/2} C^{t+1  }_{i,j+1} + (1 + S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t+1  }_{i,j}  - S_y \alpha^y_{i,j-1/2} C^{t+1  }_{i,j-1} = & \\
+ S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 - S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  + S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} 
+\end{aligned}
+\right.
+\end{equation}
