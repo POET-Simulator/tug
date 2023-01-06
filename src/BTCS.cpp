@@ -87,7 +87,6 @@ auto calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
   }
 
   // then iterate over inlet
-#pragma omp parallel for private(y_values) schedule(dynamic)
   for (int i = 1; i < n_rows - 1; i++) {
     for (int j = 0; j < n_cols; j++) {
       double sy = (time_step * alpha(i, j)) / (dx * dx);
