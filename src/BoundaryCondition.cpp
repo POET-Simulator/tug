@@ -175,7 +175,7 @@ void tug::bc::BoundaryCondition::setInnerBC(boundary_condition bc, int x,
   if (x >= this->sizes[X_DIM] || y >= this->sizes[Y_DIM]) {
     throw_out_of_range("One input parameter is out of range");
   }
-  uint32_t index = x * this->sizes[Y_DIM] + y;
+  uint32_t index = y * this->sizes[X_DIM] + x;
   auto it = this->inner_cells.find(index);
 
   if (it != this->inner_cells.end()) {
@@ -187,7 +187,7 @@ void tug::bc::BoundaryCondition::setInnerBC(boundary_condition bc, int x,
 }
 
 void tug::bc::BoundaryCondition::unsetInnerBC(int x, int y) {
-  uint32_t index = x * this->sizes[Y_DIM] + y;
+  uint32_t index = y * this->sizes[X_DIM] + x;
   this->inner_cells.erase(index);
 }
 
@@ -197,7 +197,7 @@ auto tug::bc::BoundaryCondition::getInnerBC(int x, int y = 0)
     throw_out_of_range("One input parameter is out of range");
   }
 
-  uint32_t index = x * this->sizes[Y_DIM] + y;
+  uint32_t index = y * this->sizes[X_DIM] + x;
 
   auto it = this->inner_cells.find(index);
 
