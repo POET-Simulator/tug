@@ -5,11 +5,12 @@
 #+OPTIONS: toc:nil
 
 
-* Diffusion in 1D
+* Homogeneous diffusion in 1D
 
 ** Finite differences with nodes as cells' centres
 
-The 1D diffusion equation is:
+The 1D diffusion equation for spatially constant diffusion
+coefficients $\alpha$ is:
 
 #+NAME: eqn:1
 \begin{align}
@@ -304,3 +305,137 @@ form:
 
 
 #+LATEX: \clearpage
+
+* Heterogeneous diffusion
+
+If the diffusion coefficient $\alpha$ is spatially variable, [[eqn:1]] can
+be rewritten:
+
+#+NAME: eqn:hetdiff
+\begin{align}
+\frac{\partial C }{\partial t} & = \frac{\partial}{\partial x} \left(\alpha(x) \frac{\partial C }{\partial x} \right)
+\end{align}
+
+** Discretization of the equation using chain rule
+
+\noindent From the product rule for derivatives we obtain:
+
+#+NAME: eqn:product
+\begin{equation}
+\frac{\partial}{\partial x} \left(\alpha(x) \frac{\partial C }{\partial x}\right) = \frac{\partial \alpha}{\partial x} \cdot \frac{\partial C}{\partial x} + \alpha \frac{\partial^2 C }{\partial x^2} 
+\end{equation}
+
+\noindent Using a spatially centred second order finite difference
+approximation at $x=x_i$ for both $\alpha$ and $C$, we have
+#+NAME: eqn:hetdiff_fd
+\begin{align}
+\frac{\partial \alpha}{\partial x} \cdot \frac{\partial C}{\partial x} +
+ \alpha \frac{\partial^2 C }{\partial x^2} & \simeq \frac{\alpha_{i+1} - \alpha_{i-1}}{2\Delta x}\cdot\frac{C_{i+1} - C_{i-1}}{2\Delta x} + \alpha_i \frac{C_{i+1} - 2 C_{i} + C_{i-1}}{\Delta x^2} \\ \nonumber
+ & = \frac{1}{\Delta x^2} \frac{\alpha_{i+1} - \alpha_{i-1}}{4}(C_{i+1} - C_{i-1}) + \frac{\alpha_{i}}{\Delta x^2}(C_{i+1}-2C_i+C_{i-1})\\ \nonumber
+ & = \frac{1}{\Delta x^2} \left\{A C_{i+1} -2\alpha_i C_i + AC_{i-1})\right\}
+\end{align}
+\noindent having set
+\[ A = \frac{\alpha_{i+1}-\alpha_{i-1}}{4} + \alpha_i \]
+
+\noindent In 2D the ADI scheme [[eqn:genADI]] with heterogeneous diffusion
+coefficients can thus be written:
+
+#+NAME: eqn:genADI_het
+\begin{equation}
+\systeme{ 
+  \displaystyle \frac{C^{t+1/2}_{i,j}-C^{t    }_{i,j}}{\Delta t/2} = \displaystyle \frac{\partial}{\partial x} \left( \alpha^x_{i,j} \frac{\partial C^{t+1/2}_{i,j}}{\partial x}\right) + \frac{\partial}{\partial y} \left( \alpha^y_{i,j} \frac{\partial C^{t  }_{i,j}}{\partial y}\right),
+  \displaystyle \frac{C^{t+1  }_{i,j}-C^{t+1/2}_{i,j}}{\Delta t/2} = \displaystyle \frac{\partial}{\partial x} \left( \alpha^x_{i,j} \frac{\partial C^{t+1/2}_{i,j}}{\partial x}\right) + \frac{\partial}{\partial y} \left( \alpha^y_{i,j} \frac{\partial C^{t+1}_{i,j}}{\partial y}\right)
+}
+\end{equation}
+
+\noindent We define for compactness $S_x=\frac{\Delta t}{2\Delta x^2}$
+and $S_y=\frac{\Delta t}{2\Delta y^2}$ and
+
+#+NAME: eqn:het_AB
+\begin{equation}
+\systeme{ 
+  \displaystyle  A_{i,j} = \displaystyle \frac{\alpha^x_{i+1,j}  -\alpha^x_{i-1,j  }}{4} + \alpha^x_{i,j},
+  \displaystyle  B_{i,j} = \displaystyle \frac{\alpha^y_{i,  j+1}-\alpha^y_{i  ,j-1}}{4} + \alpha^y_{i,j}
+}
+\end{equation}
+
+\noindent Plugging eq. ([[eqn:hetdiff_fd]]) into the first of equations
+([[eqn:genADI_het]]) - so called "sweep by x" - and putting all implicit
+terms (at time level $t+1/2$) on the left hand side we obtain:
+
+#+NAME: eqn:sweepX_het
+\begin{equation}\displaystyle
+\begin{split}
+-S_x A_{i,j} C^{t+1/2}_{i+1,j} + (1 + 2S_x\alpha^x_{i,j})C^{t+1/2}_{i,j}  - S_x A_{i,j}C^{t+1/2}_{i-1,j} = \\
+ S_y B_{i,j} C^{t    }_{i,j+1} + (1 - 2S_y\alpha^y_{i,j})C^{t    }_{i,j}  + S_y B_{i,j}C^{t    }_{i,j-1}
+\end{split}
+\end{equation}
+
+\noindent In the same way for the second of eq. [[eqn:genADI_het]] we have:
+
+#+NAME: eqn:sweepY_het
+\begin{equation}\displaystyle
+\begin{split}
+-S_y B_{i,j} C^{t+1  }_{i,j+1} + (1 + 2S_y\alpha^y_{i,j})C^{t+1  }_{i,j}  - S_y B_{i,j}C^{t+1  }_{i,j-1} = \\
+ S_x A_{i,j} C^{t+1/2}_{i+1,j} + (1 - 2S_x\alpha^x_{i,j})C^{t+1/2}_{i,j}  + S_x A_{i,j}C^{t+1/2}_{i-1,j}
+\end{split}
+\end{equation}
+
+\noindent If the diffusion coefficients are constant,
+$A_{i,j}=B_{i,j}=\alpha$ and the scheme reverts to the homogeneous
+case. Problem with this discretization is that the terms in $A_{ij}$
+and $B_{ij}$ can be negative depending on the derivative of the
+diffusion coefficient, resulting in unphysical values for the
+concentrations.
+
+** Direct discretization
+
+As noted in literature (LeVeque and Numerical Recipes) a better way is
+to discretize directly the physical problem ([[eqn:hetdiff]]) at points
+halfway between grid points:
+
+\begin{align*}
+\begin{cases}
+\displaystyle \alpha(x_{i+1/2}) \frac{\partial C }{\partial x}(x_{i+1/2}) & \displaystyle = \alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right) \\
+\displaystyle \alpha(x_{i-1/2}) \frac{\partial C }{\partial x}(x_{i-1/2}) & \displaystyle = \alpha_{i-1/2} \left( \frac{C_{i} -C_{i-1}}{\Delta x} \right) 
+\end{cases}
+\end{align*}
+
+\noindent A further differentiation gives us the centered
+approximation of $\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)$:
+
+\begin{align*}
+\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)(x_i) & \simeq \frac{1}{\Delta x}\left[\alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right) - \alpha_{i-1/2} \left( \frac{C_{i} -C_{i-1}}{\Delta x} \right) \right]\\
+&\displaystyle =\frac{1}{\Delta x^2} \left[ \alpha_{i+1/2}C_{i+1} - (\alpha_{i+1/2}+\alpha_{i-1/2}) C_{i} + \alpha_{i-1/2}C_{i-1}\right]
+\end{align*}
+
+\noindent The ADI scheme with this approach becomes:
+
+#+NAME: eqn:genADI_hetdir
+\begin{equation}
+\left\{
+\begin{aligned}
+   \frac{C^{t+1/2}_{i,j}-C^{t    }_{i,j}}{\Delta t/2} = & \frac{1}{\Delta x^2} \left[ \alpha_{i+1/2,j} C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C^{t+1/2}_{i,j} + \alpha_{i-1/2,j} C^{t+1/2}_{i-1,j}\right] + \\
+   & \frac{1}{\Delta y^2} \left[ \alpha_{i,j+1/2}C^{t}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^t_{i,j} + \alpha_{i,j-1/2}C^{t}_{i,j-1}\right]\\ 
+\frac{C^{t+1  }_{i,j}-C^{t+1/2}_{i,j}}{\Delta t/2} = &  \frac{1}{\Delta y^2} \left[ \alpha_{i+1/2,j}C^{t+1/2}_{i+1,j} - (\alpha_{i+1/2,j}+\alpha_{i-1/2,j}) C^t_{i,j} + \alpha_{i-1/2,j}C^{t+1/2}_{i-1,j}\right] + \\
+   & \frac{1}{\Delta x^2} \left[ \alpha_{i,j+1/2}C^{t+1}_{i,j+1} - (\alpha_{i,j+1/2}+\alpha_{i,j-1/2}) C^{t+1}_{i,j} + \alpha_{i,j-1/2}C^{t+1}_{i,j-1}\right] 
+\end{aligned}
+\right.
+\end{equation}
+
+\noindent Doing the usual algebra and separating implicit from
+explicit terms, the two sweeps become:
+
+#+NAME: eqn:sweepX_hetdir
+\begin{equation}
+\left\{
+\begin{aligned}
+-S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 + S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  - S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} = \quad & \\
+ S_y \alpha^y_{i,j+1/2} C^{t    }_{i,j+1} + (1 - S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t    }_{i,j}  + S_y \alpha^y_{i,j-1/2} C^{t    }_{i,j-1} & \\[1em]
+-S_y \alpha^y_{i,j+1/2} C^{t+1  }_{i,j+1} + (1 + S_y(\alpha^y_{i,j+1/2}+ \alpha^y_{i,j-1/2}))C^{t+1  }_{i,j}  - S_y \alpha^y_{i,j-1/2} C^{t+1  }_{i,j-1} = \qquad & \\
+ S_x \alpha^x_{i+1/2,j} C^{t+1/2}_{i+1,j} + (1 - S_x(\alpha^x_{i+1/2,j}+ \alpha^x_{i-1/2,j}))C^{t+1/2}_{i,j}  + S_x \alpha^x_{i-1/2,j} C^{t+1/2}_{i-1,j} 
+\end{aligned}
+\right.
+\end{equation}
