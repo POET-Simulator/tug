@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2022-12-21 18:47:13 delucia"
+## Time-stamp: "Last modified 2023-01-05 17:52:55 delucia"
 
 ## Brutal implementation of 2D ADI scheme
 ## Square NxN grid with dx=dy=1
@@ -272,8 +272,8 @@ ADIHetDir <- function(field, dt, iter, alpha) {
     
     for (it in seq(1, iter)) {
         for (i in seq(2, ny-1)) {
-            Aij <- cbind((alpha[i,]+alpha[i-1,])/2, (alpha[i,]+alpha[i+1,])/2)
-            Bij <- cbind((alpha[,i]+alpha[,i-1])/2, (alpha[,i]+alpha[,i+1])/2)
+            Aij <- cbind(harm(alpha[i,], alpha[i-1,]), harm(alpha[i,], alpha[i+1,]))
+            Bij <- cbind(harm(alpha[,i], alpha[,i-1]), harm(alpha[,i], alpha[,i+1]))
             tmpX[i,] <- SweepByRowHetDir(i, res, dt=dt, Aij, Bij)
         }
         resY <- t(tmpX)
@@ -285,6 +285,10 @@ ADIHetDir <- function(field, dt, iter, alpha) {
 
     return(out)
 }
+
+harm <- function(x,y) 1/(1/x+1/y)
+
+harm(1,4)
 
 
 ## Direct discretization, Workhorse function to fill A, B and solve
@@ -299,15 +303,17 @@ SweepByRowHetDir <- function(i, field, dt, Aij, Bij) {
     
     ## adjacent diagonals "Sx"
     for (ii in seq(1, nrow(field)-1)) {
-        A[ii+1, ii] <- -Sx*Aij[ii,1]
-        A[ii, ii+1] <- -Sx*Aij[ii,2]
+        A[ii+1, ii] <- -Sx*Aij[ii,2] # i-1/2
+        A[ii, ii+1] <- -Sx*Aij[ii,1] # i+1/2
     }
 
     B <- numeric(ncol(field))
 
     for (ii in seq_along(B))
         B[ii] <- Sy*Bij[ii,2]*field[i+1,ii] + (1 - Sy*(Bij[ii,1]+Bij[ii,2]))*field[i, ii] + Sy*Bij[ii,1]*field[i-1,ii]
-    
+
+    lastA <<- A
+    lastB <<- B
     x <- solve(A, B)
     x
 }
@@ -315,11 +321,11 @@ SweepByRowHetDir <- function(i, field, dt, Aij, Bij) {
 ## adi2 <- ADI(n=51, dt=10, iter=200, alpha=1E-3)
 ## ref2 <- DoRef(n=51, alpha=1E-3, dt=10, iter=200)
 
-n <- 51
+n <- 5
 field <- matrix(0, n, n)
-alphas <- matrix(1E-3*runif(n*n, 1,1.2), n, n)
+alphas <- matrix(1E-5*runif(n*n, 1,2), n, n)
 
-alphas1 <- matrix(1E-5, n, 25)
+alphas1 <- matrix(3E-5, n, 25)
 alphas2 <- matrix(1E-5, n, 26)
 
 alphas <- cbind(alphas1, alphas2)
@@ -352,3 +358,5 @@ image(alphas)
 points(0.5,0.5, col="red",pch=4)
 image(adih[[length(adih)]])
 points(0.5,0.5, col="red",pch=4)
+
+options(width=110)
