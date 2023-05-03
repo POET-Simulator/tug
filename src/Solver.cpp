@@ -1,4 +1,3 @@
-#include <bits/stdint-uintn.h>
 #include <tug/Solver.hpp>
 
 #include <Eigen/Dense>
