@@ -7,7 +7,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Matrix.h>
-#include <bits/stdint-uintn.h>
 #include <chrono>
 #include <vector>
 

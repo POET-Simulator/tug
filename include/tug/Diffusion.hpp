@@ -6,7 +6,6 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <array>
-#include <bits/stdint-uintn.h>
 #include <vector>
 
 namespace tug {
