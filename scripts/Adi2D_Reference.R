@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2023-01-05 17:52:55 delucia"
+## Time-stamp: "Last modified 2023-05-11 17:31:41 delucia"
 
 ## Brutal implementation of 2D ADI scheme
 ## Square NxN grid with dx=dy=1
@@ -272,8 +272,8 @@ ADIHetDir <- function(field, dt, iter, alpha) {
     
     for (it in seq(1, iter)) {
         for (i in seq(2, ny-1)) {
-            Aij <- cbind(harm(alpha[i,], alpha[i-1,]), harm(alpha[i,], alpha[i+1,]))
-            Bij <- cbind(harm(alpha[,i], alpha[,i-1]), harm(alpha[,i], alpha[,i+1]))
+            Aij <- cbind(colMeans(rbind(alpha[i,], alpha[i-1,])), colMeans(rbind(alpha[i,], alpha[i+1,])))
+            Bij <- cbind(rowMeans(cbind(alpha[,i], alpha[,i-1])), rowMeans(cbind(alpha[,i], alpha[,i+1])))
             tmpX[i,] <- SweepByRowHetDir(i, res, dt=dt, Aij, Bij)
         }
         resY <- t(tmpX)
@@ -321,22 +321,27 @@ SweepByRowHetDir <- function(i, field, dt, Aij, Bij) {
 ## adi2 <- ADI(n=51, dt=10, iter=200, alpha=1E-3)
 ## ref2 <- DoRef(n=51, alpha=1E-3, dt=10, iter=200)
 
-n <- 5
+n <- 51
 field <- matrix(0, n, n)
 alphas <- matrix(1E-5*runif(n*n, 1,2), n, n)
 
-alphas1 <- matrix(3E-5, n, 25)
-alphas2 <- matrix(1E-5, n, 26)
 
-alphas <- cbind(alphas1, alphas2)
+## dim(field)
+## dim(alphas)
+## all.equal(dim(field), dim(alphas))
+
+## alphas1 <- matrix(3E-5, n, 25)
+## alphas2 <- matrix(1E-5, n, 26)
+
+## alphas <- cbind(alphas1, alphas2)
 
 ## for (i in seq(1,nrow(alphas)))
 ##     alphas[i,] <- seq(1E-7,1E-3, length=n)
 
 #diag(alphas) <- rep(1E-2, n)
 
-adih  <- ADIHetDir(field=field, dt=10, iter=200, alpha=alphas)
-adi2  <- ADI(n=n, dt=10, iter=200, alpha=1E-5)
+adih  <- ADIHetDir(field=field, dt=20, iter=500, alpha=alphas)
+adi2  <- ADI(n=n, dt=20, iter=500, alpha=1E-5)
 
 
 par(mfrow=c(1,3))
@@ -345,6 +350,17 @@ image(adih[[length(adih)]])
 points(0.5,0.5, col="red",pch=4)
 plot(adih[[length(adih)]], adi2[[length(adi2)]], pch=4, log="xy")
 abline(0,1)
+
+
+cchet <- lapply(adih, round, digits=6)
+cchom <- lapply(adi2, round, digits=6)
+
+plot(cchet[[length(cchet)]], cchom[[length(cchom)]], pch=4, log="xy", xlim=c(1e-6,1), ylim=c(1e-6,1))
+abline(0,1)
+
+cchet[[500]]
+
+str(adih)
 
 
 sapply(adih, sum)
@@ -360,3 +376,108 @@ image(adih[[length(adih)]])
 points(0.5,0.5, col="red",pch=4)
 
 options(width=110)
+
+
+FTCS_2D <- function(field, dt, iter, alpha) {
+
+    if (!all.equal(dim(field), dim(alpha)))
+        stop("field and alpha are not matrix")
+    
+    ## now both field and alpha must be nx*ny matrices
+    nx <- ncol(field)
+    ny <- nrow(field)
+    dx <- dy <- 1
+
+    ## find out the center of the grid to apply conc=1
+    cenx <- ceiling(nx/2)
+    ceny <- ceiling(ny/2)
+    field[cenx, ceny] <- 1
+
+    ## prepare containers for computations and outputs
+    tmp <- res <- field
+
+    cflt <- 1/max(alpha)/4
+    cat(":: CFL allowable time step: ", cflt,"\n")
+
+    ## inner iterations
+    inner <- floor(dt/cflt)
+    if (inner == 0) {
+        ## dt < cflt, no inner iterations
+        inner <- 1
+        tsteps <- dt
+        cat(":: No inner iter. required\n")
+    } else {
+        tsteps <- c(rep(cflt, inner), dt-inner*cflt)
+        cat(":: Number of inner iter. required: ", inner,"\n")
+    }
+    
+    
+    out <- vector(mode="list", length=iter)
+
+    for (it in seq(1, iter)) {
+        cat(":: outer it: ", it)
+        
+        for (innerit in seq_len(inner)) {
+            for (i in seq(2, ny-1)) {
+                for (j in seq(2, nx-1)) {
+                    ## tmp[i,j] <- res[i,j] +
+                    ## + tsteps[innerit]/dx/dx * (res[i+1,j]*mean(alpha[i+1,j],alpha[i,j]) -
+                    ##                            res[i,j]  *(mean(alpha[i+1,j],alpha[i,j])+mean(alpha[i-1,j],alpha[i,j])) +
+                    ##                            res[i-1,j]*mean(alpha[i-1,j],alpha[i,j])) +
+                    ## + tsteps[innerit]/dy/dy * (res[i,j+1]*mean(alpha[i,j+1],alpha[i,j]) -
+                    ##                            res[i,j]  *(mean(alpha[i,j+1],alpha[i,j])+mean(alpha[i,j-1],alpha[i,j])) +
+                    ##                            res[i,j-1]*mean(alpha[i,j-1],alpha[i,j]))
+                    tmp[i,j] <- res[i,j] +
+                        + tsteps[innerit]/dx/dx * ((res[i+1,j]-res[i,j]) * mean(alpha[i+1,j],alpha[i,j]) -
+                                                   (res[i,j]-res[i-1,j]) * mean(alpha[i-1,j],alpha[i,j])) +
+                        + tsteps[innerit]/dx/dx * ((res[i,j+1]-res[i,j]) * mean(alpha[i,j+1],alpha[i,j]) -
+                                                   (res[i,j]-res[i,j-1]) * mean(alpha[i,j-1],alpha[i,j])) 
+                }
+            }
+            ## swap back tmp to res for the next inner iteration 
+            res <- tmp
+        } 
+        cat("- done\n")
+        ## at end of inner it we store 
+        out[[it]] <- res
+    }
+    
+    return(out)
+}
+
+## testing that FTCS with homog alphas reverts to ADI/Reference sim
+n <- 51
+field <- matrix(0, n, n)
+alphas <- matrix(1E-3, n, n)
+
+adi2 <- ADI(n=51, dt=100, iter=20, alpha=1E-3)
+
+ref  <-  DoRef(n=51, alpha=1E-3, dt=100, iter=20)
+
+adihet  <- ADIHetDir(field=field, dt=100, iter=20, alpha=alphas)
+
+ftcsh <- FTCS_2D(field=field, dt=100, iter=20, alpha=alphas)
+
+
+par(mfrow=c(2,4))
+image(ref, main="Reference ODE.2D")
+points(0.5,0.5, col="red",pch=4)
+image(ftcsh[[length(ftcsh)]], main="FTCS 2D")
+points(0.5,0.5, col="red",pch=4)
+image(adihet[[length(adihet)]], main="ADI Heter.")
+points(0.5,0.5, col="red",pch=4)
+image(adi2[[length(adi2)]], main="ADI Homog.", col=terrain.colors(12))
+points(0.5,0.5, col="red",pch=4)
+plot(ftcsh[[length(ftcsh)]], ref, pch=4, log="xy", xlim=c(1E-16, 1), ylim=c(1E-16, 1),
+     main = "FTCS_2D vs ref", xlab="FTCS 2D", ylab="Reference")
+abline(0,1)
+plot(ftcsh[[length(ftcsh)]], adihet[[length(adihet)]], pch=4, log="xy", xlim=c(1E-16, 1), ylim=c(1E-16, 1),
+     main = "FTCS_2D vs ADI Het", xlab="FTCS 2D", ylab="ADI 2D Heter.")
+abline(0,1)
+plot(ftcsh[[length(ftcsh)]], adi2[[length(adi2)]], pch=4, log="xy", xlim=c(1E-16, 1), ylim=c(1E-16, 1),
+     main = "FTCS_2D vs ADI Hom", xlab="FTCS 2D", ylab="ADI 2D Hom.")
+abline(0,1)
+plot(adihet[[length(adihet)]], adi2[[length(adi2)]], pch=4, log="xy", xlim=c(1E-16, 1), ylim=c(1E-16, 1),
+     main = "ADI Het vs ADI Hom", xlab="ADI Het", ylab="ADI 2D Hom.")
+abline(0,1)
+
