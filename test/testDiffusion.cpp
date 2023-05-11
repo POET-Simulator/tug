@@ -1,4 +1,3 @@
-#include <bits/stdint-uintn.h>
 #include <doctest/doctest.h>
 #include <tug/BoundaryCondition.hpp>
 #include <tug/Diffusion.hpp>

@@ -2,7 +2,6 @@
 #define BOUNDARYCONDITION_H_
 
 #include <array>
-#include <bits/stdint-uintn.h>
 #include <map>
 #include <stdexcept>
 #include <stdint.h>
