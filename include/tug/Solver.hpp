@@ -23,7 +23,7 @@ auto EigenLU(const Eigen::SparseMatrix<double> &A_matrix,
 
 /**
  * Solving linear equation system with brutal implementation of the Thomas
- * algorithm.
+ * algorithm (a.k.a. Tridiagonal matrix algorithm).
  *
  * \param A_matrix The A matrix represented as a sparse matrix using Eigen
  * library.

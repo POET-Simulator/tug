@@ -1,3 +1,5 @@
 add_executable(first_example first_example.cpp)
+add_executable(second_example second_example.cpp)
 
 target_link_libraries(first_example tug)
+target_link_libraries(second_example tug)
