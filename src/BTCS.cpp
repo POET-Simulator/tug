@@ -24,7 +24,8 @@ init_delta(const std::array<double, tug::diffusion::MAX_ARR_SIZE> &domain_size,
            const uint8_t dim) -> std::vector<double> {
   std::vector<double> out(dim);
   for (uint8_t i = 0; i < dim; i++) {
-    out[i] = (double)(domain_size.at(i) / grid_cells.at(i));
+    // calculate 'size' of each cell in grid
+    out[i] = (double)(domain_size.at(i) / grid_cells.at(i)); 
   }
   return out;
 }
