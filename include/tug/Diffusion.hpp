@@ -15,6 +15,8 @@ constexpr uint8_t MAX_ARR_SIZE = 3;
 
 /**
  * Defines grid dimensions and boundary conditions.
+ * QUESTION: why is TugGrid a separate struct? For conceptual reasons?
+ * why not combine TugGrid and TugInput?
  */
 typedef struct tug_grid_s {
   std::array<uint32_t, MAX_ARR_SIZE>

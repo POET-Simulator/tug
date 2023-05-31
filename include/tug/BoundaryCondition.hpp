@@ -32,6 +32,7 @@ enum {
 
 /**
  * Defines the boundary condition type and according value.
+ * QUESTION: For what is the struct bc necessary?
  */
 typedef struct boundary_condition_s {
   bctype type;  /**< Type of the boundary condition */
@@ -197,6 +198,7 @@ private:
 
   enum { X_DIM, Y_DIM };
 
+// TODO combine the 'public' blocks
 public:
   /**
    * Returns the left/right boundary condition for 1D grid.
