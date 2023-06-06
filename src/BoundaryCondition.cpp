@@ -32,6 +32,7 @@ tug::bc::BoundaryCondition::BoundaryCondition(int x, int y) {
 
 void tug::bc::BoundaryCondition::setSide(
     uint8_t side, tug::bc::boundary_condition &input_bc) {
+  // QUESTION: why cant the BC be changed for dim = 1?
   if (this->dim == 1) {
     throw_invalid_argument("setSide requires at least a 2D grid");
   }

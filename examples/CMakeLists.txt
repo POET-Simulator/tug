@@ -1,5 +1,7 @@
 add_executable(first_example first_example.cpp)
 add_executable(second_example second_example.cpp)
+add_executable(boundary_example1D boundary_example1D.cpp)
 
 target_link_libraries(first_example tug)
 target_link_libraries(second_example tug)
+target_link_libraries(boundary_example1D tug)

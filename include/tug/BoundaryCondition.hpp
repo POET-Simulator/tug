@@ -13,7 +13,8 @@ namespace tug {
 namespace bc {
 
 enum {
-  BC_TYPE_CLOSED,   /**< Defines a closed/Neumann boundary condition. */
+  // flux = Neumann? Cauchy combination of Neumann and Dirichlet?
+  BC_TYPE_CLOSED,   /**< Defines a closed boundary condition (special case of Neumann condition). */
   BC_TYPE_FLUX,     /**< Defines a flux/Cauchy boundary condition. */
   BC_TYPE_CONSTANT, /**< Defines a constant/Dirichlet boundary condition. */
   BC_UNSET          /**< Indicates undefined boundary condition*/
@@ -66,9 +67,11 @@ public:
    * elements than needed and no exception is thrown if some index exceeding
    * grid limits.
    *
+   * QUESTION: why not use non-squared grids with the correct size?
+   * 
    * \param x Number of grid cells in x-direction
    * \param y Number of grid cells in y-direction
-   *
+   * 
    */
   BoundaryCondition(int x, int y);
 
