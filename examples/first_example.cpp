@@ -44,6 +44,11 @@ int main(int argc, char *argv[]) {
     BoundaryCondition bc(n);
     input_param.setBoundaryCondition(bc);
 
+    BoundaryCondition bc2 = input_param.getBoundaryCondition();
+    auto [bc_left, bc_right] = bc2.row_boundary(0);
+    cout << "left: " << unsigned(bc_left.type) << endl;
+    cout << "right: " << unsigned(bc_right.type) << endl;
+
     ofstream myfile;
     myfile.open("output.csv"); 
     if (!myfile) {
