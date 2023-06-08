@@ -138,7 +138,7 @@ auto fillMatrixFromRow(const DVectorRowMajor &alpha,
                              "BC_TYPE_CONSTANT are currently not supported.");
     }
     A_matrix.insert(1, 1) = 1;
-  } else {
+  } else { // if BC_UNSET
     sx = (alpha[0] * time_step) / (dx * dx);
     A_matrix.insert(1, 1) = -1. - 3. * sx;
     A_matrix.insert(1, 0) = 2. * sx;
@@ -153,7 +153,7 @@ auto fillMatrixFromRow(const DVectorRowMajor &alpha,
       }
       A_matrix.insert(j, j) = 1;
       continue;
-    }
+    } // if BC_UNSET
     sx = (alpha[k] * time_step) / (dx * dx);
 
     A_matrix.insert(j, j) = -1. - 2. * sx;
@@ -167,7 +167,7 @@ auto fillMatrixFromRow(const DVectorRowMajor &alpha,
                              "BC_TYPE_CONSTANT are currently not supported.");
     }
     A_matrix.insert(A_size - 2, A_size - 2) = 1;
-  } else {
+  } else { // if BC_UNSET
     sx = (alpha[size - 1] * time_step) / (dx * dx);
     A_matrix.insert(A_size - 2, A_size - 2) = -1. - 3. * sx;
     A_matrix.insert(A_size - 2, A_size - 3) = sx;
@@ -203,7 +203,7 @@ auto fillVectorFromRow(const DVectorRowMajor &c, const DVectorRowMajor &alpha,
       }
       b_vector[j + 1] = bc_inner[j].value;
       continue;
-    }
+    } // if BC_UNSET
     b_vector[j + 1] = -c[j] + d_ortho[j];
   }
 
