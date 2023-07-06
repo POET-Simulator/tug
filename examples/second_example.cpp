@@ -17,7 +17,9 @@ int main(int argc, char *argv[]) {
 
     vector<double> alpha(n * m, 1);
     vector<double> field(n * m, 0);
-    field[0] = 2000;
+    field[n * 19] = 2000;
+    field[n * 19 + 19] = 2000;
+
     // for (int i = 1; i<20; i++) {
     //     for (int j = 0; j<20; j++ ) {
     //         field[i] = 0;
@@ -40,12 +42,13 @@ int main(int argc, char *argv[]) {
     input_param.setDomainSize(n, m);
     BoundaryCondition bc(n, m);
     boundary_condition bc_constant;
-    bc_constant.type = BC_TYPE_CONSTANT;
+    bc_constant.type = BC_TYPE_CLOSED;
     bc_constant.value = 0;
     bc.setSide(BC_SIDE_LEFT, bc_constant);
-    bc.setSide(BC_SIDE_TOP, bc_constant);
     bc.setSide(BC_SIDE_RIGHT, bc_constant);
     bc.setSide(BC_SIDE_BOTTOM, bc_constant);
+    // bc_constant.value = 2000;
+    bc.setSide(BC_SIDE_TOP, bc_constant);
     input_param.setBoundaryCondition(bc);
 
     // int iterations = 1000;
