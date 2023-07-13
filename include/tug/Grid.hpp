@@ -1,4 +1,3 @@
-#include <iostream>
 #include <Eigen/Core>
 
 using namespace Eigen;
@@ -49,7 +48,7 @@ class Grid {
         * @param alpha_y 
         */
         void setAlpha(Matrix2d alpha_x, Matrix2d alpha_y);
-        
+
 
     private:
 
