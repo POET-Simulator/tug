@@ -49,7 +49,7 @@ class Grid {
         */
         void setAlpha(Matrix2d alpha_x, Matrix2d alpha_y);
 
-        auto getDim();
+        int getDim();
 
         auto getRow();
 

@@ -3,7 +3,7 @@
 
 using namespace std;
 
-Boundary::Boundary(Grid grid, BC_TYPE type) {
+Boundary::Boundary(Grid &grid, BC_TYPE type) : grid(grid) {
     this->type = type;
 
     if (type == BC_TYPE_CONSTANT) {

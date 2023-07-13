@@ -1,5 +1,4 @@
 #include "Boundary.hpp"
-#include "Grid.hpp"
 
 enum APPROACH {
     FTCS,
@@ -71,7 +70,6 @@ class Simulation {
         int iterations;
         CSV_OUTPUT csv_output;
 
-        Grid grid;
         Boundary bc;
         APPROACH approach;
 

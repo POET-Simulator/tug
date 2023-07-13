@@ -35,7 +35,7 @@ void Grid::setAlpha(Matrix2d alpha_x, Matrix2d alpha_y) {
     this->alpha_y = alpha_y;
 }
 
-auto Grid::getDim() {
+int Grid::getDim() {
     return dim;
 }
 
