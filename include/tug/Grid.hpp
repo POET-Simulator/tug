@@ -8,17 +8,17 @@ class Grid {
         /**
         * @brief Construct a new Grid object
         * 
-        * @param n 
+        * @param col 
         */
-        Grid(int n);
+        Grid(int col);
 
         /**
         * @brief Construct a new Grid object
         * 
-        * @param n 
-        * @param m 
+        * @param row 
+        * @param col 
         */
-        Grid(int n, int m);
+        Grid(int row, int col);
 
         /**
         * @brief Set the Concentrations object
@@ -49,12 +49,18 @@ class Grid {
         */
         void setAlpha(Matrix2d alpha_x, Matrix2d alpha_y);
 
+        auto getDim();
+
+        auto getRow();
+
+        auto getCol();
+
 
     private:
 
         int dim;
-        int n;
-        int m;
+        int row;
+        int col;
         Matrix2d concentrations;
         Matrix2d alpha_x;
         Matrix2d alpha_y;

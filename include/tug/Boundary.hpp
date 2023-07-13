@@ -1,4 +1,5 @@
 #include <Eigen/Core>
+#include "Grid.hpp"
 
 using namespace Eigen;
 
@@ -20,24 +21,10 @@ class Boundary {
         /**
          * @brief Construct a new Boundary object
          * 
-         * @param dim 
+         * @param grid
+         * @param type  
          */
-        Boundary(int dim);
-
-        /**
-         * @brief Construct a new Boundary object
-         * 
-         * @param dim 
-         * @param type 
-         */
-        Boundary(int dim, BC_TYPE type);
-
-        /**
-         * @brief Set the Boundary Condition Type object
-         * 
-         * @param type 
-         */
-        void setBoundaryConditionType(BC_TYPE type);
+        Boundary(Grid grid, BC_TYPE type);
 
         /**
          * @brief Get the Boundary Condition Type object
@@ -65,7 +52,7 @@ class Boundary {
 
     private:
 
-        int dim;
+        Grid grid;
         BC_TYPE type;
         VectorXd left, right, top, bottom;
 };
