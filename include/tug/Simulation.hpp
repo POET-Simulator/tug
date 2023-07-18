@@ -1,8 +1,8 @@
 #include "Boundary.hpp"
 
 enum APPROACH {
-    FTCS,
-    BTCS
+    FTCS_APPROACH,
+    BTCS_APPROACH
 };
 
 enum CSV_OUTPUT {
@@ -21,14 +21,14 @@ class Simulation {
          * @param bc 
          * @param aproach 
          */
-        Simulation(Grid grid, Boundary bc, APPROACH aproach);
+        Simulation(Grid &grid, Boundary &bc, APPROACH approach);
 
         /**
          * @brief 
          * 
          * @param csv_output 
          */
-        void outputCSV(CSV_OUTPUT csv_output);
+        void setOutputCSV(CSV_OUTPUT csv_output);
 
         /**
          * @brief Set the Timestep object
@@ -41,7 +41,7 @@ class Simulation {
          * @brief Get the Timestep object
          * 
          */
-        void getTimestep();
+        auto getTimestep();
 
         /**
          * @brief Set the Iterations object
@@ -70,6 +70,7 @@ class Simulation {
         int iterations;
         CSV_OUTPUT csv_output;
 
+        Grid grid;
         Boundary bc;
         APPROACH approach;
 

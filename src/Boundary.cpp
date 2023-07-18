@@ -5,6 +5,7 @@
 using namespace std;
 
 Boundary::Boundary(Grid &grid, BC_TYPE type) : grid(grid) {
+    //probably to DEBUG assignment grid
     this->type = type;
 
     if (type == BC_TYPE_CONSTANT) {
