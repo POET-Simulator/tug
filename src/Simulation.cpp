@@ -5,6 +5,10 @@
 
 using namespace std;
 
+// auto FTCS(Grid &grid, Boundary &bc, double timestep) {
+
+// }
+
 Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid), bc(bc) {
     //probably to DEBUG assignment of grid and bc
     this->grid = grid;
@@ -40,6 +44,7 @@ void Simulation::setIterations(int iterations) {
 auto Simulation::getIterations() {
     return this->iterations;
 }
+
 
 auto Simulation::run() {
     if (approach == FTCS_APPROACH) {

@@ -32,7 +32,7 @@ class Grid {
          * 
          * @return auto 
          */
-        auto getConcentrations();
+        Matrix2d getConcentrations();
 
         /**
         * @brief Set the Alpha object
@@ -49,18 +49,34 @@ class Grid {
         */
         void setAlpha(Matrix2d alpha_x, Matrix2d alpha_y);
 
+        Matrix2d getAlphaX();
+
+        Matrix2d getAlphaY();
+
         int getDim();
 
         int getRow();
 
         int getCol();
 
+        void setDomain(int domain_col);
+
+        void setDomain(int domain_row, int domain_col);
+
+        double getDeltaCol();
+
+        double getDeltaRow();
+
 
     private:
 
         int dim;
-        int row;
         int col;
+        int row;
+        int domain_col;
+        int domain_row;
+        double delta_col;
+        double delta_row;
         Matrix2d concentrations;
         Matrix2d alpha_x;
         Matrix2d alpha_y;

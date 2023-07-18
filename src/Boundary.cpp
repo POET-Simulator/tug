@@ -23,7 +23,7 @@ Boundary::Boundary(Grid &grid, BC_TYPE type) : grid(grid) {
     } 
 }
 
-auto Boundary::getBoundaryConditionType() {
+BC_TYPE Boundary::getBoundaryConditionType() {
     return this->type; 
 }
 

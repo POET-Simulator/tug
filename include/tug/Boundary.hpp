@@ -1,3 +1,6 @@
+#ifndef BOUNDARY_H_
+#define BOUNDARY_H_
+
 #include <Eigen/Core>
 #include "Grid.hpp"
 
@@ -31,7 +34,7 @@ class Boundary {
          * 
          * @return auto 
          */
-        auto getBoundaryConditionType();
+        BC_TYPE getBoundaryConditionType();
 
         /**
          * @brief Set the Boundary Condition Value object
@@ -55,3 +58,5 @@ class Boundary {
         BC_TYPE type;
         VectorXd left, right, top, bottom;
 };
+
+#endif
