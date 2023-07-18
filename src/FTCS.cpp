@@ -1,5 +1,5 @@
 #include <tug/Boundary.hpp>
-
+#include <iostream>
 
 auto calc_alpha_intercell(double alpha1, double alpha2, bool useHarmonic = false) {
     if (useHarmonic) {
@@ -17,7 +17,7 @@ auto FTCS_constant(Grid &grid, Boundary &bc, double timestep) {
 
     // Matrix with concentrations at time t+1
     // TODO profiler / only use 2 matrices
-    Matrix2d concentrations_t1 = Matrix2d(rowMax, colMax);
+    MatrixXd concentrations_t1 = MatrixXd(rowMax, colMax);
 
     // inner cells
     for (int row = 1; row < rowMax-1; row++) {

@@ -25,21 +25,21 @@ class Grid {
         * 
         * @param concentrations 
         */
-        void setConcentrations(Matrix2d concentrations);
+        void setConcentrations(MatrixXd concentrations);
 
         /**
          * @brief Get the Concentrations object
          * 
          * @return auto 
          */
-        Matrix2d getConcentrations();
+        MatrixXd getConcentrations();
 
         /**
         * @brief Set the Alpha object
         * 
         * @param alpha 
         */
-        void setAlpha(Matrix2d alpha);
+        void setAlpha(MatrixXd alpha);
 
         /**
         * @brief Set the Alpha object
@@ -47,11 +47,11 @@ class Grid {
         * @param alpha_x 
         * @param alpha_y 
         */
-        void setAlpha(Matrix2d alpha_x, Matrix2d alpha_y);
+        void setAlpha(MatrixXd alpha_x, MatrixXd alpha_y);
 
-        Matrix2d getAlphaX();
+        MatrixXd getAlphaX();
 
-        Matrix2d getAlphaY();
+        MatrixXd getAlphaY();
 
         int getDim();
 
@@ -77,7 +77,7 @@ class Grid {
         int domain_row;
         double delta_col;
         double delta_row;
-        Matrix2d concentrations;
-        Matrix2d alpha_x;
-        Matrix2d alpha_y;
+        MatrixXd concentrations;
+        MatrixXd alpha_x;
+        MatrixXd alpha_y;
 };

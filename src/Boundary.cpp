@@ -10,13 +10,14 @@ Boundary::Boundary(Grid &grid, BC_TYPE type) : grid(grid) {
 
     if (type == BC_TYPE_CONSTANT) {
         if (grid.getDim() == 1) {
-            this->left = VectorXd::Constant(1, 1, 1);
-            this->right = VectorXd::Constant(1, 1, 1);
+            this->left = VectorXd::Constant(1, 1);
+            this->right = VectorXd::Constant(1, 1);
         } else if (grid.getDim() == 2) {
-            this->left = VectorXd::Constant(grid.getRow(), 1, 1);
-            this->right = VectorXd::Constant(grid.getRow(), 1, 1);
-            this->top = VectorXd::Constant(1, grid.getCol(), 1);
-            this->bottom = VectorXd::Constant(1, grid.getCol(), 1);
+            this->left = VectorXd::Constant(grid.getRow(), 1);
+            this->right = VectorXd::Constant(grid.getRow(), 1);
+            this->top = VectorXd::Constant(grid.getCol(), 1);
+            this->bottom = VectorXd::Constant(grid.getCol(), 1);
+
         } else {
             throw invalid_argument("Dimension must be 1 or 2!");
         }

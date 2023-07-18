@@ -1,11 +1,12 @@
 #include <tug/Grid.hpp>
+#include <iostream>
 
 Grid::Grid(int col) {
     this->col = col;
 
     this->dim = 1;
-    this->concentrations = Matrix2d::Constant(1, col, 1);
-    this->alpha_x = Matrix2d::Constant(1, col, 1);
+    this->concentrations = MatrixXd::Constant(1, col, 1);
+    this->alpha_x = MatrixXd::Constant(1, col, 1);
 }
 
 Grid::Grid(int row, int col) {
@@ -13,33 +14,34 @@ Grid::Grid(int row, int col) {
     this->col = col;
 
     this->dim = 2;
-    this->concentrations = Matrix2d::Constant(row, col, 1);
-    this->alpha_x = Matrix2d::Constant(row, col, 1);
-    this->alpha_y = Matrix2d::Constant(row, col, 1);
+    this->concentrations = MatrixXd::Constant(row, col, 1);
+    this->alpha_x = MatrixXd::Constant(row, col, 1);
+    this->alpha_y = MatrixXd::Constant(row, col, 1);
+    
 }
 
-void Grid::setConcentrations(Matrix2d concentrations) {
+void Grid::setConcentrations(MatrixXd concentrations) {
     this->concentrations = concentrations;
 }
 
-Matrix2d Grid::getConcentrations() {
+MatrixXd Grid::getConcentrations() {
     return this->concentrations;
 }
 
-void Grid::setAlpha(Matrix2d alpha) {
+void Grid::setAlpha(MatrixXd alpha) {
     this->alpha_x = alpha;
 }
 
-void Grid::setAlpha(Matrix2d alpha_x, Matrix2d alpha_y) {
+void Grid::setAlpha(MatrixXd alpha_x, MatrixXd alpha_y) {
     this->alpha_x = alpha_x;
     this->alpha_y = alpha_y;
 }
 
-Matrix2d Grid::getAlphaX() {
+MatrixXd Grid::getAlphaX() {
     return this->alpha_x;
 }
 
-Matrix2d Grid::getAlphaY() {
+MatrixXd Grid::getAlphaY() {
     return this->alpha_y;
 }
 
