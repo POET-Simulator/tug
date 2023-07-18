@@ -39,10 +39,10 @@ int Grid::getDim() {
     return dim;
 }
 
-auto Grid::getRow() {
+int Grid::getRow() {
     return row;
 }
 
-auto Grid::getCol() {
+int Grid::getCol() {
     return col;
 }

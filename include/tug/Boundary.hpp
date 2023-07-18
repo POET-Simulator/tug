@@ -39,7 +39,7 @@ class Boundary {
          * @param side 
          * @param values 
          */
-        void setBoundaryConditionValue(BC_SIDE side, VectorXd values);
+        void setBoundaryConditionValue(BC_SIDE side, VectorXd &values);
 
         /**
          * @brief Get the Boundary Condition Value object
@@ -51,7 +51,6 @@ class Boundary {
 
 
     private:
-
         Grid grid;
         BC_TYPE type;
         VectorXd left, right, top, bottom;

@@ -51,9 +51,9 @@ class Grid {
 
         int getDim();
 
-        auto getRow();
+        int getRow();
 
-        auto getCol();
+        int getCol();
 
 
     private:
