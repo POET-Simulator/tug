@@ -62,7 +62,7 @@ class Simulation {
          * 
          * @return auto 
          */
-        auto run();
+        void run();
 
     private:
 

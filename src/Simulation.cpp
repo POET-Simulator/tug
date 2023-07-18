@@ -46,7 +46,7 @@ auto Simulation::getIterations() {
 }
 
 
-auto Simulation::run() {
+void Simulation::run() {
     if (approach == FTCS_APPROACH) {
         for (int i = 0; i < iterations; i++) {
             FTCS(grid, bc, timestep);

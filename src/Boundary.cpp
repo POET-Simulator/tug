@@ -51,7 +51,7 @@ void Boundary::setBoundaryConditionValue(BC_SIDE side, VectorXd &values) {
     }
 }
 
-auto Boundary::getBoundaryConditionValue(BC_SIDE side) {
+VectorXd Boundary::getBoundaryConditionValue(BC_SIDE side) {
     switch (side) {
         case BC_SIDE_LEFT:
             return this->left;

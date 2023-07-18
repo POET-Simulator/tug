@@ -50,7 +50,7 @@ class Boundary {
          * @param side 
          * @return auto 
          */
-        auto getBoundaryConditionValue(BC_SIDE side);
+        VectorXd getBoundaryConditionValue(BC_SIDE side);
 
 
     private:
