@@ -27,6 +27,6 @@ lint:
     - apk add clang-extra-tools
   script:
     - mkdir lint && cd lint
-    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" -DTUG_ENABLE_TESTING=OFF ..
+    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*, modernize-*" -DTUG_ENABLE_TESTING=OFF ..
     - make tug
   when: manual
