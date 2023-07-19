@@ -8,6 +8,7 @@ int main(int argc, char *argv[]) {
     Boundary bc = Boundary(grid, BC_TYPE_CONSTANT);
 
     Simulation simulation = Simulation(grid, bc, FTCS_APPROACH);
+    simulation.setIterations(2);
     
     simulation.run();
     

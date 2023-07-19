@@ -59,15 +59,15 @@ int Grid::getCol() {
 
 void Grid::setDomain(int domain_col) {
     this->domain_col = domain_col;
-    this->delta_col = this->domain_col/this->col;
+    this->delta_col = double(this->domain_col)/this->col;
 }
 
 void Grid::setDomain(int domain_row, int domain_col) {
     this->domain_row = domain_row;
     this->domain_col = domain_col;
 
-    this->domain_row = this->domain_row/this->row;
-    this->domain_col = this->domain_col/this->col;
+    this->delta_row = double(this->domain_row)/this->row;
+    this->delta_col = double(this->domain_col)/this->col;
 }
 
 double Grid::getDeltaCol() {

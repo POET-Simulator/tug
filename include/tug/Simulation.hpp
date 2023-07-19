@@ -21,7 +21,7 @@ class Simulation {
          * @param bc 
          * @param aproach 
          */
-        Simulation(Grid &grid, Boundary &bc, APPROACH approach);
+        Simulation(Grid grid, Boundary bc, APPROACH approach);
 
         /**
          * @brief 

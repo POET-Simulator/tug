@@ -9,7 +9,7 @@ using namespace std;
 
 // }
 
-Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid), bc(bc) {
+Simulation::Simulation(Grid grid, Boundary bc, APPROACH approach) : grid(grid), bc(bc) {
     //probably to DEBUG assignment of grid and bc
     this->grid = grid;
     this->approach = approach;
@@ -48,9 +48,16 @@ auto Simulation::getIterations() {
 
 void Simulation::run() {
     if (approach == FTCS_APPROACH) {
+        cout << grid.getConcentrations() << endl;
+        cout << endl;
         for (int i = 0; i < iterations; i++) {
-            FTCS(grid, bc, timestep);
+            grid.setConcentrations(FTCS(grid, bc, timestep));
+            if (i == 10) {
+                cout << grid.getConcentrations() << endl;
+                cout << endl;
+            }
         }
+        cout << grid.getConcentrations() << endl;
     } else if (approach == BTCS_APPROACH) {
         for (int i = 0; i < iterations; i++) {
             //TODO

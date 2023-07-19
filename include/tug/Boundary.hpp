@@ -27,7 +27,7 @@ class Boundary {
          * @param grid
          * @param type  
          */
-        Boundary(Grid &grid, BC_TYPE type);
+        Boundary(Grid grid, BC_TYPE type);
 
         /**
          * @brief Get the Boundary Condition Type object

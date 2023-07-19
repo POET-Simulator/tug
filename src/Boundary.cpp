@@ -4,7 +4,7 @@
 
 using namespace std;
 
-Boundary::Boundary(Grid &grid, BC_TYPE type) : grid(grid) {
+Boundary::Boundary(Grid grid, BC_TYPE type) : grid(grid) {
     //probably to DEBUG assignment grid
     this->type = type;
 
