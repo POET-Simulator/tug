@@ -3,18 +3,24 @@
 
 Grid::Grid(int col) {
     this->col = col;
+    this->domain_col = col;
+    this->delta_col = double(this->domain_col)/double(this->col);
 
     this->dim = 1;
-    this->concentrations = MatrixXd::Constant(1, col, 1);
+    this->concentrations = MatrixXd::Constant(1, col, 20);
     this->alpha_x = MatrixXd::Constant(1, col, 1);
 }
 
 Grid::Grid(int row, int col) {
     this->row = row;
     this->col = col;
+    this->domain_row = row;
+    this->domain_col = col;
+    this->delta_row = double(this->domain_row)/double(this->row);
+    this->delta_col = double(this->domain_col)/double(this->col);
 
     this->dim = 2;
-    this->concentrations = MatrixXd::Constant(row, col, 1);
+    this->concentrations = MatrixXd::Constant(row, col, 20);
     this->alpha_x = MatrixXd::Constant(row, col, 1);
     this->alpha_y = MatrixXd::Constant(row, col, 1);
     
@@ -66,8 +72,8 @@ void Grid::setDomain(int domain_row, int domain_col) {
     this->domain_row = domain_row;
     this->domain_col = domain_col;
 
-    this->delta_row = double(this->domain_row)/this->row;
-    this->delta_col = double(this->domain_col)/this->col;
+    this->delta_row = double(this->domain_row)/double(this->row);
+    this->delta_col = double(this->domain_col)/double(this->col);
 }
 
 double Grid::getDeltaCol() {
