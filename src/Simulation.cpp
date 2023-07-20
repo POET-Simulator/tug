@@ -31,7 +31,7 @@ void Simulation::setTimestep(double timestep) {
     this->timestep = timestep;
 }
 
-auto Simulation::getTimestep() {
+double Simulation::getTimestep() {
     return this->timestep;
 }
 
@@ -39,7 +39,7 @@ void Simulation::setIterations(int iterations) {
     this->iterations = iterations;
 }
 
-auto Simulation::getIterations() {
+int Simulation::getIterations() {
     return this->iterations;
 }
 
@@ -49,12 +49,17 @@ void Simulation::printConcentrationsConsole() {
     cout << endl;
 }
 
-void Simulation::printConcentrationsCSV(string ident) {
+void Simulation::printConcentrationsCSV(string ident, bool appendMode) {
     ofstream file;
 
     string filename = "output-" + ident + ".csv";
     // string directory = "output/";
-    file.open(filename, std::ios_base::app);
+
+    if (appendMode) {
+        file.open(filename, std::ios_base::app);
+    } else {
+        file.open(filename);
+    }
     if (!file) {
         exit(1);
     }
@@ -70,7 +75,7 @@ void Simulation::run() {
         printConcentrationsConsole();
         for (int i = 0; i < iterations; i++) {
             if (csv_output == CSV_OUTPUT_VERBOSE) {
-                printConcentrationsCSV("test");
+                printConcentrationsCSV("test", true);
             }
             grid.setConcentrations(FTCS(grid, bc, timestep));
             // if (i != 0 && i % 200 == 0) {
@@ -79,7 +84,7 @@ void Simulation::run() {
         }
         printConcentrationsConsole();
         if (csv_output >= CSV_OUTPUT_ON) {
-            printConcentrationsCSV("test");
+            printConcentrationsCSV("test", true);
         }
     } else if (approach == BTCS_APPROACH) {
         for (int i = 0; i < iterations; i++) {

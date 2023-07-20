@@ -43,7 +43,7 @@ class Simulation {
          * @brief Get the Timestep object
          * 
          */
-        auto getTimestep();
+        double getTimestep();
 
         /**
          * @brief Set the Iterations object
@@ -57,14 +57,19 @@ class Simulation {
          * 
          * @return auto 
          */
-        auto getIterations();
-
-        void printConcentrationsConsole();
-
-        void printConcentrationsCSV(string ident);
+        int getIterations();
 
         /**
-         * @brief 
+         * @brief Print the current concentrations of the grid to standard out. 
+         * 
+         */
+        void printConcentrationsConsole();
+
+
+        void printConcentrationsCSV(string ident, bool appendMode = false);
+
+        /**
+         * @brief Start the simulation with all of the previously set parameters. 
          * 
          * @return auto 
          */

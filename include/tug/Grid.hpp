@@ -20,7 +20,8 @@ class Grid {
         */
         Grid(int row, int col);
 
-        Grid(MatrixXd concentrations);
+        // TODO
+        // Grid(MatrixXd concentrations);
 
         /**
         * @brief Set the Concentrations object
