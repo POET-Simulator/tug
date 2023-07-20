@@ -1,13 +1,11 @@
 #include <stdexcept>
 #include <tug/Simulation.hpp>
 
+#include <fstream>
+
 #include "FTCS.cpp"
 
 using namespace std;
-
-// auto FTCS(Grid &grid, Boundary &bc, double timestep) {
-
-// }
 
 Simulation::Simulation(Grid grid, Boundary bc, APPROACH approach) : grid(grid), bc(bc) {
     //probably to DEBUG assignment of grid and bc
@@ -45,19 +43,44 @@ auto Simulation::getIterations() {
     return this->iterations;
 }
 
+void Simulation::printConcentrationsConsole() {
+    cout << "Concentrations:" << endl;
+    cout << grid.getConcentrations() << endl;
+    cout << endl;
+}
+
+void Simulation::printConcentrationsCSV(string ident) {
+    ofstream file;
+
+    string filename = "output-" + ident + ".csv";
+    // string directory = "output/";
+    file.open(filename, std::ios_base::app);
+    if (!file) {
+        exit(1);
+    }
+
+    IOFormat do_not_align(StreamPrecision, DontAlignCols);
+    file << grid.getConcentrations().format(do_not_align) << endl;
+    file << endl << endl;
+    file.close();
+}
 
 void Simulation::run() {
     if (approach == FTCS_APPROACH) {
-        cout << grid.getConcentrations() << endl;
-        cout << endl;
+        printConcentrationsConsole();
         for (int i = 0; i < iterations; i++) {
-            grid.setConcentrations(FTCS(grid, bc, timestep));
-            if (i == 10) {
-                cout << grid.getConcentrations() << endl;
-                cout << endl;
+            if (csv_output == CSV_OUTPUT_VERBOSE) {
+                printConcentrationsCSV("test");
             }
+            grid.setConcentrations(FTCS(grid, bc, timestep));
+            // if (i != 0 && i % 200 == 0) {
+            //     printConcentrationsConsole();
+            // }
         }
-        cout << grid.getConcentrations() << endl;
+        printConcentrationsConsole();
+        if (csv_output >= CSV_OUTPUT_ON) {
+            printConcentrationsCSV("test");
+        }
     } else if (approach == BTCS_APPROACH) {
         for (int i = 0; i < iterations; i++) {
             //TODO

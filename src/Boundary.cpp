@@ -28,7 +28,7 @@ BC_TYPE Boundary::getBoundaryConditionType() {
     return this->type; 
 }
 
-void Boundary::setBoundaryConditionValue(BC_SIDE side, VectorXd &values) {
+void Boundary::setBoundaryConditionValue(BC_SIDE side, VectorXd values) {
     if (type != BC_TYPE_CONSTANT) {
         // TODO check if correct way for handling warning
         cerr << "Values will not be used, wrong BC_TYPE!";

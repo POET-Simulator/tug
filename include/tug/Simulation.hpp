@@ -1,5 +1,7 @@
 #include "Boundary.hpp"
 
+using namespace std;
+
 enum APPROACH {
     FTCS_APPROACH,
     BTCS_APPROACH
@@ -56,6 +58,10 @@ class Simulation {
          * @return auto 
          */
         auto getIterations();
+
+        void printConcentrationsConsole();
+
+        void printConcentrationsCSV(string ident);
 
         /**
          * @brief 
