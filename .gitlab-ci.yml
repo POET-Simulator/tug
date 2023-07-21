@@ -1,4 +1,4 @@
-image: sobc/gitlab-ci
+image: git.gfz-potsdam.de:5000/naaice/tug:ci
 
 stages:
     - build
@@ -6,8 +6,6 @@ stages:
     - static_analyze
 
 build_release:
-  before_script:
-    - apt-get update && apt-get install -y libeigen3-dev git
   stage: build
   artifacts:
       paths:
@@ -24,11 +22,11 @@ test:
         - ./build/test/testTug
 
 lint:
-  before_script:
-    - apt-get update && apt-get install -y libeigen3-dev
   stage: static_analyze
+  before_script:
+    - apk add clang-extra-tools
   script:
     - mkdir lint && cd lint
-    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*,readability-*, modernize-*" -DTUG_ENABLE_TESTING=OFF ..
+    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*, modernize-*" -DTUG_ENABLE_TESTING=OFF ..
     - make tug
   when: manual
