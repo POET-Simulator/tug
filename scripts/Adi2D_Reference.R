@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2023-05-11 17:31:41 delucia"
+## Time-stamp: "Last modified 2023-07-20 15:37:25 delucia"
 
 ## Brutal implementation of 2D ADI scheme
 ## Square NxN grid with dx=dy=1
@@ -286,7 +286,11 @@ ADIHetDir <- function(field, dt, iter, alpha) {
     return(out)
 }
 
-harm <- function(x,y) 1/(1/x+1/y)
+harm <- function(x,y) {
+    if (length(x) != 1 || length(y) != 1)
+        stop("x & z have different lengths")
+    2/(1/x+1/y)
+}
 
 harm(1,4)
 
@@ -428,10 +432,10 @@ FTCS_2D <- function(field, dt, iter, alpha) {
                     ##                            res[i,j]  *(mean(alpha[i,j+1],alpha[i,j])+mean(alpha[i,j-1],alpha[i,j])) +
                     ##                            res[i,j-1]*mean(alpha[i,j-1],alpha[i,j]))
                     tmp[i,j] <- res[i,j] +
-                        + tsteps[innerit]/dx/dx * ((res[i+1,j]-res[i,j]) * mean(alpha[i+1,j],alpha[i,j]) -
-                                                   (res[i,j]-res[i-1,j]) * mean(alpha[i-1,j],alpha[i,j])) +
-                        + tsteps[innerit]/dx/dx * ((res[i,j+1]-res[i,j]) * mean(alpha[i,j+1],alpha[i,j]) -
-                                                   (res[i,j]-res[i,j-1]) * mean(alpha[i,j-1],alpha[i,j])) 
+                        + tsteps[innerit]/dx/dx * ((res[i+1,j]-res[i,j]) * harm(alpha[i+1,j],alpha[i,j]) -
+                                                   (res[i,j]-res[i-1,j]) * harm(alpha[i-1,j],alpha[i,j])) +
+                        + tsteps[innerit]/dx/dx * ((res[i,j+1]-res[i,j]) * harm(alpha[i,j+1],alpha[i,j]) -
+                                                   (res[i,j]-res[i,j-1]) * harm(alpha[i,j-1],alpha[i,j])) 
                 }
             }
             ## swap back tmp to res for the next inner iteration 
