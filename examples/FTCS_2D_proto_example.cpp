@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
     // (optional) set the concentrations, e.g.:
     // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); // #row,#col,value
     // grid.setConcentrations(concentrations);
-    MatrixXd concentrations = MatrixXd::Constant(20,20,0);
+    MatrixXd concentrations = MatrixXd::Constant(20,20,20);
     // concentrations(0,0) = 2000;
     grid.setConcentrations(concentrations);
 
@@ -45,12 +45,12 @@ int main(int argc, char *argv[]) {
     // (optional) set boundary condition values for one side, e.g.:
     // VectorXd bc_left_values = VectorXd::Constant(20,1); // length,value
     // bc.setBoundaryConditionValue(BC_SIDE_LEFT, bc_left_values); // side,values
-    VectorXd bc_zero_values = VectorXd::Constant(20,0);
-    bc.setBoundaryConditionValue(BC_SIDE_LEFT, bc_zero_values);
-    bc.setBoundaryConditionValue(BC_SIDE_RIGHT, bc_zero_values);
-    VectorXd bc_front_values = VectorXd::Constant(20,2000);
-    bc.setBoundaryConditionValue(BC_SIDE_TOP, bc_front_values);
-    bc.setBoundaryConditionValue(BC_SIDE_BOTTOM, bc_zero_values);
+    // VectorXd bc_zero_values = VectorXd::Constant(20,0);
+    // bc.setBoundaryConditionValue(BC_SIDE_LEFT, bc_zero_values);
+    // bc.setBoundaryConditionValue(BC_SIDE_RIGHT, bc_zero_values);
+    // VectorXd bc_front_values = VectorXd::Constant(20,2000);
+    // bc.setBoundaryConditionValue(BC_SIDE_TOP, bc_front_values);
+    // bc.setBoundaryConditionValue(BC_SIDE_BOTTOM, bc_zero_values);
 
 
     // ************************
@@ -64,10 +64,10 @@ int main(int argc, char *argv[]) {
     simulation.setTimestep(0.1); // timestep
 
     // (optional) set the number of iterations
-    simulation.setIterations(1000);
+    simulation.setIterations(100);
 
     // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
-    simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);
+    simulation.setOutputCSV(CSV_OUTPUT_OFF);
     
     // **** RUN SIMULATION ****
 
