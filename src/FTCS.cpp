@@ -30,6 +30,11 @@ double calcHorizontalChange(Grid grid, int row, int col) {
 }
 
 
+double calcHorizontalChangeClosed() {
+    return 0;
+}
+
+
 double calcVerticalChange(Grid grid, int row, int col) {
     
     double result =    
