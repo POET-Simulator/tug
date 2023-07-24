@@ -84,7 +84,11 @@ void Simulation::run() {
         }
         printConcentrationsConsole();
         if (csv_output >= CSV_OUTPUT_ON) {
-            printConcentrationsCSV("test", true);
+            bool append = false;
+            if (csv_output == CSV_OUTPUT_VERBOSE) {
+                append = true;
+            }
+            printConcentrationsCSV("test", append);
         }
     } else if (approach == BTCS_APPROACH) {
         for (int i = 0; i < iterations; i++) {

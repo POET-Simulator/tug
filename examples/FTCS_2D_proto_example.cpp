@@ -49,12 +49,12 @@ int main(int argc, char *argv[]) {
     // (optional) set boundary condition values for one side, e.g.:
     // VectorXd bc_left_values = VectorXd::Constant(20,1); // length,value
     // bc.setBoundaryConditionValue(BC_SIDE_LEFT, bc_left_values); // side,values
-    VectorXd bc_zero_values = VectorXd::Constant(20,0);
-    bc.setBoundaryConditionValue(BC_SIDE_LEFT, bc_zero_values);
-    bc.setBoundaryConditionValue(BC_SIDE_RIGHT, bc_zero_values);
-    VectorXd bc_front_values = VectorXd::Constant(20,2000);
-    bc.setBoundaryConditionValue(BC_SIDE_TOP, bc_front_values);
-    bc.setBoundaryConditionValue(BC_SIDE_BOTTOM, bc_zero_values);
+    // VectorXd bc_zero_values = VectorXd::Constant(20,0);
+    // bc.setBoundaryConditionValue(BC_SIDE_LEFT, bc_zero_values);
+    // bc.setBoundaryConditionValue(BC_SIDE_RIGHT, bc_zero_values);
+    // VectorXd bc_front_values = VectorXd::Constant(20,2000);
+    // bc.setBoundaryConditionValue(BC_SIDE_TOP, bc_front_values);
+    // bc.setBoundaryConditionValue(BC_SIDE_BOTTOM, bc_zero_values);
 
 
     // ************************
