@@ -4,7 +4,7 @@
 
 using namespace std;
 
-double calc_alpha_intercell(double alpha1, double alpha2, bool useHarmonic = false) {
+double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = false) {
     if (useHarmonic) {
         return 2 / ((1/alpha1) + (1/alpha2));
     } else {
@@ -16,14 +16,14 @@ double calc_alpha_intercell(double alpha1, double alpha2, bool useHarmonic = fal
 double calcHorizontalChange(Grid grid, int row, int col) {
 
     double result = 
-        calc_alpha_intercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
+        calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
             * grid.getConcentrations()(row,col+1)
         - (
-            calc_alpha_intercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col))
-            + calc_alpha_intercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
+            calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col))
+            + calcAlphaIntercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
             )
             * grid.getConcentrations()(row,col)
-        + calc_alpha_intercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
+        + calcAlphaIntercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
             * grid.getConcentrations()(row,col-1);
 
     return result;
@@ -33,14 +33,14 @@ double calcHorizontalChange(Grid grid, int row, int col) {
 double calcVerticalChange(Grid grid, int row, int col) {
     
     double result =    
-        calc_alpha_intercell(grid.getAlphaY()(row+1,col), grid.getAlphaY()(row,col)) 
+        calcAlphaIntercell(grid.getAlphaY()(row+1,col), grid.getAlphaY()(row,col)) 
             * grid.getConcentrations()(row+1,col)
         - (
-            calc_alpha_intercell(grid.getAlphaY()(row+1,col), grid.getAlphaY()(row,col))
-            + calc_alpha_intercell(grid.getAlphaY()(row-1,col), grid.getAlphaY()(row,col))
+            calcAlphaIntercell(grid.getAlphaY()(row+1,col), grid.getAlphaY()(row,col))
+            + calcAlphaIntercell(grid.getAlphaY()(row-1,col), grid.getAlphaY()(row,col))
             )
             * grid.getConcentrations()(row,col)
-        + calc_alpha_intercell(grid.getAlphaY()(row-1,col), grid.getAlphaY()(row,col))
+        + calcAlphaIntercell(grid.getAlphaY()(row-1,col), grid.getAlphaY()(row,col))
             * grid.getConcentrations()(row-1,col);
 
     return result;
@@ -50,10 +50,10 @@ double calcVerticalChange(Grid grid, int row, int col) {
 double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
-        calc_alpha_intercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
+        calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
             * grid.getConcentrations()(row,col+1)
         - (
-            calc_alpha_intercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
+            calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
             + 2 * grid.getAlphaX()(row,col)
             ) 
             * grid.getConcentrations()(row,col) 
@@ -68,11 +68,11 @@ double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int co
     double result = 
         2 * grid.getAlphaX()(row,col) * bc.getBoundaryConditionValue(BC_SIDE_RIGHT)(row)
         - (
-            calc_alpha_intercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
+            calcAlphaIntercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
             + 2 * grid.getAlphaX()(row,col)
             ) 
             * grid.getConcentrations()(row,col)
-        + calc_alpha_intercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
+        + calcAlphaIntercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
             * grid.getConcentrations()(row,col-1);
 
     return result;
@@ -82,10 +82,10 @@ double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int co
 double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
     
     double result = 
-        calc_alpha_intercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
+        calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
             * grid.getConcentrations()(row+1,col)
         - (
-            calc_alpha_intercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
+            calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
             + 2 * grid.getAlphaY()(row, col)
             ) 
             * grid.getConcentrations()(row, col)
@@ -100,11 +100,11 @@ double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col
     double result = 
         2 * grid.getAlphaY()(row, col) * bc.getBoundaryConditionValue(BC_SIDE_BOTTOM)(col)
         - (
-            calc_alpha_intercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col)) 
+            calcAlphaIntercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col)) 
             + 2 * grid.getAlphaY()(row, col)
             ) 
             * grid.getConcentrations()(row, col)
-        + calc_alpha_intercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col)) 
+        + calcAlphaIntercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col)) 
             * grid.getConcentrations()(row-1,col);
 
     return result;
@@ -153,14 +153,6 @@ MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
     return concentrations_t1;
 }
 
-// IN PROGRESS
-// MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
-//     int rowMax = grid.getRow();
-//     int colMax = grid.getCol();
-//     double deltaRow = grid.getDeltaRow();
-//     double deltaCol = grid.getDeltaCol();
-
-// }
 
 MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     int rowMax = grid.getRow();
@@ -311,10 +303,6 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     return concentrations_t1;
 }
 
-// TODO
-MatrixXd FTCS_closed(Grid grid, Boundary bc, double timestep) {
-    return MatrixXd();
-}
 
 MatrixXd FTCS(Grid grid, Boundary bc, double timestep) {
     // inner cells 

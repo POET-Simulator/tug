@@ -25,8 +25,8 @@ int main(int argc, char *argv[]) {
     // (optional) set the concentrations, e.g.:
     // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); // #row,#col,value
     // grid.setConcentrations(concentrations);
-    MatrixXd concentrations = MatrixXd::Constant(20,20,20);
-    // concentrations(0,0) = 2000;
+    MatrixXd concentrations = MatrixXd::Constant(20,20,0);
+    concentrations(0,0) = 2000;
     grid.setConcentrations(concentrations);
 
     // (optional) set alphas of the grid, e.g.:
@@ -64,10 +64,10 @@ int main(int argc, char *argv[]) {
     simulation.setTimestep(0.1); // timestep
 
     // (optional) set the number of iterations
-    simulation.setIterations(100);
+    simulation.setIterations(1000);
 
     // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
-    simulation.setOutputCSV(CSV_OUTPUT_OFF);
+    simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);
     
     // **** RUN SIMULATION ****
 
