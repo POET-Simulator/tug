@@ -12,7 +12,7 @@ double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = false
     }
 }
 
-// IN PROGRESS
+
 double calcHorizontalChange(Grid grid, int row, int col) {
 
     double result = 
@@ -29,7 +29,7 @@ double calcHorizontalChange(Grid grid, int row, int col) {
     return result;
 }
 
-// IN PROGRESS
+
 double calcVerticalChange(Grid grid, int row, int col) {
     
     double result =    
@@ -46,7 +46,7 @@ double calcVerticalChange(Grid grid, int row, int col) {
     return result;
 }
 
-// IN PROGRESS
+
 double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
@@ -62,7 +62,7 @@ double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col
     return result;
 }
 
-// IN PROGRESS
+
 double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
@@ -78,7 +78,7 @@ double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int co
     return result;
 }
 
-// IN PROGRESS
+
 double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
     
     double result = 
@@ -94,7 +94,7 @@ double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
     return result;
 }
 
-// IN PROGRESS
+
 double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
@@ -111,7 +111,6 @@ double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col
 }
 
 
-// IN PROGRESS
 MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
     int colMax = grid.getCol();
     double deltaCol = grid.getDeltaCol();
