@@ -30,11 +30,6 @@ double calcHorizontalChange(Grid grid, int row, int col) {
 }
 
 
-double calcHorizontalChangeClosed() {
-    return 0;
-}
-
-
 double calcVerticalChange(Grid grid, int row, int col) {
     
     double result =    
@@ -52,11 +47,7 @@ double calcVerticalChange(Grid grid, int row, int col) {
 }
 
 
-double calcVerticalChangeClosed() {
-    return 0;
-}
-
-double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeLeftBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
@@ -72,7 +63,12 @@ double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col
 }
 
 
-double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeLeftBoundaryClosed() {
+    return 0;
+}
+
+
+double calcHorizontalChangeRightBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
         2 * grid.getAlphaX()(row,col) * bc.getBoundaryConditionValue(BC_SIDE_RIGHT)(row)
@@ -88,7 +84,12 @@ double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int co
 }
 
 
-double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeRightBoundaryClosed() {
+    return 0;
+}
+
+
+double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
@@ -104,7 +105,12 @@ double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
 }
 
 
-double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcVerticalChangeTopBoundaryClosed() {
+    return 0;
+}
+
+
+double calcVerticalChangeBottomBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
         2 * grid.getAlphaY()(row, col) * bc.getBoundaryConditionValue(BC_SIDE_BOTTOM)(col)
@@ -117,6 +123,11 @@ double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col
             * grid.getConcentrations()(row-1,col);
 
     return result;
+}
+
+
+double calcVerticalChangeBottomBoundaryClosed() {
+    return 0;
 }
 
 
@@ -144,7 +155,7 @@ MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+                    calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
                 )
             ;
 
@@ -154,7 +165,7 @@ MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeRightBoundary(grid, bc, row, col)
+                    calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
                 )
             ;
 
@@ -196,7 +207,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+                    calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
                 )
             + timestep / (deltaRow*deltaRow)
                 * (
@@ -211,7 +222,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeRightBoundary(grid, bc, row, col)
+                    calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
                 )
             + timestep / (deltaRow*deltaRow)
                 * (
@@ -227,7 +238,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
                 * (
-                    calcVerticalChangeTopBoundary(grid, bc, row, col)
+                    calcVerticalChangeTopBoundaryConstant(grid, bc, row, col)
                 )
             + timestep / (deltaCol*deltaCol) 
                 * (
@@ -242,7 +253,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
                 * (
-                    calcVerticalChangeBottomBoundary(grid, bc, row, col)
+                    calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col)
                 )
             + timestep / (deltaCol*deltaCol) 
                 * (
@@ -257,11 +268,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+                calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeTopBoundary(grid, bc, row, col)
+                calcVerticalChangeTopBoundaryConstant(grid, bc, row, col)
             )
         ;
 
@@ -271,11 +282,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeRightBoundary(grid, bc, row, col)
+                calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeTopBoundary(grid, bc, row, col)
+                calcVerticalChangeTopBoundaryConstant(grid, bc, row, col)
             )
         ;
 
@@ -285,11 +296,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+                calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeBottomBoundary(grid, bc, row, col)
+                calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col)
             )
         ;
 
@@ -299,11 +310,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeRightBoundary(grid, bc, row, col)
+                calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeBottomBoundary(grid, bc, row, col)
+                calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col)
             )
         ;
 
