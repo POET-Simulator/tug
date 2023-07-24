@@ -1,7 +1,7 @@
-#+TITLE: Numerical solution of diffusion equation in 2D with ADI Scheme
+#+TITLE: Finite Difference Schemes for the numerical solution of heterogeneous diffusion equation in 2D
 #+LaTeX_CLASS_OPTIONS: [a4paper,10pt]
 #+LATEX_HEADER: \usepackage{fullpage}
-#+LATEX_HEADER: \usepackage{amsmath, systeme}
+#+LATEX_HEADER: \usepackage{amsmath, systeme, cancel, xcolor}
 #+OPTIONS: toc:nil
 
 
@@ -308,8 +308,8 @@ form:
 
 * Heterogeneous diffusion
 
-If the diffusion coefficient $\alpha$ is spatially variable, [[eqn:1]] can
-be rewritten:
+If the diffusion coefficient $\alpha$ is spatially variable, equation
+[[eqn:1]] can be rewritten as:
 
 #+NAME: eqn:hetdiff
 \begin{align}
@@ -391,8 +391,8 @@ concentrations.
 ** Direct discretization
 
 As noted in literature (LeVeque and Numerical Recipes) a better way is
-to discretize directly the physical problem ([[eqn:hetdiff]]) at points
-halfway between grid points:
+to discretize directly the physical problem (eq. [[eqn:hetdiff]]) at
+points halfway between grid points:
 
 \begin{align*}
 \begin{cases}
@@ -401,15 +401,18 @@ halfway between grid points:
 \end{cases}
 \end{align*}
 
-\noindent A further differentiation gives us the centered
+\noindent A further differentiation gives us the spatially centered
 approximation of $\frac{\partial}{\partial x} \left(\alpha(x)
 \frac{\partial C }{\partial x}\right)$:
 
-\begin{align*}
+#+NAME: eqn:CS_het
+\begin{equation}
+\begin{aligned}
 \frac{\partial}{\partial x} \left(\alpha(x)
 \frac{\partial C }{\partial x}\right)(x_i) & \simeq \frac{1}{\Delta x}\left[\alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right) - \alpha_{i-1/2} \left( \frac{C_{i} -C_{i-1}}{\Delta x} \right) \right]\\
 &\displaystyle =\frac{1}{\Delta x^2} \left[ \alpha_{i+1/2}C_{i+1} - (\alpha_{i+1/2}+\alpha_{i-1/2}) C_{i} + \alpha_{i-1/2}C_{i-1}\right]
-\end{align*}
+\end{aligned}
+\end{equation}
 
 \noindent The ADI scheme with this approach becomes:
 
@@ -439,3 +442,98 @@ explicit terms, the two sweeps become:
 \end{aligned}
 \right.
 \end{equation}
+
+\bigskip
+
+\noindent The "interblock" diffusion coefficients $\alpha_{i+1/2,j}$
+can be arithmetic mean:
+
+\[
+\displaystyle \alpha_{i+1/2, j} = \displaystyle \frac{\alpha_{i+1, j} + \alpha_{i, j}}{2}
+\]
+
+\noindent or the harmonic mean:
+
+\[
+\displaystyle \alpha_{i+1/2, j} = \displaystyle \frac{2}{\frac{1}{\alpha_{i+1, j}} + \frac{1}{\alpha_{i, j}}}
+\]
+
+
+
+\pagebreak
+
+* Explicit scheme for 2D heterogeneous diffusion
+
+A classical explicit FTCS scheme (forward in time, central in space)
+for 2D heterogeneous diffusion can be expressed simply leveraging the
+discretization of equation [[eqn:CS_het]]:
+
+#+NAME: eqn:2DHeterFTCS
+\begin{equation}
+\begin{aligned}
+\frac{C_{i,j}^{t+1} - C_{i,j}^{t}}{\Delta t} = & \frac{1}{\Delta x^2} \left[ \alpha^x_{i+1/2, j}C^t_{i+1, j} - (\alpha^x_{i+1/2, j} + \alpha^x_{i-1/2, j}) C^t_{i,j} + \alpha^x_{i-1/2,j}C^t_{i-1,j}\right] + \\
+                                               & \frac{1}{\Delta y^2} \left[ \alpha^y_{i, j+1/2}C^t_{i, j+1} - (\alpha^y_{i, j+1/2} + \alpha^y_{i, j-1/2}) C^t_{i,j} + \alpha^y_{i,j-1/2}C^t_{i,j-1}\right]
+\end{aligned}
+\end{equation}
+\noindent where in the RHS only the known concentrations at time $t$
+appear. Rearranging the terms, we get:
+
+#+NAME: eqn:2DHeterFTCS_final
+\begin{equation}
+\begin{aligned}
+C_{i,j}^{t+1} = & C^t_{i,j} +\\
+                & \frac{\Delta t}{\Delta x^2} \left[ \alpha^x_{i+1/2, j}C^t_{i+1, j} - (\alpha^x_{i+1/2, j} + \alpha^x_{i-1/2, j}) C^t_{i,j} + \alpha^x_{i-1/2,j}C^t_{i-1,j}\right] + \\
+                & \frac{\Delta t}{\Delta y^2} \left[ \alpha^y_{i, j+1/2}C^t_{i, j+1} - (\alpha^y_{i, j+1/2} + \alpha^y_{i, j-1/2}) C^t_{i,j} + \alpha^y_{i,j-1/2}C^t_{i,j-1}\right]
+\end{aligned}
+\end{equation}
+
+The Courant-Friedrichs-Lewy stability criterion for this scheme reads:
+#+NAME: eqn:CFL2DFTCS
+\begin{equation}
+\Delta t \leq \frac{(\Delta x^2, \Delta y^2)}{2 \max(\alpha_{i,j})}
+\end{equation}
+
+** Boundary conditions
+
+In analogy to the treatment of the 1D homogeneous FTCS scheme (cfr
+section 1), we need to differentiate the domain boundaries ($i=0$ and
+$i=n_x$; the same applies to $j$ of course) accounting for the
+discrepancy in the discretization.
+
+For the zero-th (left) cell, whose center is at $x=dx/2$, we can
+evaluate the left gradient with the left boundary using such distance,
+calling $l$ the numerical value of a constant boundary condition,
+equation [[eqn:CS_het]] becomes:
+
+#+NAME: eqn:2D_FTCS_left
+\begin{equation}
+\begin{aligned}
+\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)(x_0) & \simeq \frac{1}{\Delta x}\left[\alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right) - \alpha_{i} \left( \frac{C_{i} - l }{\frac{\Delta x}{2}} \right) \right]\\
+&\displaystyle =\frac{1}{\Delta x^2} \left[ \alpha_{i+1/2}C_{i+1} - (\alpha_{i+1/2}+ 2\alpha_i) C_{i} + 2 \alpha_{i}\cdot l\right]
+\end{aligned}
+\end{equation}
+
+\noindent Similarly, for $i=n_x$,
+
+#+NAME: eqn:2D_FTCS_right
+\begin{equation}
+\begin{aligned}
+\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)(x_n) & \simeq \frac{1}{\Delta x}\left[\alpha_{i} \left( \frac{r -C_{i}}{\frac{\Delta x}{2}} \right) - \alpha_{i-1/2} \left( \frac{C_{i} - C_{i-1}} {\Delta x} \right) \right]\\
+&\displaystyle =\frac{1}{\Delta x^2} \left[ 2 \alpha_{i} r - (\alpha_{i+1/2}+ 2\alpha_i) C_{i} + \alpha_{i-1/2}\cdot C_{i-1}\right]
+\end{aligned}
+\end{equation}
+
+If on the right boundary we have *closed* or Neumann condition, the
+left derivative becomes zero and we are left with:
+
+#+NAME: eqn:2D_FTCS_rightclosed
+\begin{equation}
+\begin{aligned}
+\frac{\partial}{\partial x} \left(\alpha(x)
+\frac{\partial C }{\partial x}\right)(x_n) & \simeq \frac{1}{\Delta x}\left[\cancel{\alpha_{i+1/2} \left( \frac{C_{i+1} -C_{i}}{\Delta x} \right)} - \alpha_{i-1/2} \left( \frac{C_{i} -C_{i-1}}{\Delta x} \right) \right]\\
+&\displaystyle =\frac{\alpha_{i-1/2}}{\Delta x^2} (C_{i-1} - C_i)
+\end{aligned}
+\end{equation}
+
