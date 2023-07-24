@@ -52,6 +52,10 @@ double calcVerticalChange(Grid grid, int row, int col) {
 }
 
 
+double calcVerticalChangeClosed() {
+    return 0;
+}
+
 double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
