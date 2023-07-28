@@ -44,7 +44,12 @@ int main(int argc, char *argv[]) {
     // ******************
 
     // create a boundary with constant values
-    Boundary bc = Boundary(grid, BC_TYPE_CONSTANT);
+    Boundary bc = Boundary(grid);
+    bc.setBoundarySideConstant(BC_SIDE_LEFT, 0);
+    bc.setBoundarySideConstant(BC_SIDE_RIGHT, 0);
+    bc.setBoundarySideConstant(BC_SIDE_TOP, 0);
+    bc.setBoundarySideConstant(BC_SIDE_BOTTOM, 0);
+
 
     // (optional) set boundary condition values for one side, e.g.:
     // VectorXd bc_left_values = VectorXd::Constant(20,1); // length,value
@@ -68,7 +73,7 @@ int main(int argc, char *argv[]) {
     simulation.setTimestep(0.1); // timestep
 
     // (optional) set the number of iterations
-    simulation.setIterations(2);
+    simulation.setIterations(10000);
 
     // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
     simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);

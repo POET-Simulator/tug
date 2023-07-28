@@ -1,8 +1,10 @@
+#include "TugUtils.hpp"
 #include <cstddef>
 #include <tug/Boundary.hpp>
 #include <iostream>
 
 using namespace std;
+
 
 double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = false) {
     if (useHarmonic) {
@@ -57,7 +59,7 @@ double calcHorizontalChangeLeftBoundaryConstant(Grid grid, Boundary bc, int row,
             + 2 * grid.getAlphaX()(row,col)
             ) 
             * grid.getConcentrations()(row,col) 
-        + 2 * grid.getAlphaX()(row,col) * bc.getBoundaryConditionValue(BC_SIDE_LEFT)(row);
+        + 2 * grid.getAlphaX()(row,col) * bc.getBoundaryElementValue(BC_SIDE_LEFT, row);
 
     return result;
 }
@@ -73,10 +75,21 @@ double calcHorizontalChangeLeftBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
+double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col) {
+    if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CONSTANT) {
+        return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
+    } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CLOSED) {
+        return calcHorizontalChangeLeftBoundaryClosed(grid, row, col);
+    } else {
+        throw_invalid_argument("Undefined Boundary Condition Type!");
+    }
+}
+
+
 double calcHorizontalChangeRightBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
-        2 * grid.getAlphaX()(row,col) * bc.getBoundaryConditionValue(BC_SIDE_RIGHT)(row)
+        2 * grid.getAlphaX()(row,col) * bc.getBoundaryElementValue(BC_SIDE_RIGHT, row)
         - (
             calcAlphaIntercell(grid.getAlphaX()(row,col-1), grid.getAlphaX()(row,col))
             + 2 * grid.getAlphaX()(row,col)
@@ -99,6 +112,17 @@ double calcHorizontalChangeRightBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
+double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int col) {
+    if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CONSTANT) {
+        return calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col);
+    } else if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CLOSED) {
+        return calcHorizontalChangeRightBoundaryClosed(grid, row, col);
+    } else {
+        throw_invalid_argument("Undefined Boundary Condition Type!");
+    }
+}
+
+
 double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
     
     double result = 
@@ -109,7 +133,7 @@ double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, in
             + 2 * grid.getAlphaY()(row, col)
             ) 
             * grid.getConcentrations()(row, col)
-        + 2 * grid.getAlphaY()(row, col) * bc.getBoundaryConditionValue(BC_SIDE_TOP)(col);
+        + 2 * grid.getAlphaY()(row, col) * bc.getBoundaryElementValue(BC_SIDE_TOP, col);
 
     return result;
 }
@@ -125,10 +149,21 @@ double calcVerticalChangeTopBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
+double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
+    if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CONSTANT) {
+        return calcVerticalChangeTopBoundaryConstant(grid, bc, row, col);
+    } else if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CLOSED) {
+        return calcVerticalChangeTopBoundaryClosed(grid, row, col);
+    } else {
+        throw_invalid_argument("Undefined Boundary Condition Type!");
+    }
+}
+
+
 double calcVerticalChangeBottomBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
 
     double result = 
-        2 * grid.getAlphaY()(row, col) * bc.getBoundaryConditionValue(BC_SIDE_BOTTOM)(col)
+        2 * grid.getAlphaY()(row, col) * bc.getBoundaryElementValue(BC_SIDE_BOTTOM, col)
         - (
             calcAlphaIntercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col)) 
             + 2 * grid.getAlphaY()(row, col)
@@ -148,6 +183,17 @@ double calcVerticalChangeBottomBoundaryClosed(Grid grid, int row, int col) {
             * (grid.getConcentrations()(row, col) - grid.getConcentrations()(row-1, col)));
 
     return result;
+}
+
+
+double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col) {
+    if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CONSTANT) {
+        return calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col);
+    } else if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CLOSED) {
+        return calcVerticalChangeBottomBoundaryClosed(grid, row, col);
+    } else {
+        throw_invalid_argument("Undefined Boundary Condition Type!");
+    }
 }
 
 
@@ -175,7 +221,7 @@ MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
+                    calcHorizontalChangeLeftBoundary(grid, bc, row, col)
                 )
             ;
 
@@ -185,7 +231,7 @@ MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
+                    calcHorizontalChangeRightBoundary(grid, bc, row, col)
                 )
             ;
 
@@ -240,7 +286,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
+                    calcHorizontalChangeLeftBoundary(grid, bc, row, col)
                 )
             + timestep / (deltaRow*deltaRow)
                 * (
@@ -255,7 +301,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
+                    calcHorizontalChangeRightBoundary(grid, bc, row, col)
                 )
             + timestep / (deltaRow*deltaRow)
                 * (
@@ -271,7 +317,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
                 * (
-                    calcVerticalChangeTopBoundaryConstant(grid, bc, row, col)
+                    calcVerticalChangeTopBoundary(grid, bc, row, col)
                 )
             + timestep / (deltaCol*deltaCol) 
                 * (
@@ -286,7 +332,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
                 * (
-                    calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col)
+                    calcVerticalChangeBottomBoundary(grid, bc, row, col)
                 )
             + timestep / (deltaCol*deltaCol) 
                 * (
@@ -301,11 +347,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
+                calcHorizontalChangeLeftBoundary(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeTopBoundaryConstant(grid, bc, row, col)
+                calcVerticalChangeTopBoundary(grid, bc, row, col)
             )
         ;
 
@@ -315,11 +361,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
+                calcHorizontalChangeRightBoundary(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeTopBoundaryConstant(grid, bc, row, col)
+                calcVerticalChangeTopBoundary(grid, bc, row, col)
             )
         ;
 
@@ -329,11 +375,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col)
+                calcHorizontalChangeLeftBoundary(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col)
+                calcVerticalChangeBottomBoundary(grid, bc, row, col)
             )
         ;
 
@@ -343,11 +389,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
         + timestep/(deltaCol*deltaCol)
             * (
-                calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col)
+                calcHorizontalChangeRightBoundary(grid, bc, row, col)
             )
         + timestep/(deltaRow*deltaRow)
             * (
-                calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col)
+                calcVerticalChangeBottomBoundary(grid, bc, row, col)
             )
         ;
 

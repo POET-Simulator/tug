@@ -34,12 +34,15 @@ double BoundaryElement::getValue() {
 
 Boundary::Boundary(Grid grid) : grid(grid) {
     //probably to DEBUG assignment grid
-    
 
     if (grid.getDim() == 1) {
+        this->boundaries = vector<vector<BoundaryElement>>(2);
+
         this->boundaries[BC_SIDE_LEFT].push_back(BoundaryElement());
         this->boundaries[BC_SIDE_RIGHT].push_back(BoundaryElement());
     } else if (grid.getDim() == 2) {
+        this->boundaries = vector<vector<BoundaryElement>>(4);
+
         this->boundaries[BC_SIDE_LEFT] = vector<BoundaryElement>(grid.getRow(), BoundaryElement());
         this->boundaries[BC_SIDE_RIGHT] = vector<BoundaryElement>(grid.getRow(), BoundaryElement());
         this->boundaries[BC_SIDE_TOP] = vector<BoundaryElement>(grid.getCol(), BoundaryElement());
