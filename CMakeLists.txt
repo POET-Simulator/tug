@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(OpenMP)
-find_package(easy_profiler REQUIRED)
+find_package(easy_profiler)
 
 ## SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O2 -mfma")
 option(TUG_USE_OPENMP "Compile with OpenMP support" ON)

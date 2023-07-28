@@ -63,8 +63,13 @@ double calcHorizontalChangeLeftBoundaryConstant(Grid grid, Boundary bc, int row,
 }
 
 
-double calcHorizontalChangeLeftBoundaryClosed() {
-    return 0;
+double calcHorizontalChangeLeftBoundaryClosed(Grid grid, int row, int col) {
+    
+    double result = 
+        calcAlphaIntercell(grid.getAlphaX()(row, col+1), grid.getAlphaX()(row, col)) 
+            * (grid.getConcentrations()(row, col+1) - grid.getConcentrations()(row, col));
+    
+    return result;
 }
 
 
@@ -84,8 +89,13 @@ double calcHorizontalChangeRightBoundaryConstant(Grid grid, Boundary bc, int row
 }
 
 
-double calcHorizontalChangeRightBoundaryClosed() {
-    return 0;
+double calcHorizontalChangeRightBoundaryClosed(Grid grid, int row, int col) {
+    
+    double result = 
+        - (calcAlphaIntercell(grid.getAlphaX()(row, col-1), grid.getAlphaX()(row, col))
+         * (grid.getConcentrations()(row, col) - grid.getConcentrations()(row, col-1)));
+    
+    return result;
 }
 
 
@@ -105,8 +115,13 @@ double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, in
 }
 
 
-double calcVerticalChangeTopBoundaryClosed() {
-    return 0;
+double calcVerticalChangeTopBoundaryClosed(Grid grid, int row, int col) {
+    
+    double result = 
+        calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getConcentrations()(row, col)) 
+            * (grid.getConcentrations()(row+1, col) - grid.getConcentrations()(row, col));
+
+    return result;
 }
 
 
@@ -126,8 +141,13 @@ double calcVerticalChangeBottomBoundaryConstant(Grid grid, Boundary bc, int row,
 }
 
 
-double calcVerticalChangeBottomBoundaryClosed() {
-    return 0;
+double calcVerticalChangeBottomBoundaryClosed(Grid grid, int row, int col) {
+
+    double result = 
+        - (calcAlphaIntercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col))
+            * (grid.getConcentrations()(row, col) - grid.getConcentrations()(row-1, col)));
+
+    return result;
 }
 
 
