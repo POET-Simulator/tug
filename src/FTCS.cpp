@@ -270,19 +270,6 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     // left without corners / looping over rows
     int col = 0;
     for (int row = 1; row < rowMax-1; row++) {
-        // concentrations_t1(row, col) = grid.getConcentrations()(row, col);
-        // if (bc.getBoundaryConditionType(BC_SIDE_LEFT, row)) {
-        //     concentrations_t1(row, col) += timestep / (deltaCol*deltaCol)
-        //         + calcHorizontalChangeLeftBoundaryClosed(grid, row, col);
-        // } else {
-        //     concentrations_t1(row, col) += timestep / (deltaCol*deltaCol)
-        //         + calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
-        // }
-        // concentrations_t1(row, col) += timestep / (deltaRow*deltaRow)
-        //         * (
-        //             calcVerticalChange(grid, row, col)
-        //         );
-
         concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
@@ -403,29 +390,11 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
 
 
 MatrixXd FTCS(Grid grid, Boundary bc, double timestep) {
-    // inner cells 
-    // TODO only the boundary cells are different in constant and closed case
-
-    // if 1D:
-    //      do inner cells 
-    //      do left boundary according to bc type
-    //      do right boundary according to bc type
-    // if 2D:
-    //      do inner cells
-    //      do left boundaries according to bc type
-    //      do right boundaries according to bc type
-    //      ...
-
+    
     if (grid.getDim() == 1) {
         return FTCS_1D(grid, bc, timestep);
     } else {
         return FTCS_2D(grid, bc, timestep);
     }
 
-    // checking the boundary condition type first does not work
-    // if the boundary condition types change dynamically for a grid
-    // meaning:
-    // - boundary condition type needs to be checked for every single boundary cell
-    //      -> this check is last in order
-    // - 
 }
