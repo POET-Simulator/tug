@@ -83,6 +83,10 @@ class Boundary {
 
         BoundaryElement getBoundaryElement(BC_SIDE side, int index);
 
+        BC_TYPE getBoundaryElementType(BC_SIDE side, int index);
+
+        double getBoundaryElementValue(BC_SIDE side, int index);
+
     private:
         Grid grid;
         
@@ -90,3 +94,4 @@ class Boundary {
 };
 
 #endif
+

@@ -71,3 +71,12 @@ vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
 BoundaryElement Boundary::getBoundaryElement(BC_SIDE side, int index) {
     return this->boundaries[side][index];
 }
+
+BC_TYPE Boundary::getBoundaryElementType(BC_SIDE side, int index) {
+    return this->boundaries[side][index].getType();
+}
+
+double Boundary::getBoundaryElementValue(BC_SIDE side, int index) {
+    return this->boundaries[side][index].getValue();
+}
+
