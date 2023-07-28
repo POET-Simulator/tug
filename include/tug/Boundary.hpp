@@ -2,6 +2,7 @@
 #define BOUNDARY_H_
 
 #include <Eigen/Core>
+#include <cstddef>
 #include "Grid.hpp"
 
 using namespace std;
@@ -19,26 +20,21 @@ enum BC_SIDE {
     BC_SIDE_BOTTOM
 };
 
-/*******************************************
-class WallElement {
+class BoundaryElement {
     public:
-        WallElement() {
-            this->type = BC_TYPE_CLOSED;
-            this->value = 0;
-        }
+        // bc type closed
+        BoundaryElement();
 
-        WallElement(double value) {
-            this->type = BC_TYPE_CONSTANT;
-            this->value = value;
-        }
+        // bc type constant
+        BoundaryElement(double value);
 
-        BC_TYPE getType() {
-            return this->type;
-        }
+        void setType(BC_TYPE type);
 
-        double getValue() {
-            return this->value;
-        }
+        void setValue(double value);
+
+        BC_TYPE getType();
+
+        double getValue();
 
     private:
         BC_TYPE type;
@@ -47,16 +43,22 @@ class WallElement {
 
 class BoundaryWall {
     public: 
-        BoundaryWall(int length) {
-            // create array with length many wall elements
-        }
+        BoundaryWall(int length);
+
+        void setWall(BC_TYPE type, double value = NAN);
+
+        vector<BoundaryElement> getWall();
+
+        void setBoundaryElement(int index, BC_TYPE type, double value = NAN);
+
+        BoundaryElement getBoundaryElement();
 
     private:
         BC_SIDE side;
         int length;
-        vector<WallElement> wall;
+        vector<BoundaryElement> wall;
+
 };
-***********************/
 
 class Boundary {
     public:
@@ -67,40 +69,29 @@ class Boundary {
          * @param grid
          * @param type  
          */
-        Boundary(Grid grid, BC_TYPE type);
+        Boundary(Grid grid);
 
-        /**
-         * @brief Get the Boundary Condition Type object
-         * 
-         * @return auto 
-         */
-        BC_TYPE getBoundaryConditionType();
+        void setBoundarySideClosed(BC_SIDE side);
 
-        /**
-         * @brief Set the Boundary Condition Value object
-         * 
-         * @param side 
-         * @param values 
-         */
-        void setBoundaryConditionValue(BC_SIDE side, VectorXd values);
+        void setBoundarySideConstant(BC_SIDE side, double value);
 
-        /**
-         * @brief Get the Boundary Condition Value object
-         * 
-         * @param side 
-         * @return auto 
-         */
-        VectorXd getBoundaryConditionValue(BC_SIDE side);
+        void setBoundaryElementClosed(BC_SIDE side, int index);
 
+        void setBoundaryElementConstant(BC_SIDE side, int index, double value);
+
+        vector<BoundaryElement> getBoundarySide(BC_SIDE side);
+
+        BoundaryElement getBoundaryElement(BC_SIDE side, int index);
+
+        BC_TYPE getBoundaryElementType(BC_SIDE side, int index);
+
+        double getBoundaryElementValue(BC_SIDE side, int index);
 
     private:
         Grid grid;
-
-        // need a way to save the bc type and value for each single 'boundary cell'
-        // perhaps an array for each side with structs containing the bc type as well as a value
-        // or another object that contains one boundary side 
-        BC_TYPE type;
-        VectorXd left, right, top, bottom;
+        
+        vector<vector<BoundaryElement>> boundaries;
 };
 
 #endif
+

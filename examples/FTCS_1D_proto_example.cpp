@@ -1,3 +1,4 @@
+#include "tug/Boundary.hpp"
 #include <tug/Simulation.hpp>
 
 int main(int argc, char *argv[]) {
@@ -18,7 +19,9 @@ int main(int argc, char *argv[]) {
     // ******************
 
     // create a boundary with constant values
-    Boundary bc = Boundary(grid, BC_TYPE_CONSTANT);
+    Boundary bc = Boundary(grid);
+    bc.setBoundarySideConstant(BC_SIDE_LEFT, 1);
+    bc.setBoundarySideConstant(BC_SIDE_RIGHT, 1);
 
 
     // ************************
