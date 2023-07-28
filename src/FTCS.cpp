@@ -224,6 +224,19 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
     // left without corners / looping over rows
     int col = 0;
     for (int row = 1; row < rowMax-1; row++) {
+        // concentrations_t1(row, col) = grid.getConcentrations()(row, col);
+        // if (bc.getBoundaryConditionType(BC_SIDE_LEFT, row)) {
+        //     concentrations_t1(row, col) += timestep / (deltaCol*deltaCol)
+        //         + calcHorizontalChangeLeftBoundaryClosed(grid, row, col);
+        // } else {
+        //     concentrations_t1(row, col) += timestep / (deltaCol*deltaCol)
+        //         + calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
+        // }
+        // concentrations_t1(row, col) += timestep / (deltaRow*deltaRow)
+        //         * (
+        //             calcVerticalChange(grid, row, col)
+        //         );
+
         concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
                 * (
