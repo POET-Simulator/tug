@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); // #row,#col,value
     // grid.setConcentrations(concentrations);
     MatrixXd concentrations = MatrixXd::Constant(row,col,0);
-    concentrations(0,0) = 2000;
+    concentrations(0,0) = 1999;
     grid.setConcentrations(concentrations);
 
     // (optional) set alphas of the grid, e.g.:
