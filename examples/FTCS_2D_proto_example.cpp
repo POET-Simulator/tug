@@ -8,16 +8,16 @@
 
 #include <tug/Simulation.hpp>
 #include <easy/profiler.h>
-#define EASY_PROFILER_ENABLE ::profiler::setEnabled(true);
+// #define EASY_PROFILER_ENABLE ::profiler::setEnabled(true);
 
 
 int main(int argc, char *argv[]) {
-    EASY_PROFILER_ENABLE;
-    profiler::startListen();  
+    // EASY_PROFILER_ENABLE;
+    // profiler::startListen();  
     // **************
     // **** GRID ****
     // **************
-    profiler::startListen();
+    // profiler::startListen();
     // create a grid with a 20 x 20 field
     int row = 20;
     int col = 20;
@@ -77,9 +77,9 @@ int main(int argc, char *argv[]) {
     
     // run the simulation
 
-    EASY_BLOCK("SIMULATION")
+    // EASY_BLOCK("SIMULATION")
     simulation.run();
-    EASY_END_BLOCK;
-    profiler::dumpBlocksToFile("test_profile.prof");
-    profiler::stopListen();
+    // EASY_END_BLOCK;
+    // profiler::dumpBlocksToFile("test_profile.prof");
+    // profiler::stopListen();
 }
