@@ -62,7 +62,7 @@ double calcHorizontalChangeLeftBoundaryConstant(Grid grid, Boundary bc, int row,
     return result;
 }
 
-// TODO: REVIEW
+
 double calcHorizontalChangeLeftBoundaryClosed(Grid grid, int row, int col) {
     
     double result = 
@@ -88,7 +88,7 @@ double calcHorizontalChangeRightBoundaryConstant(Grid grid, Boundary bc, int row
     return result;
 }
 
-// TODO: REVIEW
+
 double calcHorizontalChangeRightBoundaryClosed(Grid grid, int row, int col) {
     
     double result = 
@@ -114,7 +114,7 @@ double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, in
     return result;
 }
 
-// TODO: REVIEW
+
 double calcVerticalChangeTopBoundaryClosed(Grid grid, int row, int col) {
     
     double result = 
@@ -140,7 +140,7 @@ double calcVerticalChangeBottomBoundaryConstant(Grid grid, Boundary bc, int row,
     return result;
 }
 
-// TODO: REVIEW
+
 double calcVerticalChangeBottomBoundaryClosed(Grid grid, int row, int col) {
 
     double result = 
