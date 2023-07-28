@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
     MatrixXd concentrations = MatrixXd::Constant(20,20,0);
     concentrations(0,0) = 2000;
     grid.setConcentrations(concentrations);
+    
 
     // (optional) set alphas of the grid, e.g.:
     // MatrixXd alphax = MatrixXd::Constant(20,20,1); // row,col,value
