@@ -7,7 +7,7 @@
  */
 
 #include <tug/Simulation.hpp>
-#include <easy/profiler.h>
+// #include <easy/profiler.h>
 // #define EASY_PROFILER_ENABLE ::profiler::setEnabled(true);
 
 
