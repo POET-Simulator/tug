@@ -536,4 +536,3 @@ left derivative becomes zero and we are left with:
 &\displaystyle =\frac{\alpha_{i-1/2}}{\Delta x^2} (C_{i-1} - C_i)
 \end{aligned}
 \end{equation}
-
