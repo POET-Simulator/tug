@@ -6,7 +6,7 @@
 using namespace std;
 
 
-double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = false) {
+double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = true) {
     if (useHarmonic) {
         return 2 / ((1/alpha1) + (1/alpha2));
     } else {
