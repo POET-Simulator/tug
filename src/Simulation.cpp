@@ -13,7 +13,23 @@ Simulation::Simulation(Grid grid, Boundary bc, APPROACH approach) : grid(grid), 
     this->approach = approach;
 
     //TODO calculate max time step
-    this->timestep = 0.01;
+
+    double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+
+    double minDelta = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+    double maxAlphaX = grid.getAlphaX().maxCoeff();
+    double maxAlphaY = grid.getAlphaY().maxCoeff();
+    double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
+
+    //double maxStableTimestep = minDelta / (2*maxAlpha); // Formula from Marco --> seems to be unstable
+    double maxStableTimestep = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
+
+    cout << maxStableTimestep << endl;
+
+    this->timestep = maxStableTimestep;
+
+    
     this->iterations = 1000;
     this->csv_output = CSV_OUTPUT_OFF;
 }

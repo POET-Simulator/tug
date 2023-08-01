@@ -40,8 +40,8 @@ int main(int argc, char *argv[]) {
 
     // Simulation
     Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
-    sim.setTimestep(0.001);
-    sim.setIterations(7000);
+    //sim.setTimestep(0.001);
+    sim.setIterations(2);
     sim.setOutputCSV(CSV_OUTPUT_VERBOSE);
 
 
