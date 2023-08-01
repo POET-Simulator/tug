@@ -1,4 +1,5 @@
 #include "Boundary.hpp"
+#include <ios>
 
 using namespace std;
 
@@ -8,9 +9,22 @@ enum APPROACH {
 };
 
 enum CSV_OUTPUT {
-    CSV_OUTPUT_OFF,
-    CSV_OUTPUT_ON,
-    CSV_OUTPUT_VERBOSE
+    CSV_OUTPUT_OFF, // do not produce csv output
+    CSV_OUTPUT_ON, // produce csv output with last concentration matrix
+    CSV_OUTPUT_VERBOSE, // produce csv output with all concentration matrices
+    CSV_OUTPUT_XTREME // produce csv output with all concentration matrices and simulation environment
+};
+
+enum CONSOLE_OUTPUT {
+    CONSOLE_OUTPUT_OFF, // do not print any output to console
+    CONSOLE_OUTPUT_ON, // print before concentrations to console
+    CONSOLE_OUTPUT_VERBOSE // print all concentration matrices to console
+};
+
+enum TIME_MEASURE {
+    TIME_MEASURE_OFF, // do not print any time measures
+    TIME_MEASURE_ON, // print one time measure after all iterations
+    TIME_MEASURE_VERBOSE // print time measures after each iteration
 };
 
 class Simulation {
@@ -31,6 +45,20 @@ class Simulation {
          * @param csv_output 
          */
         void setOutputCSV(CSV_OUTPUT csv_output);
+
+        /**
+         * @brief Set the Output Console object
+         * 
+         * @param console_output 
+         */
+        void setOutputConsole(CONSOLE_OUTPUT console_output);
+
+        /**
+         * @brief Set the Time Measure object
+         * 
+         * @param time_measure 
+         */
+        void setTimeMeasure(TIME_MEASURE time_measure);
 
         /**
          * @brief Set the Timestep object
@@ -65,8 +93,14 @@ class Simulation {
          */
         void printConcentrationsConsole();
 
+        /**
+         * @brief 
+         * 
+         * @return string 
+         */
+        string createCSVfile();
 
-        void printConcentrationsCSV(string ident, bool appendMode = false);
+        void printConcentrationsCSV(string filename);
 
         /**
          * @brief Start the simulation with all of the previously set parameters. 
@@ -80,6 +114,8 @@ class Simulation {
         double timestep;
         int iterations;
         CSV_OUTPUT csv_output;
+        CONSOLE_OUTPUT console_output;
+        TIME_MEASURE time_measure;
 
         Grid grid;
         Boundary bc;
