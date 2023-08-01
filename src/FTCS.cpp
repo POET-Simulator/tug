@@ -6,7 +6,7 @@
 using namespace std;
 
 
-double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = true) {
+double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = true) {
     if (useHarmonic) {
         return 2 / ((1/alpha1) + (1/alpha2));
     } else {
@@ -15,7 +15,7 @@ double calcAlphaIntercell(double alpha1, double alpha2, bool useHarmonic = true)
 }
 
 
-double calcHorizontalChange(Grid grid, int row, int col) {
+double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
@@ -32,7 +32,7 @@ double calcHorizontalChange(Grid grid, int row, int col) {
 }
 
 
-double calcVerticalChange(Grid grid, int row, int col) {
+double calcVerticalChange(Grid &grid, int &row, int &col) {
     
     double result =    
         calcAlphaIntercell(grid.getAlphaY()(row+1,col), grid.getAlphaY()(row,col)) 
@@ -49,7 +49,7 @@ double calcVerticalChange(Grid grid, int row, int col) {
 }
 
 
-double calcHorizontalChangeLeftBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
@@ -65,7 +65,7 @@ double calcHorizontalChangeLeftBoundaryConstant(Grid grid, Boundary bc, int row,
 }
 
 
-double calcHorizontalChangeLeftBoundaryClosed(Grid grid, int row, int col) {
+double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row, col+1), grid.getAlphaX()(row, col)) 
@@ -75,7 +75,7 @@ double calcHorizontalChangeLeftBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
-double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CONSTANT) {
         return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CLOSED) {
@@ -86,7 +86,7 @@ double calcHorizontalChangeLeftBoundary(Grid grid, Boundary bc, int row, int col
 }
 
 
-double calcHorizontalChangeRightBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeRightBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
         2 * grid.getAlphaX()(row,col) * bc.getBoundaryElementValue(BC_SIDE_RIGHT, row)
@@ -102,7 +102,7 @@ double calcHorizontalChangeRightBoundaryConstant(Grid grid, Boundary bc, int row
 }
 
 
-double calcHorizontalChangeRightBoundaryClosed(Grid grid, int row, int col) {
+double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
         - (calcAlphaIntercell(grid.getAlphaX()(row, col-1), grid.getAlphaX()(row, col))
@@ -112,7 +112,7 @@ double calcHorizontalChangeRightBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
-double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CONSTANT) {
         return calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CLOSED) {
@@ -123,7 +123,7 @@ double calcHorizontalChangeRightBoundary(Grid grid, Boundary bc, int row, int co
 }
 
 
-double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
+double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
@@ -139,7 +139,7 @@ double calcVerticalChangeTopBoundaryConstant(Grid grid, Boundary bc, int row, in
 }
 
 
-double calcVerticalChangeTopBoundaryClosed(Grid grid, int row, int col) {
+double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getConcentrations()(row, col)) 
@@ -149,7 +149,7 @@ double calcVerticalChangeTopBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
-double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CONSTANT) {
         return calcVerticalChangeTopBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CLOSED) {
@@ -160,7 +160,7 @@ double calcVerticalChangeTopBoundary(Grid grid, Boundary bc, int row, int col) {
 }
 
 
-double calcVerticalChangeBottomBoundaryConstant(Grid grid, Boundary bc, int row, int col) {
+double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
         2 * grid.getAlphaY()(row, col) * bc.getBoundaryElementValue(BC_SIDE_BOTTOM, col)
@@ -176,7 +176,7 @@ double calcVerticalChangeBottomBoundaryConstant(Grid grid, Boundary bc, int row,
 }
 
 
-double calcVerticalChangeBottomBoundaryClosed(Grid grid, int row, int col) {
+double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
 
     double result = 
         - (calcAlphaIntercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col))
@@ -186,7 +186,7 @@ double calcVerticalChangeBottomBoundaryClosed(Grid grid, int row, int col) {
 }
 
 
-double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col) {
+double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CONSTANT) {
         return calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CLOSED) {
@@ -197,7 +197,7 @@ double calcVerticalChangeBottomBoundary(Grid grid, Boundary bc, int row, int col
 }
 
 
-MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
+MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     int colMax = grid.getCol();
     double deltaCol = grid.getDeltaCol();
 
@@ -239,7 +239,7 @@ MatrixXd FTCS_1D(Grid grid, Boundary bc, double timestep) {
 }
 
 
-MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
+MatrixXd FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double deltaRow = grid.getDeltaRow();
@@ -389,7 +389,7 @@ MatrixXd FTCS_2D(Grid grid, Boundary bc, double timestep) {
 }
 
 
-MatrixXd FTCS(Grid grid, Boundary bc, double timestep) {
+MatrixXd FTCS(Grid &grid, Boundary &bc, double &timestep) {
     
     if (grid.getDim() == 1) {
         return FTCS_1D(grid, bc, timestep);
