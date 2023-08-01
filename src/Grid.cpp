@@ -1,3 +1,4 @@
+#include "TugUtils.hpp"
 #include <tug/Grid.hpp>
 #include <iostream>
 
@@ -12,6 +13,11 @@ Grid::Grid(int col) {
 }
 
 Grid::Grid(int row, int col) {
+    // TODO check for reasonable dimensions
+    if (row < 1 || col < 1) {
+        throw_invalid_argument("Either row or col too small!");
+    }
+
     this->row = row;
     this->col = col;
     this->domain_row = row;
@@ -23,7 +29,6 @@ Grid::Grid(int row, int col) {
     this->concentrations = MatrixXd::Constant(row, col, 20);
     this->alpha_x = MatrixXd::Constant(row, col, 1);
     this->alpha_y = MatrixXd::Constant(row, col, 1);
-    
 }
 
 void Grid::setConcentrations(MatrixXd concentrations) {

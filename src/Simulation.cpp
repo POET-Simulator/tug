@@ -1,9 +1,12 @@
+#include <filesystem>
 #include <stdexcept>
+#include <string>
 #include <tug/Simulation.hpp>
 
 #include <fstream>
 
 #include "FTCS.cpp"
+#include "TugUtils.hpp"
 
 using namespace std;
 
@@ -16,14 +19,33 @@ Simulation::Simulation(Grid grid, Boundary bc, APPROACH approach) : grid(grid), 
     this->timestep = 0.01;
     this->iterations = 1000;
     this->csv_output = CSV_OUTPUT_OFF;
+    this->console_output = CONSOLE_OUTPUT_OFF;
+    this->time_measure = TIME_MEASURE_OFF;
 }
 
 void Simulation::setOutputCSV(CSV_OUTPUT csv_output) {
     if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-        throw invalid_argument("Invalid CSV output option given!");
+        // throw invalid_argument("Invalid CSV output option given!");
+        throw_invalid_argument("Invalid CSV output option given!");
     }
 
     this->csv_output = csv_output;
+}
+
+void Simulation::setOutputConsole(CONSOLE_OUTPUT console_output) {
+    if (console_output < CONSOLE_OUTPUT_OFF && console_output > CONSOLE_OUTPUT_VERBOSE) {
+        throw_invalid_argument("Invalid console output option given!");
+    }
+
+    this->console_output = console_output;
+}
+
+void Simulation::setTimeMeasure(TIME_MEASURE time_measure) {
+    if (time_measure < TIME_MEASURE_OFF && time_measure > TIME_MEASURE_ON) {
+        throw_invalid_argument("Invalid time measure option given!");
+    }
+
+    this->time_measure = time_measure;
 }
 
 void Simulation::setTimestep(double timestep) {
@@ -44,22 +66,59 @@ int Simulation::getIterations() {
 }
 
 void Simulation::printConcentrationsConsole() {
-    cout << "Concentrations:" << endl;
     cout << grid.getConcentrations() << endl;
     cout << endl;
 }
 
-void Simulation::printConcentrationsCSV(string ident, bool appendMode) {
+string Simulation::createCSVfile() {
+    ofstream file;
+    int appendIdent = 0;
+    string appendIdentString;
+
+     // APPROACH_ROW_COL_ITERATIONS
+    string approachString = (approach == 0) ? "FTCS" : "BTCS";
+    string row = to_string(grid.getRow());
+    string col = to_string(grid.getCol());
+    string numIterations = to_string(iterations);
+
+    string filename = approachString + "_" + row + "_" + col + "_" + numIterations + ".csv";
+
+    while (filesystem::exists(filename)) {
+        appendIdent += 1;
+        appendIdentString = to_string(appendIdent);
+        filename = filename = approachString + "_" + row + "_" + col + "_" + numIterations + "-" + appendIdentString + ".csv";
+    }
+
+    file.open(filename);
+    if (!file) {
+        exit(1);
+    }
+
+    if (csv_output == CSV_OUTPUT_XTREME) {
+        //rows
+        //cols
+        //iterations
+        //boundary left
+        //boundary right
+        //boundary top
+        //boundary bottom
+        file << row << endl;
+        file << col << endl;
+        file << numIterations << endl;
+        // TODO
+        // file << to_string(bc.printBoundarySide) << endl;
+        file << endl << endl;
+    }
+
+    file.close();
+
+    return filename;
+}
+
+void Simulation::printConcentrationsCSV(string filename) {
     ofstream file;
 
-    string filename = "output-" + ident + ".csv";
-    // string directory = "output/";
-
-    if (appendMode) {
-        file.open(filename, std::ios_base::app);
-    } else {
-        file.open(filename);
-    }
+    file.open(filename, std::ios_base::app);
     if (!file) {
         exit(1);
     }
@@ -71,29 +130,48 @@ void Simulation::printConcentrationsCSV(string ident, bool appendMode) {
 }
 
 void Simulation::run() {
+    string filename;
+    if (this->console_output > CONSOLE_OUTPUT_OFF) {
+        printConcentrationsConsole();
+    }
+    if (this->csv_output > CSV_OUTPUT_OFF) {
+        filename = createCSVfile();
+        printConcentrationsCSV(filename);
+    }
+
     if (approach == FTCS_APPROACH) {
-        printConcentrationsConsole();
+        
         for (int i = 0; i < iterations; i++) {
-            if (csv_output == CSV_OUTPUT_VERBOSE) {
-                printConcentrationsCSV("test", true);
+            if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+                printConcentrationsConsole();
             }
+            if (csv_output == CSV_OUTPUT_VERBOSE && i > 0) {
+                printConcentrationsCSV(filename);
+            }
+
             grid.setConcentrations(FTCS(grid, bc, timestep));
-            // if (i != 0 && i % 200 == 0) {
-            //     printConcentrationsConsole();
-            // }
         }
-        printConcentrationsConsole();
-        if (csv_output >= CSV_OUTPUT_ON) {
-            bool append = false;
-            if (csv_output == CSV_OUTPUT_VERBOSE) {
-                append = true;
-            }
-            printConcentrationsCSV("test", append);
-        }
+
     } else if (approach == BTCS_APPROACH) {
+
         for (int i = 0; i < iterations; i++) {
+            if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+                printConcentrationsConsole();
+            }
+            if (csv_output == CSV_OUTPUT_VERBOSE && i > 0) {
+                printConcentrationsCSV(filename);
+            }
+
             //TODO
             break;
         }
+
+    }
+
+    if (this->console_output > CONSOLE_OUTPUT_OFF) {
+        printConcentrationsConsole();
+    }
+    if (this->csv_output > CSV_OUTPUT_OFF) {
+        printConcentrationsCSV(filename);
     }
 }
