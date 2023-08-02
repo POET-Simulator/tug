@@ -5,7 +5,7 @@
 using namespace std;
 using namespace Eigen;
 
-inline MatrixXd CSV2Eigen(string file2Convert){
+MatrixXd CSV2Eigen(string file2Convert){
 
     vector<double> matrixEntries;
 

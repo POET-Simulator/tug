@@ -1,5 +1,5 @@
 #include <tug/Simulation.hpp>
-#include "csv2eigen.hpp"
+#include "csv2eigen.cpp"
 #include "Eigen/Core"
 
 int main(int argc, char *argv[]) {
