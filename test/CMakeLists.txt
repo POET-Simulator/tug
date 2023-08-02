@@ -11,7 +11,7 @@ if(NOT DOCTEST_LIB)
   FetchContent_MakeAvailable(DocTest)
 endif()
 
-add_executable(testTug setup.cpp testBoundaryCondition.cpp testDiffusion.cpp)
+add_executable(testTug setup.cpp testBoundaryCondition.cpp testDiffusion.cpp testSimulation.cpp)
 target_link_libraries(testTug doctest tug)
 
 add_custom_target(
