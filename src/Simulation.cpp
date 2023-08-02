@@ -146,7 +146,7 @@ void Simulation::printConcentrationsCSV(string filename) {
     file.close();
 }
 
-void Simulation::run() {
+Grid Simulation::run() {
     string filename;
     if (this->console_output > CONSOLE_OUTPUT_OFF) {
         printConcentrationsConsole();
@@ -191,4 +191,6 @@ void Simulation::run() {
     if (this->csv_output > CSV_OUTPUT_OFF) {
         printConcentrationsCSV(filename);
     }
+
+    return grid;
 }

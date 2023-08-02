@@ -50,9 +50,7 @@ static Grid setupSimulation() {
 
 
     // RUN
-    sim.run();
-
-    return grid;
+    return sim.run();
 }
 
 TEST_CASE("equality to reference matrix") {
