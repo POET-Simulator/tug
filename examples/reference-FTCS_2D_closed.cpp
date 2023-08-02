@@ -1,4 +1,6 @@
 #include <tug/Simulation.hpp>
+#include "csv2eigen.hpp"
+#include "Eigen/Core"
 
 int main(int argc, char *argv[]) {
     int row = 11;
@@ -42,8 +44,14 @@ int main(int argc, char *argv[]) {
     Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
     //sim.setTimestep(0.001);
     sim.setIterations(2);
-    sim.setOutputCSV(CSV_OUTPUT_VERBOSE);
+    sim.setOutputCSV(CSV_OUTPUT_ON);
 
+    MatrixXd mymatrix = CSV2Eigen("/Users/hannessigner/Documents/tug/build/examples/FTCS_11_11_2-1.csv");
+
+    cout << "Matrix start:" << endl;
+    cout << mymatrix << endl;
+
+    //bool r = grid.isApprox(mymatrix);
 
     // RUN
     sim.run();

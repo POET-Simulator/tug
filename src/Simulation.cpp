@@ -152,7 +152,7 @@ void Simulation::run() {
     }
     if (this->csv_output > CSV_OUTPUT_OFF) {
         filename = createCSVfile();
-        printConcentrationsCSV(filename);
+        // printConcentrationsCSV(filename);
     }
 
     if (approach == FTCS_APPROACH) {
