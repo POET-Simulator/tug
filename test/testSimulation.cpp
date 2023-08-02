@@ -1,4 +1,4 @@
-#include <_stdio.h>
+#include <stdio.h>
 #include <doctest/doctest.h>
 #include <tug/Simulation.hpp>
 #include <filesystem>
@@ -63,8 +63,5 @@ TEST_CASE("equality to reference matrix") {
     MatrixXd reference = CSV2Eigen(test_path);
 
     Grid grid = setupSimulation();
-
-    cout << reference << endl << endl;
-    cout << grid.getConcentrations() << endl;
     CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
 }
