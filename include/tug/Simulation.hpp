@@ -37,7 +37,7 @@ class Simulation {
          * @param bc 
          * @param aproach 
          */
-        Simulation(Grid grid, Boundary bc, APPROACH approach);
+        Simulation(Grid &grid, Boundary &bc, APPROACH approach);
 
         /**
          * @brief 
@@ -107,7 +107,7 @@ class Simulation {
          * 
          * @return Grid 
          */
-        Grid run();
+        void run();
 
     private:
 
@@ -117,8 +117,8 @@ class Simulation {
         CONSOLE_OUTPUT console_output;
         TIME_MEASURE time_measure;
 
-        Grid grid;
-        Boundary bc;
+        Grid &grid;
+        Boundary &bc;
         APPROACH approach;
 
 };

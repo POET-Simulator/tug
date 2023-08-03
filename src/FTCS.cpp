@@ -239,7 +239,7 @@ MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
 }
 
 
-MatrixXd FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
+void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double deltaRow = grid.getDeltaRow();
@@ -384,17 +384,16 @@ MatrixXd FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
             )
         ;
 
-
-    return concentrations_t1;
+    grid.setConcentrations(concentrations_t1);
 }
 
 
-MatrixXd FTCS(Grid &grid, Boundary &bc, double &timestep) {
+void FTCS(Grid &grid, Boundary &bc, double &timestep) {
     
     if (grid.getDim() == 1) {
-        return FTCS_1D(grid, bc, timestep);
+        FTCS_1D(grid, bc, timestep);
     } else {
-        return FTCS_2D(grid, bc, timestep);
+        FTCS_2D(grid, bc, timestep);
     }
 
 }

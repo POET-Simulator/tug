@@ -10,9 +10,7 @@
 
 using namespace std;
 
-Simulation::Simulation(Grid grid, Boundary bc, APPROACH approach) : grid(grid), bc(bc) {
-    //probably to DEBUG assignment of grid and bc
-    this->grid = grid;
+Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid), bc(bc) {
     this->approach = approach;
 
     //TODO calculate max time step
@@ -146,7 +144,7 @@ void Simulation::printConcentrationsCSV(string filename) {
     file.close();
 }
 
-Grid Simulation::run() {
+void Simulation::run() {
     string filename;
     if (this->console_output > CONSOLE_OUTPUT_OFF) {
         printConcentrationsConsole();
@@ -165,7 +163,7 @@ Grid Simulation::run() {
                 printConcentrationsCSV(filename);
             }
 
-            grid.setConcentrations(FTCS(grid, bc, timestep));
+            FTCS(grid, bc, timestep);
         }
 
     } else if (approach == BTCS_APPROACH) {
@@ -191,5 +189,5 @@ Grid Simulation::run() {
         printConcentrationsCSV(filename);
     }
 
-    return grid;
+    
 }

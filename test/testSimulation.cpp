@@ -49,19 +49,17 @@ static Grid setupSimulation() {
     Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
     sim.setTimestep(0.001);
     sim.setIterations(7000);
-    // sim.setOutputCSV(CSV_OUTPUT_ON);
-    // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
-
+    sim.run();
 
     // RUN
-    return sim.run();
+    return grid;
+    
 }
 
 TEST_CASE("equality to reference matrix") {
     // set string from the header file
     string test_path = testSimulationCSVDir;
     MatrixXd reference = CSV2Eigen(test_path);
-    cout << test_path << endl;
     Grid grid = setupSimulation();
     CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
 }

@@ -1,5 +1,8 @@
 #include <tug/Simulation.hpp>
 #include "Eigen/Core"
+#include <iostream>
+
+using namespace std;
 
 int main(int argc, char *argv[]) {
     int row = 11;
@@ -49,5 +52,7 @@ int main(int argc, char *argv[]) {
 
     // RUN
     sim.run();
+
+    cout << grid.getConcentrations() << endl;
 
 }
