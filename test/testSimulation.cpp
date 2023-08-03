@@ -58,8 +58,8 @@ static Grid setupSimulation() {
 }
 
 TEST_CASE("equality to reference matrix") {
-    fs::path p = fs::current_path().parent_path().parent_path();
-    string test_path = p.generic_string() + "/test/FTCS_11_11_7000.csv";
+    fs::path p = fs::current_path(); // .parent_path().parent_path();
+    string test_path = p.generic_string() + "/FTCS_11_11_7000.csv";
     MatrixXd reference = CSV2Eigen(test_path);
     cout << test_path << endl;
     Grid grid = setupSimulation();
