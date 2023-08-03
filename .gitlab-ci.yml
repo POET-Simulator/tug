@@ -20,6 +20,7 @@ build_release:
 test:
     stage: test
     script:
+        - cp ../test/FTCS_11_11_7000.csv test/
         - ./build/test/testTug
 
 lint:
