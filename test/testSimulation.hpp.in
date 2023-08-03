@@ -1,0 +1,7 @@
+#ifndef TESTSIMULATION_H_
+#define TESTSIMULATION_H_
+
+// CSV file needed for validation
+const char *testSimulationCSVDir = "@testSimulationCSV@";
+
+#endif // TESTSIMULATION_H_
