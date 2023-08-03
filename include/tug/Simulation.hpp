@@ -17,7 +17,7 @@ enum CSV_OUTPUT {
 
 enum CONSOLE_OUTPUT {
     CONSOLE_OUTPUT_OFF, // do not print any output to console
-    CONSOLE_OUTPUT_ON, // print before concentrations to console
+    CONSOLE_OUTPUT_ON, // print before and after concentrations to console
     CONSOLE_OUTPUT_VERBOSE // print all concentration matrices to console
 };
 
