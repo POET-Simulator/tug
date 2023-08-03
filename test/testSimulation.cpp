@@ -1,11 +1,11 @@
 #include <stdio.h>
 #include <doctest/doctest.h>
 #include <tug/Simulation.hpp>
-#include <filesystem>
 #include "TestUtils.cpp"
 #include <string>
 
-namespace fs = std::filesystem;
+// include the configured header file
+#include <testSimulation.hpp>
 
 static Grid setupSimulation() {
     int row = 11;
@@ -58,8 +58,8 @@ static Grid setupSimulation() {
 }
 
 TEST_CASE("equality to reference matrix") {
-    fs::path p = fs::current_path(); // .parent_path().parent_path();
-    string test_path = p.generic_string() + "/FTCS_11_11_7000.csv";
+    // set string from the header file
+    string test_path = testSimulationCSVDir;
     MatrixXd reference = CSV2Eigen(test_path);
     cout << test_path << endl;
     Grid grid = setupSimulation();
