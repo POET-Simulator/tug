@@ -1,3 +1,10 @@
+/**
+ * @file FTCS.cpp
+ * @brief Implementation of heterogenous FTCS (forward time-centered space) solution
+ *        of diffusion equation in 1D and 2D space.
+ * 
+ */
+
 #include "TugUtils.hpp"
 #include <cstddef>
 #include <tug/Boundary.hpp>
@@ -6,6 +13,7 @@
 using namespace std;
 
 
+// calculates arithmetic or harmonic mean of alpha between two cells
 double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = true) {
     if (useHarmonic) {
         return 2 / ((1/alpha1) + (1/alpha2));
@@ -15,6 +23,7 @@ double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = tru
 }
 
 
+// calculates horizontal change on one cell independent of boundary type
 double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
     double result = 
@@ -32,6 +41,7 @@ double calcHorizontalChange(Grid &grid, int &row, int &col) {
 }
 
 
+// calculates vertical change on one cell independent of boundary type
 double calcVerticalChange(Grid &grid, int &row, int &col) {
     
     double result =    
@@ -49,6 +59,7 @@ double calcVerticalChange(Grid &grid, int &row, int &col) {
 }
 
 
+// calculates horizontal change on one cell with a constant left boundary
 double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
@@ -65,6 +76,7 @@ double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc, int &r
 }
 
 
+// calculates horizontal change on one cell with a closed left boundary
 double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
@@ -75,6 +87,7 @@ double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
 }
 
 
+// checks boundary condition type for a cell on the left edge of grid
 double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CONSTANT) {
         return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
@@ -86,6 +99,7 @@ double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc, int &row, int 
 }
 
 
+// calculates horizontal change on one cell with a constant right boundary
 double calcHorizontalChangeRightBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
@@ -102,6 +116,7 @@ double calcHorizontalChangeRightBoundaryConstant(Grid &grid, Boundary &bc, int &
 }
 
 
+// calculates horizontal change on one cell with a closed right boundary
 double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
@@ -112,6 +127,7 @@ double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
 }
 
 
+// checks boundary condition type for a cell on the right edge of grid
 double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CONSTANT) {
         return calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col);
@@ -123,6 +139,7 @@ double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc, int &row, int
 }
 
 
+// calculates vertical change on one cell with a constant top boundary
 double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
     
     double result = 
@@ -139,6 +156,7 @@ double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc, int &row,
 }
 
 
+// calculates vertical change on one cell with a closed top boundary
 double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
@@ -149,6 +167,7 @@ double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row, int &col) {
 }
 
 
+// checks boundary condition type for a cell on the top edge of grid
 double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CONSTANT) {
         return calcVerticalChangeTopBoundaryConstant(grid, bc, row, col);
@@ -160,6 +179,7 @@ double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row, int &co
 }
 
 
+// calculates vertical change on one cell with a constant bottom boundary
 double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
@@ -176,6 +196,7 @@ double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc, int &r
 }
 
 
+// calculates vertical change on one cell with a closed bottom boundary
 double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
 
     double result = 
@@ -186,6 +207,7 @@ double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
 }
 
 
+// checks boundary condition type for a cell on the bottom edge of grid
 double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CONSTANT) {
         return calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col);
@@ -197,16 +219,19 @@ double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &row, int 
 }
 
 
+// FTCS solution to 1D grid
 MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     int colMax = grid.getCol();
     double deltaCol = grid.getDeltaCol();
 
+    // matrix for concentrations at time t+1
     MatrixXd concentrations_t1 = MatrixXd::Constant(1, colMax, 0);
 
-    // only one row in 1D case
+    // only one row in 1D case -> row constant at index 0
     int row = 0;
 
     // inner cells
+    // independent of boundary condition type
     for (int col = 1; col < colMax-1; col++) {
         concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol)
@@ -216,7 +241,7 @@ MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
             ;
     }
 
-    // left boundary
+    // left boundary; hold column constant at index 0
     int col = 0;
     concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
@@ -226,7 +251,7 @@ MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
             ;
 
 
-    // right boundary
+    // right boundary; hold column constant at max index
     col = colMax-1;
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
@@ -239,18 +264,18 @@ MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
 }
 
 
+// FTCS solution to 2D grid
 void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double deltaRow = grid.getDeltaRow();
     double deltaCol = grid.getDeltaCol();
 
-    // Matrix with concentrations at time t+1
-    // TODO profiler / only use 2 matrices
+    // matrix for concentrations at time t+1
     MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
 
     // inner cells
-    // these do not depend on the boundary condition type
+    // these are independent of the boundary condition type
     for (int row = 1; row < rowMax-1; row++) {
         for (int col = 1; col < colMax-1; col++) {
             concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
@@ -268,6 +293,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
     // boundary conditions
     // left without corners / looping over rows
+    // hold column constant at index 0
     int col = 0;
     for (int row = 1; row < rowMax-1; row++) {
         concentrations_t1(row, col) = grid.getConcentrations()(row,col)
@@ -282,7 +308,8 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
             ;
     }
 
-    // right without corners / looping over columns
+    // right without corners / looping over rows
+    // hold column constant at max index
     col = colMax-1;
     for (int row = 1; row < rowMax-1; row++) {
         concentrations_t1(row,col) = grid.getConcentrations()(row,col)
@@ -298,7 +325,8 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     }
 
 
-    // top without corners / looping over cols
+    // top without corners / looping over columns
+    // hold row constant at index 0
     int row = 0;
     for (int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
@@ -313,7 +341,8 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
             ;
     }
 
-    // bottom without corners / looping over cols
+    // bottom without corners / looping over columns
+    // hold row constant at max index
     row = rowMax-1;
     for(int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
@@ -329,6 +358,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     }
 
     // corner top left
+    // hold row and column constant at 0
     row = 0;
     col = 0;
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
@@ -343,6 +373,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         ;
 
     // corner top right
+    // hold row constant at 0 and column constant at max index
     row = 0;
     col = colMax-1;
     concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
@@ -357,6 +388,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         ;
 
     // corner bottom left
+    // hold row constant at max index and column constant at 0
     row = rowMax-1;
     col = 0;
     concentrations_t1(row,col) = grid.getConcentrations()(row,col)
@@ -371,6 +403,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         ;
 
     // corner bottom right
+    // hold row and column constant at max index
     row = rowMax-1;
     col = colMax-1;
     concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
@@ -384,16 +417,16 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
             )
         ;
 
+    // overwrite obsolete concentrations 
     grid.setConcentrations(concentrations_t1);
 }
 
 
+// entry point; differentiate between 1D and 2D grid
 void FTCS(Grid &grid, Boundary &bc, double &timestep) {
-    
     if (grid.getDim() == 1) {
         FTCS_1D(grid, bc, timestep);
     } else {
         FTCS_2D(grid, bc, timestep);
     }
-
 }
