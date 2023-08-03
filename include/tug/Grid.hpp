@@ -96,6 +96,13 @@ class Grid {
         int getDim();
 
         /**
+         * @brief Gets length of 1D grid. Must be one dimensional grid.
+         * 
+         * @return int Length of 1D grid.
+         */
+        int getLength();
+
+        /**
          * @brief Gets the number of rows of the grid.
          * 
          * @return int Number of rows. 
@@ -132,7 +139,7 @@ class Grid {
         double getDeltaCol();
 
         /**
-         * @brief Gets the delta value in y-direction.
+         * @brief Gets the delta value in y-direction. Must be two dimensional grid.
          * 
          * @return double Delta value in y-direction. 
          */

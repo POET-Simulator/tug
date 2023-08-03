@@ -103,6 +103,14 @@ int Grid::getDim() {
     return dim;
 }
 
+int Grid::getLength() {
+    if (dim != 1) {
+        throw_invalid_argument("Grid is not one dimensional, you should probably use getRow() or getCol()!");
+    }
+
+    return col;
+}
+
 int Grid::getRow() {
     return row;
 }
@@ -142,5 +150,9 @@ double Grid::getDeltaCol() {
 }
 
 double Grid::getDeltaRow() {
+    if (dim != 2) {
+        throw_invalid_argument("Grid is not two dimensional, meaning there is no delta in y-direction!");
+    }
+
     return this->deltaRow;
 }

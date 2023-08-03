@@ -11,7 +11,7 @@ if(NOT DOCTEST_LIB)
   FetchContent_MakeAvailable(DocTest)
 endif()
 
-add_executable(testTug setup.cpp testSimulation.cpp) # testBoundaryCondition.cpp testDiffusion.cpp
+add_executable(testTug setup.cpp testSimulation.cpp testGrid.cpp) # testBoundaryCondition.cpp testDiffusion.cpp
 target_link_libraries(testTug doctest tug)
 
 # get relative path of the CSV file
