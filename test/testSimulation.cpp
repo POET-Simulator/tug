@@ -1,7 +1,13 @@
+#include <stdio.h>
+#include <doctest/doctest.h>
 #include <tug/Simulation.hpp>
-#include "Eigen/Core"
+#include "TestUtils.cpp"
+#include <string>
 
-int main(int argc, char *argv[]) {
+// include the configured header file
+#include <testSimulation.hpp>
+
+static Grid setupSimulation() {
     int row = 11;
     int col = 11;
     int domain_row = 10;
@@ -43,11 +49,19 @@ int main(int argc, char *argv[]) {
     Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
     sim.setTimestep(0.001);
     sim.setIterations(7000);
-    sim.setOutputCSV(CSV_OUTPUT_ON);
-    sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+    // sim.setOutputCSV(CSV_OUTPUT_ON);
+    // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
 
 
     // RUN
-    sim.run();
+    return sim.run();
+}
 
+TEST_CASE("equality to reference matrix") {
+    // set string from the header file
+    string test_path = testSimulationCSVDir;
+    MatrixXd reference = CSV2Eigen(test_path);
+    cout << test_path << endl;
+    Grid grid = setupSimulation();
+    CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
 }

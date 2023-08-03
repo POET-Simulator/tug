@@ -25,12 +25,13 @@ Simulation::Simulation(Grid grid, Boundary bc, APPROACH approach) : grid(grid), 
     double maxAlphaY = grid.getAlphaY().maxCoeff();
     double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
 
-    //double maxStableTimestep = minDelta / (2*maxAlpha); // Formula from Marco --> seems to be unstable
+    double maxStableTimestepMdl = minDelta / (2*maxAlpha); // Formula from Marco --> seems to be unstable
     double maxStableTimestep = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
 
-    cout << maxStableTimestep << endl;
+    // cout << "Max stable time step MDL: " << maxStableTimestepMdl << endl;
+    // cout << "Max stable time step: " << maxStableTimestep << endl;
 
-    this->timestep = maxStableTimestep;
+    this->timestep = maxStableTimestep; 
 
     
     this->iterations = 1000;
@@ -145,7 +146,7 @@ void Simulation::printConcentrationsCSV(string filename) {
     file.close();
 }
 
-void Simulation::run() {
+Grid Simulation::run() {
     string filename;
     if (this->console_output > CONSOLE_OUTPUT_OFF) {
         printConcentrationsConsole();
@@ -189,4 +190,6 @@ void Simulation::run() {
     if (this->csv_output > CSV_OUTPUT_OFF) {
         printConcentrationsCSV(filename);
     }
+
+    return grid;
 }

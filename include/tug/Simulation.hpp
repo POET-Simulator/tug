@@ -103,11 +103,11 @@ class Simulation {
         void printConcentrationsCSV(string filename);
 
         /**
-         * @brief Start the simulation with all of the previously set parameters. 
+         * @brief 
          * 
-         * @return auto 
+         * @return Grid 
          */
-        void run();
+        Grid run();
 
     private:
 
