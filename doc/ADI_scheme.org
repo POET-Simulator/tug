@@ -487,10 +487,39 @@ C_{i,j}^{t+1} = & C^t_{i,j} +\\
 \end{aligned}
 \end{equation}
 
-The Courant-Friedrichs-Lewy stability criterion for this scheme reads:
+The Courant-Friedrichs-Lewy stability criterion (cfr Lee, 2017) for
+this scheme reads:
+
+#+NAME: eqn:CFL2DFTCS_Lee
+\begin{equation}
+\Delta t \leq \frac{1}{2 \max(\alpha_{i,j})} \cdot \frac{1}{\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2}}
+\end{equation}
+
+
+Note that other derivations for the CFL condition are found in
+literature. For example, the sources cited by [[https://en.wikipedia.org/wiki/FTCS_scheme][Wikipedia solution]] give:
+
+#+NAME: eqn:CFL2DFTCS_wiki
+\begin{equation}
+\displaystyle \Delta t\leq {\frac {1}{4 \max(\alpha) \left({\frac {1}{\Delta x^{2}}}+{\frac {1}{\Delta y^{2}}}\right)}}
+\end{equation}
+
+We can produce a more restrictive condition than equation
+[[eqn:CFL2DFTCS_Lee]] by considering the min of the $\Delta x$ and $\Delta
+y$:
+
 #+NAME: eqn:CFL2DFTCS
 \begin{equation}
-\Delta t \leq \frac{(\Delta x^2, \Delta y^2)}{2 \max(\alpha_{i,j})}
+\Delta t \leq \frac{\min(\Delta x, \Delta y)^2}{4 \max(\alpha_{i,j})}
+\end{equation}
+
+In practice for the implementation it is advantageous to specify an
+optional parameter $C$, $C \in [0, 1]$ so that the user can restrict
+the "inner time stepping":
+
+#+NAME: eqn:CFL2DFTCS_impl
+\begin{equation}
+\Delta t \leq C \cdot \frac{\min(\Delta x, \Delta y)^2}{4 \max(\alpha_{i,j})}
 \end{equation}
 
 ** Boundary conditions
