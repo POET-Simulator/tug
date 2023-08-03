@@ -4,8 +4,8 @@
 using namespace std;
 
 enum APPROACH {
-    FTCS_APPROACH,
-    BTCS_APPROACH
+    FTCS_APPROACH, // Forward Time-Centered Space
+    BTCS_APPROACH // Backward Time-Centered Space
 };
 
 enum CSV_OUTPUT {
@@ -23,7 +23,7 @@ enum CONSOLE_OUTPUT {
 
 enum TIME_MEASURE {
     TIME_MEASURE_OFF, // do not print any time measures
-    TIME_MEASURE_ON, // print one time measure after all iterations
+    TIME_MEASURE_ON, // print time measure after last iteration
     TIME_MEASURE_VERBOSE // print time measures after each iteration
 };
 

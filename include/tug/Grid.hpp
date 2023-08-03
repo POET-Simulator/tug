@@ -6,10 +6,10 @@ class Grid {
     public:
 
         /**
-        * @brief Construct a new Grid object
-        * 
-        * @param col 
-        */
+         * @brief Construct a new 1D Grid object, which represents the fields holding the concentrations.
+         * 
+         * @param col Defines the length of the grid in terms of cells. Input must be an integer > 3. 
+         */
         Grid(int col);
 
         /**
@@ -33,7 +33,7 @@ class Grid {
         /**
          * @brief Get the Concentrations object
          * 
-         * @return auto 
+         * @return MatrixXd 
          */
         MatrixXd getConcentrations();
 

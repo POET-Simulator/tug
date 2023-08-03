@@ -66,8 +66,7 @@ class Boundary {
         /**
          * @brief Construct a new Boundary object
          * 
-         * @param grid
-         * @param type  
+         * @param grid 
          */
         Boundary(Grid grid);
 
