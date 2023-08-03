@@ -1,3 +1,4 @@
+#include "TugUtils.hpp"
 #include "tug/BoundaryCondition.hpp"
 #include <iostream>
 #include <omp.h>
@@ -7,6 +8,7 @@
 using namespace std;
 
 BoundaryElement::BoundaryElement() {
+    
     this->type = BC_TYPE_CLOSED;
     this->value = NAN;
 }
@@ -59,10 +61,18 @@ void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
 }
 
 void Boundary::setBoundaryElementClosed(BC_SIDE side, int index) {
+    // tests whether the index really points to an element of the boundary side.
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     this->boundaries[side][index].setType(BC_TYPE_CLOSED);
 }
 
 void Boundary::setBoundaryElementConstant(BC_SIDE side, int index, double value) {
+    // tests whether the index really points to an element of the boundary side.
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     this->boundaries[side][index].setType(BC_TYPE_CONSTANT);
     this->boundaries[side][index].setValue(value);
 }
@@ -72,14 +82,26 @@ vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
 }
 
 BoundaryElement Boundary::getBoundaryElement(BC_SIDE side, int index) {
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     return this->boundaries[side][index];
 }
 
 BC_TYPE Boundary::getBoundaryElementType(BC_SIDE side, int index) {
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     return this->boundaries[side][index].getType();
 }
 
 double Boundary::getBoundaryElementValue(BC_SIDE side, int index) {
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
+    if(boundaries[side][index].getType() != BC_TYPE_CONSTANT){
+        throw_invalid_argument("A value can only be output if it is a constant boundary condition.");
+    }
     return this->boundaries[side][index].getValue();
 }
 
