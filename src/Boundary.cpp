@@ -23,6 +23,9 @@ void BoundaryElement::setType(BC_TYPE type) {
 }
 
 void BoundaryElement::setValue(double value) {
+    if(value < 0){
+        throw_invalid_argument("No negative concentration allowed.");
+    }
     this->value = value;
 }
 

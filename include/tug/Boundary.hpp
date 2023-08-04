@@ -1,3 +1,9 @@
+/**
+ * @file Boundary.hpp
+ * @brief 
+ * 
+ * 
+ */
 #ifndef BOUNDARY_H_
 #define BOUNDARY_H_
 
@@ -43,7 +49,7 @@ class BoundaryElement {
        * @param value Value of the constant concentration to be assumed at the
        *              corresponding boundary element. 
        */
-      BoundaryElement(double value); // TODO negative concentration allowed?
+      BoundaryElement(double value);
 
       /**
        * @brief Allows changing the boundary type of a corresponding
@@ -83,26 +89,6 @@ class BoundaryElement {
         double value;
 };
 
-
-// TODO can be deleted?
-// class BoundaryWall {
-//     public: 
-//         BoundaryWall(int length);
-
-//         void setWall(BC_TYPE type, double value = NAN);
-
-//         vector<BoundaryElement> getWall();
-
-//         void setBoundaryElement(int index, BC_TYPE type, double value = NAN);
-
-//         BoundaryElement getBoundaryElement();
-
-//     private:
-//         BC_SIDE side;
-//         int length;
-//         vector<BoundaryElement> wall;
-
-// };
 
 /**
  * This class implements the functionality and management of the boundary
