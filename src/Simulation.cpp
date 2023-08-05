@@ -65,6 +65,9 @@ void Simulation::setTimeMeasure(TIME_MEASURE time_measure) {
 
 void Simulation::setTimestep(double timestep) {
     //TODO check timestep in FTCS for max value
+    if(timestep <= 0){
+        throw_invalid_argument("Timestep has to be greater than zero.");
+    }
     this->timestep = timestep;
 }
 
@@ -73,6 +76,9 @@ double Simulation::getTimestep() {
 }
 
 void Simulation::setIterations(int iterations) {
+    if(iterations <= 0){
+        throw_invalid_argument("Number of iterations must be greater than zero.");
+    }
     this->iterations = iterations;
 }
 
