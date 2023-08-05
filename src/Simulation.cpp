@@ -154,7 +154,7 @@ void Simulation::run() {
     }
 
     if (approach == FTCS_APPROACH) {
-        
+        auto begin = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; i++) {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
@@ -165,6 +165,9 @@ void Simulation::run() {
 
             FTCS(grid, bc, timestep);
         }
+        auto end = std::chrono::high_resolution_clock::now();
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+        std::cout << milliseconds.count() << endl;
 
     } else if (approach == BTCS_APPROACH) {
 
