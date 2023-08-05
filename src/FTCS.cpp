@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <tug/Boundary.hpp>
 #include <iostream>
+#include <omp.h>
 
 using namespace std;
 
@@ -276,6 +277,8 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
     // inner cells
     // these are independent of the boundary condition type
+    omp_set_num_threads(10);
+    #pragma omp parallel for
     for (int row = 1; row < rowMax-1; row++) {
         for (int col = 1; col < colMax-1; col++) {
             concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
@@ -295,6 +298,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     // left without corners / looping over rows
     // hold column constant at index 0
     int col = 0;
+    #pragma omp parallel for
     for (int row = 1; row < rowMax-1; row++) {
         concentrations_t1(row, col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
@@ -311,6 +315,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     // right without corners / looping over rows
     // hold column constant at max index
     col = colMax-1;
+    #pragma omp parallel for
     for (int row = 1; row < rowMax-1; row++) {
         concentrations_t1(row,col) = grid.getConcentrations()(row,col)
             + timestep / (deltaCol*deltaCol) 
@@ -328,6 +333,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     // top without corners / looping over columns
     // hold row constant at index 0
     int row = 0;
+    #pragma omp parallel for
     for (int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
@@ -344,6 +350,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     // bottom without corners / looping over columns
     // hold row constant at max index
     row = rowMax-1;
+    #pragma omp parallel for
     for(int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 

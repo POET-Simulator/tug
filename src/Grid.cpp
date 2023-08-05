@@ -123,19 +123,19 @@ void Grid::setDomain(int domainLength) {
     if (dim != 1) {
         throw_invalid_argument("Grid is not one dimensional, you should probaly use the 2D domain setter!");
     }
-    if (domainLength < 1) {
+    if (domainLength <= 0) {
         throw_invalid_argument("Given domain length is not positive!");
     }
 
     this->domainCol = domainLength;
-    this->deltaCol = double(this->domainCol)/this->col;
+    this->deltaCol = double(this->domainCol)/double(this->col);
 }
 
 void Grid::setDomain(int domainRow, int domainCol) {
     if (dim != 2) {
         throw_invalid_argument("Grid is not two dimensional, you should probably use the 1D domain setter!");
     }
-    if (domainRow < 1 || domainCol < 1) {
+    if (domainRow <= 0 || domainCol <= 0) {
         throw_invalid_argument("Given domain size is not positive!");
     }
 
