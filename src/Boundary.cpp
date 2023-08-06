@@ -26,6 +26,11 @@ void BoundaryElement::setValue(double value) {
     if(value < 0){
         throw_invalid_argument("No negative concentration allowed.");
     }
+    if(type == BC_TYPE_CLOSED){
+      throw_invalid_argument(
+          "No constant boundary concentrations can be set for closed "
+          "boundaries. Please change type first.");
+    }
     this->value = value;
 }
 
@@ -56,10 +61,24 @@ Boundary::Boundary(Grid grid) : grid(grid) {
 }
 
 void Boundary::setBoundarySideClosed(BC_SIDE side) {
+    if(grid.getDim() == 1){
+        if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
+          throw_invalid_argument(
+              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "BC_SIDE_RIGHT borders exist.");
+        }
+    }
     this->boundaries[side] = vector<BoundaryElement>(grid.getRow(), BoundaryElement());
 }
 
 void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
+    if(grid.getDim() == 1){
+        if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
+          throw_invalid_argument(
+              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "BC_SIDE_RIGHT borders exist.");
+        }
+    }
     this->boundaries[side] = vector<BoundaryElement>(grid.getRow(), BoundaryElement(value));
 }
 
@@ -81,6 +100,13 @@ void Boundary::setBoundaryElementConstant(BC_SIDE side, int index, double value)
 }
 
 vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
+    if(grid.getDim() == 1){
+        if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
+          throw_invalid_argument(
+              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "BC_SIDE_RIGHT borders exist.");
+        }
+    }
     return this->boundaries[side];
 }
 
