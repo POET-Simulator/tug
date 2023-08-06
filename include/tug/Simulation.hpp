@@ -123,7 +123,7 @@ class Simulation {
        * @brief Creates a CSV file with a name containing the current simulation
        *        parameters. If the data name already exists, an additional counter is
        *        appended to the name. The name of the file is built up as follows:
-       *        <approach> + <number rows> + <number columns> + <number of iterations>-<counter>.csv 
+       *        <approach> + <number rows> + <number columns> + <number of iterations>+<counter>.csv 
        *
        * @return string Filename with given simulation parameter.
        */
