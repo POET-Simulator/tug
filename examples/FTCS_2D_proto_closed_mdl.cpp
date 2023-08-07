@@ -67,10 +67,10 @@ int main(int argc, char *argv[]) {
     // set up a simulation environment
     Simulation simulation = Simulation(grid, bc, FTCS_APPROACH); // grid,boundary,simulation-approach
 
-    // (optional) set the timestep of the simulation
+    // set the timestep of the simulation
     simulation.setTimestep(10000); // timestep
 
-    // (optional) set the number of iterations
+    // set the number of iterations
     simulation.setIterations(100);
 
     // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
