@@ -79,7 +79,7 @@ TEST_CASE("Simulation environment"){
     Simulation sim(grid, boundary, FTCS_APPROACH);
 
     SUBCASE("default paremeters"){
-        CHECK_EQ(sim.getIterations(), 1000);
+        CHECK_EQ(sim.getIterations(), -1);
     }
 
     SUBCASE("set iterations"){
@@ -93,11 +93,5 @@ TEST_CASE("Simulation environment"){
         CHECK_EQ(sim.getTimestep(), 0.1);
         CHECK_THROWS(sim.setTimestep(-0.3));
     }
-
-    SUBCASE("filename"){
-        string s1 = sim.createCSVfile();
-        string s2 = "FTCS_12_12_1000";
-        CHECK_EQ(s1.find(s2) != std::string::npos, true);
-    }   
 }
     

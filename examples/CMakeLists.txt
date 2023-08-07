@@ -13,3 +13,6 @@ target_link_libraries(FTCS_2D_proto_example_mdl tug)
 target_link_libraries(FTCS_1D_proto_example tug)
 target_link_libraries(reference-FTCS_2D_closed tug)
 # target_link_libraries(FTCS_2D_proto_example easy_profiler) 
+
+add_executable(FTCS_2D_proto_closed_mdl FTCS_2D_proto_closed_mdl.cpp)
+target_link_libraries(FTCS_2D_proto_closed_mdl tug)
