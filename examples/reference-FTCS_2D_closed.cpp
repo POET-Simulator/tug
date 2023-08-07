@@ -5,8 +5,8 @@
 using namespace std;
 
 int main(int argc, char *argv[]) {
-    int row = 11;
-    int col = 11;
+    int row = 50;
+    int col = 50;
     int domain_row = 10;
     int domain_col = 10;
 
@@ -45,14 +45,11 @@ int main(int argc, char *argv[]) {
     // Simulation
     Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
     sim.setTimestep(0.001);
-    sim.setIterations(7000);
-    sim.setOutputCSV(CSV_OUTPUT_ON);
-    sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+    sim.setIterations(100);
+    sim.setOutputCSV(CSV_OUTPUT_OFF);
+    sim.setOutputConsole(CONSOLE_OUTPUT_OFF);
 
 
     // RUN
     sim.run();
-
-    cout << grid.getConcentrations() << endl;
-
 }
