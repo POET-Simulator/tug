@@ -1,3 +1,5 @@
+#include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <stdexcept>
 #include <string>
@@ -13,7 +15,9 @@ using namespace std;
 Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid), bc(bc) {
 
     this->approach = approach;
-
+    this->timestep = -1; // error per default
+    this->iterations = -1;
+    this->innerIterations = 1;
 
     // MDL no: we need to distinguish between "required dt" and
     // "number of (outer) iterations" at which the user needs an
@@ -22,37 +26,6 @@ Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid)
     // reach them. The following, at least at the moment, cannot be
     // computed here since "timestep" is not yet set when this
     // function is called. I brought everything into "FTCS_2D"!
-
-    
-    // TODO calculate max time step
-
-    // double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-    // double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-
-    // double minDelta2 = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
-    // double maxAlphaX = grid.getAlphaX().maxCoeff();
-    // double maxAlphaY = grid.getAlphaY().maxCoeff();
-    // double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
-
-    // double CFL_MDL = minDelta2 / (4*maxAlpha); // Formula from Marco --> seems to be unstable
-    // double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
-
-    // cout << "Sim :: CFL condition MDL: " << CFL_MDL << endl;
-    // double required_dt = this->timestep;
-    // cout << "Sim :: required dt=" << required_dt <<  endl;
-    // cout << "Sim :: CFL condition Wiki: " << CFL_Wiki << endl;
-
-    // if (required_dt > CFL_MDL) {
-
-    // 	int inner_iterations = (int) ceil(required_dt/CFL_MDL);
-    // 	double allowed_dt = required_dt/(double)inner_iterations;
-	    
-    // 	cout << "Sim :: Required " << inner_iterations << " inner iterations with dt=" << allowed_dt <<  endl;
-    // 	this->timestep = allowed_dt; 
-    // 	this->iterations = inner_iterations;
-    // } else {
-    // 	cout << "Sim :: No inner iterations required, dt=" << required_dt <<  endl;
-    // }
     
     this->csv_output = CSV_OUTPUT_OFF;
     this->console_output = CONSOLE_OUTPUT_OFF;
@@ -85,11 +58,59 @@ void Simulation::setTimeMeasure(TIME_MEASURE time_measure) {
 }
 
 void Simulation::setTimestep(double timestep) {
-    //TODO check timestep in FTCS for max value
     if(timestep <= 0){
         throw_invalid_argument("Timestep has to be greater than zero.");
     }
-    this->timestep = timestep;
+
+    double deltaRowSquare;
+    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+    double minDeltaSquare;
+    double maxAlphaX, maxAlphaY, maxAlpha;
+    if (grid.getDim() == 2) {
+
+        deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+
+        minDeltaSquare = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+        maxAlphaX = grid.getAlphaX().maxCoeff();
+        maxAlphaY = grid.getAlphaY().maxCoeff();
+        maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
+
+    } else if (grid.getDim() == 1) {
+        minDeltaSquare = deltaColSquare;
+        maxAlpha = grid.getAlpha().maxCoeff();
+
+        
+    } else {
+        throw_invalid_argument("Critical error: Undefined number of dimensions!");
+    }
+
+    // TODO check formula 1D case
+    double CFL_MDL = minDeltaSquare / (4*maxAlpha); // Formula from Marco --> seems to be unstable
+    double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
+
+    cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
+    cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
+    cout << "FTCS_2D :: required dt=" << timestep <<  endl;
+
+    if (timestep > CFL_MDL) {
+
+        this->innerIterations = (int)ceil(timestep / CFL_MDL);
+        this->timestep = timestep / (double)innerIterations;
+
+        cerr << "Warning: Timestep was adjusted, because of stability "
+                "conditions. Time duration was approximately preserved by "
+                "adjusting internal number of iterations."
+             << endl;
+        cout << "FTCS_2D :: Required " << this->innerIterations
+            << " inner iterations with dt=" << this->timestep << endl;
+
+    } else {
+
+        this->timestep = timestep;
+        cout << "FTCS_2D :: No inner iterations required, dt=" << timestep << endl;
+
+    }
+
 }
 
 double Simulation::getTimestep() {
@@ -172,6 +193,13 @@ void Simulation::printConcentrationsCSV(string filename) {
 }
 
 void Simulation::run() {
+    if (this->timestep == -1) {
+        throw_invalid_argument("Timestep is not set!");
+    }
+    if (this->iterations == -1) {
+        throw_invalid_argument("Number of iterations are not set!");
+    }
+
     string filename;
     if (this->console_output > CONSOLE_OUTPUT_OFF) {
         printConcentrationsConsole();
@@ -182,9 +210,9 @@ void Simulation::run() {
 
     if (approach == FTCS_APPROACH) {
         auto begin = std::chrono::high_resolution_clock::now();
-        for (int i = 0; i < iterations; i++) {
+        for (int i = 0; i < iterations * innerIterations; i++) {
 	    // MDL: distinguish between "outer" and "inner" iterations
-	    std::cout << ":: run(): Outer iteration " << i+1 << "/" << iterations << endl;
+	    // std::cout << ":: run(): Outer iteration " << i+1 << "/" << iterations << endl;
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }

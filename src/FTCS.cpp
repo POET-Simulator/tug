@@ -274,38 +274,40 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     double deltaCol = grid.getDeltaCol();
 
     // MDL: here we have to compute the max time step
-    double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+    // double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+    // double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
     
-    double minDelta2 = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
-    double maxAlphaX = grid.getAlphaX().maxCoeff();
-    double maxAlphaY = grid.getAlphaY().maxCoeff();
-    double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
+    // double minDelta2 = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+    // double maxAlphaX = grid.getAlphaX().maxCoeff();
+    // double maxAlphaY = grid.getAlphaY().maxCoeff();
+    // double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
     
-    double CFL_MDL = minDelta2 / (4*maxAlpha); // Formula from Marco --> seems to be unstable
-    double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
+    // double CFL_MDL = minDelta2 / (4*maxAlpha); // Formula from Marco --> seems to be unstable
+    // double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
     
-    cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
-    cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
-    double required_dt = timestep;
-    cout << "FTCS_2D :: required dt=" << required_dt <<  endl;
+    // cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
+    // cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
+    // double required_dt = timestep;
+    // cout << "FTCS_2D :: required dt=" << required_dt <<  endl;
 
-    int inner_iterations = 1;
-    double allowed_dt = timestep;
-    if (required_dt > CFL_MDL) {
+    // int inner_iterations = 1;
+    // double timestep = timestep;
+    // if (required_dt > CFL_MDL) {
 
-	inner_iterations = (int) ceil(required_dt/CFL_MDL);
-	allowed_dt = required_dt/(double)inner_iterations;
-	    
-	cout << "FTCS_2D :: Required " << inner_iterations << " inner iterations with dt=" << allowed_dt <<  endl;
-    } else {
-	cout << "FTCS_2D :: No inner iterations required, dt=" << required_dt <<  endl;
-    }
+    //   inner_iterations = (int)ceil(required_dt / CFL_MDL);
+    //   timestep = required_dt / (double)inner_iterations;
+
+    //   cout << "FTCS_2D :: Required " << inner_iterations
+    //        << " inner iterations with dt=" << timestep << endl;
+    // } else {
+    //   cout << "FTCS_2D :: No inner iterations required, dt=" << required_dt
+    //        << endl;
+    // }
 
     // we loop for inner iterations
-    for (int it =0; it < inner_iterations; ++it){
+    // for (int it =0; it < inner_iterations; ++it){
 
-	cout << "FTCS_2D :: iteration " << it+1 << "/" << inner_iterations <<  endl;
+	// cout << "FTCS_2D :: iteration " << it+1 << "/" << inner_iterations <<  endl;
 	// matrix for concentrations at time t+1
 	MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
 	
@@ -316,11 +318,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	for (int row = 1; row < rowMax-1; row++) {
 	    for (int col = 1; col < colMax-1; col++) {
 		concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
-		    + allowed_dt / (deltaRow*deltaRow) 
+		    + timestep / (deltaRow*deltaRow) 
                     * (
 		       calcVerticalChange(grid, row, col)
 		       )
-		    + allowed_dt / (deltaCol*deltaCol) 
+		    + timestep / (deltaCol*deltaCol) 
                     * (
 		       calcHorizontalChange(grid, row, col)
 		       )
@@ -335,11 +337,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 #pragma omp parallel for
 	for (int row = 1; row < rowMax-1; row++) {
 	    concentrations_t1(row, col) = grid.getConcentrations()(row,col)
-		+ allowed_dt / (deltaCol*deltaCol) 
+		+ timestep / (deltaCol*deltaCol) 
                 * (
 		   calcHorizontalChangeLeftBoundary(grid, bc, row, col)
 		   )
-		+ allowed_dt / (deltaRow*deltaRow)
+		+ timestep / (deltaRow*deltaRow)
                 * (
 		   calcVerticalChange(grid, row, col)
 		   )
@@ -352,11 +354,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 #pragma omp parallel for
 	for (int row = 1; row < rowMax-1; row++) {
 	    concentrations_t1(row,col) = grid.getConcentrations()(row,col)
-		+ allowed_dt / (deltaCol*deltaCol) 
+		+ timestep / (deltaCol*deltaCol) 
                 * (
 		   calcHorizontalChangeRightBoundary(grid, bc, row, col)
 		   )
-		+ allowed_dt / (deltaRow*deltaRow)
+		+ timestep / (deltaRow*deltaRow)
                 * (
 		   calcVerticalChange(grid, row, col)
 		   )
@@ -370,11 +372,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 #pragma omp parallel for
 	for (int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
-            + allowed_dt / (deltaRow*deltaRow) 
+            + timestep / (deltaRow*deltaRow) 
 	    * (
 	       calcVerticalChangeTopBoundary(grid, bc, row, col)
 	       )
-            + allowed_dt / (deltaCol*deltaCol) 
+            + timestep / (deltaCol*deltaCol) 
 	    * (
 	       calcHorizontalChange(grid, row, col)
 	       )
@@ -387,11 +389,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 #pragma omp parallel for
 	for(int col=1; col<colMax-1;col++){
 	    concentrations_t1(row, col) = grid.getConcentrations()(row, col)
-		+ allowed_dt / (deltaRow*deltaRow) 
+		+ timestep / (deltaRow*deltaRow) 
                 * (
 		   calcVerticalChangeBottomBoundary(grid, bc, row, col)
 		   )
-		+ allowed_dt / (deltaCol*deltaCol) 
+		+ timestep / (deltaCol*deltaCol) 
                 * (
 		   calcHorizontalChange(grid, row, col)
 		   )
@@ -403,11 +405,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	row = 0;
 	col = 0;
 	concentrations_t1(row,col) = grid.getConcentrations()(row,col)
-	    + allowed_dt/(deltaCol*deltaCol)
+	    + timestep/(deltaCol*deltaCol)
             * (
 	       calcHorizontalChangeLeftBoundary(grid, bc, row, col)
 	       )
-	    + allowed_dt/(deltaRow*deltaRow)
+	    + timestep/(deltaRow*deltaRow)
             * (
 	       calcVerticalChangeTopBoundary(grid, bc, row, col)
 	       )
@@ -418,11 +420,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	row = 0;
 	col = colMax-1;
 	concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
-	    + allowed_dt/(deltaCol*deltaCol)
+	    + timestep/(deltaCol*deltaCol)
             * (
 	       calcHorizontalChangeRightBoundary(grid, bc, row, col)
 	       )
-	    + allowed_dt/(deltaRow*deltaRow)
+	    + timestep/(deltaRow*deltaRow)
             * (
 	       calcVerticalChangeTopBoundary(grid, bc, row, col)
 	       )
@@ -433,11 +435,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	row = rowMax-1;
 	col = 0;
 	concentrations_t1(row,col) = grid.getConcentrations()(row,col)
-	    + allowed_dt/(deltaCol*deltaCol)
+	    + timestep/(deltaCol*deltaCol)
             * (
 	       calcHorizontalChangeLeftBoundary(grid, bc, row, col)
 	       )
-	    + allowed_dt/(deltaRow*deltaRow)
+	    + timestep/(deltaRow*deltaRow)
             * (
 	       calcVerticalChangeBottomBoundary(grid, bc, row, col)
 	       )
@@ -448,11 +450,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	row = rowMax-1;
 	col = colMax-1;
 	concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
-	    + allowed_dt/(deltaCol*deltaCol)
+	    + timestep/(deltaCol*deltaCol)
             * (
 	       calcHorizontalChangeRightBoundary(grid, bc, row, col)
 	       )
-	    + allowed_dt/(deltaRow*deltaRow)
+	    + timestep/(deltaRow*deltaRow)
             * (
 	       calcVerticalChangeBottomBoundary(grid, bc, row, col)
 	       )
@@ -460,7 +462,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
 	// overwrite obsolete concentrations 
 	grid.setConcentrations(concentrations_t1);
-    }
+    // }
 }
 
 

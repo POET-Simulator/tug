@@ -148,6 +148,7 @@ class Simulation {
 
         double timestep;
         int iterations;
+        int innerIterations;
         CSV_OUTPUT csv_output;
         CONSOLE_OUTPUT console_output;
         TIME_MEASURE time_measure;
