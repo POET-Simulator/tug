@@ -63,3 +63,35 @@ TEST_CASE("equality to reference matrix") {
     Grid grid = setupSimulation();
     CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
 }
+
+TEST_CASE("Initialize environment"){
+    int rc = 12;
+    Grid grid(rc, rc);
+    Boundary boundary(grid);
+
+    CHECK_NOTHROW(Simulation sim(grid, boundary, FTCS_APPROACH));
+    }
+
+TEST_CASE("Simulation environment"){
+    int rc = 12;
+    Grid grid(rc, rc);
+    Boundary boundary(grid);
+    Simulation sim(grid, boundary, FTCS_APPROACH);
+
+    SUBCASE("default paremeters"){
+        CHECK_EQ(sim.getIterations(), -1);
+    }
+
+    SUBCASE("set iterations"){
+        CHECK_NOTHROW(sim.setIterations(2000));
+        CHECK_EQ(sim.getIterations(), 2000);
+        CHECK_THROWS(sim.setIterations(-300));
+    }
+
+    SUBCASE("set timestep"){
+        CHECK_NOTHROW(sim.setTimestep(0.1));
+        CHECK_EQ(sim.getTimestep(), 0.1);
+        CHECK_THROWS(sim.setTimestep(-0.3));
+    }
+}
+    
