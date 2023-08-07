@@ -1,3 +1,4 @@
+#include "TugUtils.hpp"
 #include "tug/BoundaryCondition.hpp"
 #include <iostream>
 #include <omp.h>
@@ -7,6 +8,7 @@
 using namespace std;
 
 BoundaryElement::BoundaryElement() {
+    
     this->type = BC_TYPE_CLOSED;
     this->value = NAN;
 }
@@ -21,6 +23,14 @@ void BoundaryElement::setType(BC_TYPE type) {
 }
 
 void BoundaryElement::setValue(double value) {
+    if(value < 0){
+        throw_invalid_argument("No negative concentration allowed.");
+    }
+    if(type == BC_TYPE_CLOSED){
+      throw_invalid_argument(
+          "No constant boundary concentrations can be set for closed "
+          "boundaries. Please change type first.");
+    }
     this->value = value;
 }
 
@@ -51,35 +61,76 @@ Boundary::Boundary(Grid grid) : grid(grid) {
 }
 
 void Boundary::setBoundarySideClosed(BC_SIDE side) {
+    if(grid.getDim() == 1){
+        if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
+          throw_invalid_argument(
+              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "BC_SIDE_RIGHT borders exist.");
+        }
+    }
     this->boundaries[side] = vector<BoundaryElement>(grid.getRow(), BoundaryElement());
 }
 
 void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
+    if(grid.getDim() == 1){
+        if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
+          throw_invalid_argument(
+              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "BC_SIDE_RIGHT borders exist.");
+        }
+    }
     this->boundaries[side] = vector<BoundaryElement>(grid.getRow(), BoundaryElement(value));
 }
 
 void Boundary::setBoundaryElementClosed(BC_SIDE side, int index) {
+    // tests whether the index really points to an element of the boundary side.
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     this->boundaries[side][index].setType(BC_TYPE_CLOSED);
 }
 
 void Boundary::setBoundaryElementConstant(BC_SIDE side, int index, double value) {
+    // tests whether the index really points to an element of the boundary side.
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     this->boundaries[side][index].setType(BC_TYPE_CONSTANT);
     this->boundaries[side][index].setValue(value);
 }
 
 vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
+    if(grid.getDim() == 1){
+        if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
+          throw_invalid_argument(
+              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "BC_SIDE_RIGHT borders exist.");
+        }
+    }
     return this->boundaries[side];
 }
 
 BoundaryElement Boundary::getBoundaryElement(BC_SIDE side, int index) {
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     return this->boundaries[side][index];
 }
 
 BC_TYPE Boundary::getBoundaryElementType(BC_SIDE side, int index) {
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
     return this->boundaries[side][index].getType();
 }
 
 double Boundary::getBoundaryElementValue(BC_SIDE side, int index) {
+    if((boundaries[side].size() < index) || index < 0){
+        throw_invalid_argument("Index is selected either too large or too small.");
+    }
+    if(boundaries[side][index].getType() != BC_TYPE_CONSTANT){
+        throw_invalid_argument("A value can only be output if it is a constant boundary condition.");
+    }
     return this->boundaries[side][index].getValue();
 }
 
