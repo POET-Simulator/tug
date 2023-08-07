@@ -14,9 +14,9 @@ using namespace std;
 
 
 // calculates arithmetic or harmonic mean of alpha between two cells
-double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = true) {
+static double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = true) {
     if (useHarmonic) {
-        return 2 / ((1/alpha1) + (1/alpha2));
+        return double(2) / ((double(1)/alpha1) + (double(1)/alpha2));
     } else {
         return 0.5 * (alpha1 + alpha2);
     }
@@ -24,7 +24,7 @@ double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = tru
 
 
 // calculates horizontal change on one cell independent of boundary type
-double calcHorizontalChange(Grid &grid, int &row, int &col) {
+static double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
@@ -42,7 +42,7 @@ double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
 
 // calculates vertical change on one cell independent of boundary type
-double calcVerticalChange(Grid &grid, int &row, int &col) {
+static double calcVerticalChange(Grid &grid, int &row, int &col) {
     
     double result =    
         calcAlphaIntercell(grid.getAlphaY()(row+1,col), grid.getAlphaY()(row,col)) 
@@ -60,7 +60,7 @@ double calcVerticalChange(Grid &grid, int &row, int &col) {
 
 
 // calculates horizontal change on one cell with a constant left boundary
-double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row,col+1), grid.getAlphaX()(row,col)) 
@@ -77,7 +77,7 @@ double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc, int &r
 
 
 // calculates horizontal change on one cell with a closed left boundary
-double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
+static double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaX()(row, col+1), grid.getAlphaX()(row, col)) 
@@ -88,7 +88,7 @@ double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
 
 
 // checks boundary condition type for a cell on the left edge of grid
-double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CONSTANT) {
         return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CLOSED) {
@@ -100,7 +100,7 @@ double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc, int &row, int 
 
 
 // calculates horizontal change on one cell with a constant right boundary
-double calcHorizontalChangeRightBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcHorizontalChangeRightBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
         2 * grid.getAlphaX()(row,col) * bc.getBoundaryElementValue(BC_SIDE_RIGHT, row)
@@ -117,7 +117,7 @@ double calcHorizontalChangeRightBoundaryConstant(Grid &grid, Boundary &bc, int &
 
 
 // calculates horizontal change on one cell with a closed right boundary
-double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
+static double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
         - (calcAlphaIntercell(grid.getAlphaX()(row, col-1), grid.getAlphaX()(row, col))
@@ -128,7 +128,7 @@ double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
 
 
 // checks boundary condition type for a cell on the right edge of grid
-double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CONSTANT) {
         return calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CLOSED) {
@@ -140,7 +140,7 @@ double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc, int &row, int
 
 
 // calculates vertical change on one cell with a constant top boundary
-double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getAlphaY()(row, col)) 
@@ -157,7 +157,7 @@ double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc, int &row,
 
 
 // calculates vertical change on one cell with a closed top boundary
-double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row, int &col) {
+static double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row, int &col) {
     
     double result = 
         calcAlphaIntercell(grid.getAlphaY()(row+1, col), grid.getConcentrations()(row, col)) 
@@ -168,7 +168,7 @@ double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row, int &col) {
 
 
 // checks boundary condition type for a cell on the top edge of grid
-double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CONSTANT) {
         return calcVerticalChangeTopBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CLOSED) {
@@ -180,7 +180,7 @@ double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row, int &co
 
 
 // calculates vertical change on one cell with a constant bottom boundary
-double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc, int &row, int &col) {
 
     double result = 
         2 * grid.getAlphaY()(row, col) * bc.getBoundaryElementValue(BC_SIDE_BOTTOM, col)
@@ -197,7 +197,7 @@ double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc, int &r
 
 
 // calculates vertical change on one cell with a closed bottom boundary
-double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
+static double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
 
     double result = 
         - (calcAlphaIntercell(grid.getAlphaY()(row, col), grid.getAlphaY()(row-1, col))
@@ -208,7 +208,7 @@ double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
 
 
 // checks boundary condition type for a cell on the bottom edge of grid
-double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
+static double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &row, int &col) {
     if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CONSTANT) {
         return calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col);
     } else if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CLOSED) {
@@ -220,7 +220,7 @@ double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &row, int 
 
 
 // FTCS solution to 1D grid
-MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
+static void FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     int colMax = grid.getCol();
     double deltaCol = grid.getDeltaCol();
 
@@ -260,12 +260,13 @@ MatrixXd FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
                 )
             ;
 
-    return concentrations_t1;
+    // overwrite obsolete concentrations
+    grid.setConcentrations(concentrations_t1);
 }
 
 
 // FTCS solution to 2D grid
-void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
+static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double deltaRow = grid.getDeltaRow();
@@ -423,7 +424,7 @@ void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
 
 // entry point; differentiate between 1D and 2D grid
-void FTCS(Grid &grid, Boundary &bc, double &timestep) {
+static void FTCS(Grid &grid, Boundary &bc, double &timestep) {
     if (grid.getDim() == 1) {
         FTCS_1D(grid, bc, timestep);
     } else {
