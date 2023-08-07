@@ -11,28 +11,49 @@
 using namespace std;
 
 Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid), bc(bc) {
+
     this->approach = approach;
 
-    //TODO calculate max time step
 
-    double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-
-    double minDelta = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
-    double maxAlphaX = grid.getAlphaX().maxCoeff();
-    double maxAlphaY = grid.getAlphaY().maxCoeff();
-    double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
-
-    double maxStableTimestepMdl = minDelta / (2*maxAlpha); // Formula from Marco --> seems to be unstable
-    double maxStableTimestep = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
-
-    // cout << "Max stable time step MDL: " << maxStableTimestepMdl << endl;
-    // cout << "Max stable time step: " << maxStableTimestep << endl;
-
-    this->timestep = maxStableTimestep; 
+    // MDL no: we need to distinguish between "required dt" and
+    // "number of (outer) iterations" at which the user needs an
+    // output and the actual CFL-allowed timestep and consequently the
+    // number of "inner" iterations which the explicit FTCS needs to
+    // reach them. The following, at least at the moment, cannot be
+    // computed here since "timestep" is not yet set when this
+    // function is called. I brought everything into "FTCS_2D"!
 
     
-    this->iterations = 1000;
+    // TODO calculate max time step
+
+    // double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+    // double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+
+    // double minDelta2 = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+    // double maxAlphaX = grid.getAlphaX().maxCoeff();
+    // double maxAlphaY = grid.getAlphaY().maxCoeff();
+    // double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
+
+    // double CFL_MDL = minDelta2 / (4*maxAlpha); // Formula from Marco --> seems to be unstable
+    // double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
+
+    // cout << "Sim :: CFL condition MDL: " << CFL_MDL << endl;
+    // double required_dt = this->timestep;
+    // cout << "Sim :: required dt=" << required_dt <<  endl;
+    // cout << "Sim :: CFL condition Wiki: " << CFL_Wiki << endl;
+
+    // if (required_dt > CFL_MDL) {
+
+    // 	int inner_iterations = (int) ceil(required_dt/CFL_MDL);
+    // 	double allowed_dt = required_dt/(double)inner_iterations;
+	    
+    // 	cout << "Sim :: Required " << inner_iterations << " inner iterations with dt=" << allowed_dt <<  endl;
+    // 	this->timestep = allowed_dt; 
+    // 	this->iterations = inner_iterations;
+    // } else {
+    // 	cout << "Sim :: No inner iterations required, dt=" << required_dt <<  endl;
+    // }
+    
     this->csv_output = CSV_OUTPUT_OFF;
     this->console_output = CONSOLE_OUTPUT_OFF;
     this->time_measure = TIME_MEASURE_OFF;
@@ -162,6 +183,8 @@ void Simulation::run() {
     if (approach == FTCS_APPROACH) {
         auto begin = std::chrono::high_resolution_clock::now();
         for (int i = 0; i < iterations; i++) {
+	    // MDL: distinguish between "outer" and "inner" iterations
+	    std::cout << ":: run(): Outer iteration " << i+1 << "/" << iterations << endl;
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }
@@ -169,11 +192,13 @@ void Simulation::run() {
                 printConcentrationsCSV(filename);
             }
 
-            FTCS(grid, bc, timestep);
+            FTCS(this->grid, this->bc, this->timestep);
         }
         auto end = std::chrono::high_resolution_clock::now();
         auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-        std::cout << milliseconds.count() << endl;
+
+	// MDL: meaningful stdout messages
+        std::cout << ":: run() finished in " << milliseconds.count() << "ms" << endl;
 
     } else if (approach == BTCS_APPROACH) {
 

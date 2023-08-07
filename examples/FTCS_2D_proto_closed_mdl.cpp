@@ -1,22 +1,30 @@
 /**
- * @file FTCS_2D_proto_example.cpp
- * @author Hannes Signer, Philipp Ungrund
- * @brief Creates a prototypical standard TUG simulation in 2D with FTCS approach
- * and constant boundary condition
+ * @file FTCS_2D_proto_closed_mdl.cpp
+ * @author Hannes Signer, Philipp Ungrund, MDL
+ * @brief Creates a TUG simulation in 2D with FTCS approach and closed boundary condition; optional command line argument: number of cols and rows
  * 
  */
 
+#include <cstdlib>
+#include <iostream>
 #include <tug/Simulation.hpp>
 
 int main(int argc, char *argv[]) {
-    
+
+    int row = 64;
+
+    if (argc == 2) {
+	// no cmd line argument, take col=row=64
+	row = atoi(argv[1]);
+    }
+    int col=row;
+
+    std::cout << "Nrow =" << row << std::endl;
     // **************
     // **** GRID ****
     // **************
 
     // create a grid with a 20 x 20 field
-    int row = 64;
-    int col = 64;
     int n2 = row/2-1;
     Grid grid = Grid(row,col);
 
@@ -60,13 +68,13 @@ int main(int argc, char *argv[]) {
     Simulation simulation = Simulation(grid, bc, FTCS_APPROACH); // grid,boundary,simulation-approach
 
     // (optional) set the timestep of the simulation
-    simulation.setTimestep(1000); // timestep
+    simulation.setTimestep(10000); // timestep
 
     // (optional) set the number of iterations
-    simulation.setIterations(5);
+    simulation.setIterations(100);
 
     // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
-    simulation.setOutputCSV(CSV_OUTPUT_OFF);
+    simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);
     
     // **** RUN SIMULATION ****
 

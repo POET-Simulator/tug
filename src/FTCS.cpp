@@ -273,160 +273,194 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     double deltaRow = grid.getDeltaRow();
     double deltaCol = grid.getDeltaCol();
 
-    // matrix for concentrations at time t+1
-    MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
+    // MDL: here we have to compute the max time step
+    double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+    
+    double minDelta2 = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+    double maxAlphaX = grid.getAlphaX().maxCoeff();
+    double maxAlphaY = grid.getAlphaY().maxCoeff();
+    double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
+    
+    double CFL_MDL = minDelta2 / (4*maxAlpha); // Formula from Marco --> seems to be unstable
+    double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
+    
+    cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
+    cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
+    double required_dt = timestep;
+    cout << "FTCS_2D :: required dt=" << required_dt <<  endl;
 
-    // inner cells
-    // these are independent of the boundary condition type
-    omp_set_num_threads(10);
-    #pragma omp parallel for
-    for (int row = 1; row < rowMax-1; row++) {
-        for (int col = 1; col < colMax-1; col++) {
-            concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
-                + timestep / (deltaRow*deltaRow) 
+    int inner_iterations = 1;
+    double allowed_dt = timestep;
+    if (required_dt > CFL_MDL) {
+
+	inner_iterations = (int) ceil(required_dt/CFL_MDL);
+	allowed_dt = required_dt/(double)inner_iterations;
+	    
+	cout << "FTCS_2D :: Required " << inner_iterations << " inner iterations with dt=" << allowed_dt <<  endl;
+    } else {
+	cout << "FTCS_2D :: No inner iterations required, dt=" << required_dt <<  endl;
+    }
+
+    // we loop for inner iterations
+    for (int it =0; it < inner_iterations; ++it){
+
+	cout << "FTCS_2D :: iteration " << it+1 << "/" << inner_iterations <<  endl;
+	// matrix for concentrations at time t+1
+	MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
+	
+	// inner cells
+	// these are independent of the boundary condition type
+	// omp_set_num_threads(10);
+#pragma omp parallel for
+	for (int row = 1; row < rowMax-1; row++) {
+	    for (int col = 1; col < colMax-1; col++) {
+		concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
+		    + allowed_dt / (deltaRow*deltaRow) 
                     * (
-                        calcVerticalChange(grid, row, col)
-                    )
-                + timestep / (deltaCol*deltaCol) 
+		       calcVerticalChange(grid, row, col)
+		       )
+		    + allowed_dt / (deltaCol*deltaCol) 
                     * (
-                        calcHorizontalChange(grid, row, col)
-                    )
-                ;
-        }
-    }
-
-    // boundary conditions
-    // left without corners / looping over rows
-    // hold column constant at index 0
-    int col = 0;
-    #pragma omp parallel for
-    for (int row = 1; row < rowMax-1; row++) {
-        concentrations_t1(row, col) = grid.getConcentrations()(row,col)
-            + timestep / (deltaCol*deltaCol) 
+		       calcHorizontalChange(grid, row, col)
+		       )
+		    ;
+	    }
+	}
+	
+	// boundary conditions
+	// left without corners / looping over rows
+	// hold column constant at index 0
+	int col = 0;
+#pragma omp parallel for
+	for (int row = 1; row < rowMax-1; row++) {
+	    concentrations_t1(row, col) = grid.getConcentrations()(row,col)
+		+ allowed_dt / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeLeftBoundary(grid, bc, row, col)
-                )
-            + timestep / (deltaRow*deltaRow)
+		   calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+		   )
+		+ allowed_dt / (deltaRow*deltaRow)
                 * (
-                    calcVerticalChange(grid, row, col)
-                )
-            ;
-    }
-
-    // right without corners / looping over rows
-    // hold column constant at max index
-    col = colMax-1;
-    #pragma omp parallel for
-    for (int row = 1; row < rowMax-1; row++) {
-        concentrations_t1(row,col) = grid.getConcentrations()(row,col)
-            + timestep / (deltaCol*deltaCol) 
+		   calcVerticalChange(grid, row, col)
+		   )
+		;
+	}
+	
+	// right without corners / looping over rows
+	// hold column constant at max index
+	col = colMax-1;
+#pragma omp parallel for
+	for (int row = 1; row < rowMax-1; row++) {
+	    concentrations_t1(row,col) = grid.getConcentrations()(row,col)
+		+ allowed_dt / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChangeRightBoundary(grid, bc, row, col)
-                )
-            + timestep / (deltaRow*deltaRow)
+		   calcHorizontalChangeRightBoundary(grid, bc, row, col)
+		   )
+		+ allowed_dt / (deltaRow*deltaRow)
                 * (
-                    calcVerticalChange(grid, row, col)
-                )
-            ;
-    }
-
-
-    // top without corners / looping over columns
-    // hold row constant at index 0
-    int row = 0;
-    #pragma omp parallel for
-    for (int col=1; col<colMax-1;col++){
+		   calcVerticalChange(grid, row, col)
+		   )
+		;
+	}
+	
+	
+	// top without corners / looping over columns
+	// hold row constant at index 0
+	int row = 0;
+#pragma omp parallel for
+	for (int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
-            + timestep / (deltaRow*deltaRow) 
-                * (
-                    calcVerticalChangeTopBoundary(grid, bc, row, col)
-                )
-            + timestep / (deltaCol*deltaCol) 
-                * (
-                    calcHorizontalChange(grid, row, col)
-                )
+            + allowed_dt / (deltaRow*deltaRow) 
+	    * (
+	       calcVerticalChangeTopBoundary(grid, bc, row, col)
+	       )
+            + allowed_dt / (deltaCol*deltaCol) 
+	    * (
+	       calcHorizontalChange(grid, row, col)
+	       )
             ;
-    }
-
-    // bottom without corners / looping over columns
-    // hold row constant at max index
-    row = rowMax-1;
-    #pragma omp parallel for
-    for(int col=1; col<colMax-1;col++){
-        concentrations_t1(row, col) = grid.getConcentrations()(row, col)
-            + timestep / (deltaRow*deltaRow) 
+	}
+	
+	// bottom without corners / looping over columns
+	// hold row constant at max index
+	row = rowMax-1;
+#pragma omp parallel for
+	for(int col=1; col<colMax-1;col++){
+	    concentrations_t1(row, col) = grid.getConcentrations()(row, col)
+		+ allowed_dt / (deltaRow*deltaRow) 
                 * (
-                    calcVerticalChangeBottomBoundary(grid, bc, row, col)
-                )
-            + timestep / (deltaCol*deltaCol) 
+		   calcVerticalChangeBottomBoundary(grid, bc, row, col)
+		   )
+		+ allowed_dt / (deltaCol*deltaCol) 
                 * (
-                    calcHorizontalChange(grid, row, col)
-                )
-            ;
+		   calcHorizontalChange(grid, row, col)
+		   )
+		;
+	}
+	
+	// corner top left
+	// hold row and column constant at 0
+	row = 0;
+	col = 0;
+	concentrations_t1(row,col) = grid.getConcentrations()(row,col)
+	    + allowed_dt/(deltaCol*deltaCol)
+            * (
+	       calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+	       )
+	    + allowed_dt/(deltaRow*deltaRow)
+            * (
+	       calcVerticalChangeTopBoundary(grid, bc, row, col)
+	       )
+	    ;
+	
+	// corner top right
+	// hold row constant at 0 and column constant at max index
+	row = 0;
+	col = colMax-1;
+	concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
+	    + allowed_dt/(deltaCol*deltaCol)
+            * (
+	       calcHorizontalChangeRightBoundary(grid, bc, row, col)
+	       )
+	    + allowed_dt/(deltaRow*deltaRow)
+            * (
+	       calcVerticalChangeTopBoundary(grid, bc, row, col)
+	       )
+	    ;
+
+	// corner bottom left
+	// hold row constant at max index and column constant at 0
+	row = rowMax-1;
+	col = 0;
+	concentrations_t1(row,col) = grid.getConcentrations()(row,col)
+	    + allowed_dt/(deltaCol*deltaCol)
+            * (
+	       calcHorizontalChangeLeftBoundary(grid, bc, row, col)
+	       )
+	    + allowed_dt/(deltaRow*deltaRow)
+            * (
+	       calcVerticalChangeBottomBoundary(grid, bc, row, col)
+	       )
+	    ;
+
+	// corner bottom right
+	// hold row and column constant at max index
+	row = rowMax-1;
+	col = colMax-1;
+	concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
+	    + allowed_dt/(deltaCol*deltaCol)
+            * (
+	       calcHorizontalChangeRightBoundary(grid, bc, row, col)
+	       )
+	    + allowed_dt/(deltaRow*deltaRow)
+            * (
+	       calcVerticalChangeBottomBoundary(grid, bc, row, col)
+	       )
+	    ;
+
+	// overwrite obsolete concentrations 
+	grid.setConcentrations(concentrations_t1);
     }
-
-    // corner top left
-    // hold row and column constant at 0
-    row = 0;
-    col = 0;
-    concentrations_t1(row,col) = grid.getConcentrations()(row,col)
-        + timestep/(deltaCol*deltaCol)
-            * (
-                calcHorizontalChangeLeftBoundary(grid, bc, row, col)
-            )
-        + timestep/(deltaRow*deltaRow)
-            * (
-                calcVerticalChangeTopBoundary(grid, bc, row, col)
-            )
-        ;
-
-    // corner top right
-    // hold row constant at 0 and column constant at max index
-    row = 0;
-    col = colMax-1;
-    concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
-        + timestep/(deltaCol*deltaCol)
-            * (
-                calcHorizontalChangeRightBoundary(grid, bc, row, col)
-            )
-        + timestep/(deltaRow*deltaRow)
-            * (
-                calcVerticalChangeTopBoundary(grid, bc, row, col)
-            )
-        ;
-
-    // corner bottom left
-    // hold row constant at max index and column constant at 0
-    row = rowMax-1;
-    col = 0;
-    concentrations_t1(row,col) = grid.getConcentrations()(row,col)
-        + timestep/(deltaCol*deltaCol)
-            * (
-                calcHorizontalChangeLeftBoundary(grid, bc, row, col)
-            )
-        + timestep/(deltaRow*deltaRow)
-            * (
-                calcVerticalChangeBottomBoundary(grid, bc, row, col)
-            )
-        ;
-
-    // corner bottom right
-    // hold row and column constant at max index
-    row = rowMax-1;
-    col = colMax-1;
-    concentrations_t1(row,col) = grid.getConcentrations()(row,col) 
-        + timestep/(deltaCol*deltaCol)
-            * (
-                calcHorizontalChangeRightBoundary(grid, bc, row, col)
-            )
-        + timestep/(deltaRow*deltaRow)
-            * (
-                calcVerticalChangeBottomBoundary(grid, bc, row, col)
-            )
-        ;
-
-    // overwrite obsolete concentrations 
-    grid.setConcentrations(concentrations_t1);
 }
 
 
