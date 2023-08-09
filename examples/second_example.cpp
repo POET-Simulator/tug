@@ -17,8 +17,9 @@ int main(int argc, char *argv[]) {
 
     vector<double> alpha(n * m, 1);
     vector<double> field(n * m, 0);
-    field[n * 19] = 2000;
-    field[n * 19 + 19] = 2000;
+    field[0] = 2000;
+    // field[n * 19] = 2000;
+    // field[n * 19 + 19] = 2000;
 
     // for (int i = 1; i<20; i++) {
     //     for (int j = 0; j<20; j++ ) {
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
     input_param.setDomainSize(n, m);
     BoundaryCondition bc(n, m);
     boundary_condition bc_constant;
-    bc_constant.type = BC_TYPE_CLOSED;
+    bc_constant.type = BC_TYPE_CONSTANT;
     bc_constant.value = 0;
     bc.setSide(BC_SIDE_LEFT, bc_constant);
     bc.setSide(BC_SIDE_RIGHT, bc_constant);
@@ -73,7 +74,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    int iterations = 1000;
+    int iterations = 100;
     for (int t = 0; t < iterations; t++) {
         double result = ADI_2D(input_param, &field[0], &alpha[0]);
     
