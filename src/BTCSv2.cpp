@@ -1,6 +1,4 @@
 #include "FTCS.cpp"
-#include <arm_neon.h>
-#include <cstddef>
 #include <tug/Boundary.hpp>
 
 using namespace Eigen;
