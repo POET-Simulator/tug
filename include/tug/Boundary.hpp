@@ -32,7 +32,7 @@ enum BC_SIDE {
  */
 class BoundaryElement {
     public:
-        // bc type closed
+      
       /**
        * @brief Construct a new Boundary Element object for the closed case.
        *        The boundary type is here automatically set to the type
@@ -153,6 +153,9 @@ class Boundary {
        * @return vector<BoundaryElement> Contains the boundary conditions as BoundaryElement objects.
        */
       vector<BoundaryElement> getBoundarySide(BC_SIDE side);
+
+      // TODO write documentation and tests for this method
+      VectorXd getBoundarySideValues(BC_SIDE side);
 
       /**
        * @brief Returns the boundary condition of a specified element on a given side.

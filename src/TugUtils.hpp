@@ -24,3 +24,12 @@
     duration.count();                                                          \
   })
 #endif // BTCSUTILS_H_
+
+// calculates arithmetic or harmonic mean of alpha between two cells
+static double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = true) {
+    if (useHarmonic) {
+        return double(2) / ((double(1)/alpha1) + (double(1)/alpha2));
+    } else {
+        return 0.5 * (alpha1 + alpha2);
+    }
+}

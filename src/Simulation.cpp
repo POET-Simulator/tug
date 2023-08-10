@@ -7,8 +7,7 @@
 
 #include <fstream>
 
-#include "FTCS.cpp"
-#include "TugUtils.hpp"
+#include "BTCSv2.cpp"
 #include <tug/progressbar.hpp>
 
 
@@ -234,7 +233,7 @@ void Simulation::run() {
 
     } else if (approach == BTCS_APPROACH) {
 
-        for (int i = 0; i < iterations; i++) {
+        for (int i = 0; i < iterations * innerIterations; i++) {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }
@@ -242,8 +241,8 @@ void Simulation::run() {
                 printConcentrationsCSV(filename);
             }
 
-            //TODO
-            break;
+            BTCS(this->grid, this->bc, this->timestep);
+            
         }
 
     }

@@ -110,6 +110,17 @@ vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
     return this->boundaries[side];
 }
 
+VectorXd Boundary::getBoundarySideValues(BC_SIDE side) {
+    int length = boundaries[side].size();
+    VectorXd values(length);
+
+    for (int i = 0; i < length; i++) {
+        values(i) = getBoundaryElementValue(side, i);
+    }
+
+    return values;
+}
+
 BoundaryElement Boundary::getBoundaryElement(BC_SIDE side, int index) {
     if((boundaries[side].size() < index) || index < 0){
         throw_invalid_argument("Index is selected either too large or too small.");

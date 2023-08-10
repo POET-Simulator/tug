@@ -14,16 +14,6 @@
 using namespace std;
 
 
-// calculates arithmetic or harmonic mean of alpha between two cells
-static double calcAlphaIntercell(double &alpha1, double &alpha2, bool useHarmonic = true) {
-    if (useHarmonic) {
-        return double(2) / ((double(1)/alpha1) + (double(1)/alpha2));
-    } else {
-        return 0.5 * (alpha1 + alpha2);
-    }
-}
-
-
 // calculates horizontal change on one cell independent of boundary type
 static double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
