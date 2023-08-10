@@ -7,7 +7,6 @@
 #ifndef BOUNDARY_H_
 #define BOUNDARY_H_
 
-#include <Eigen/Core>
 #include <cstddef>
 #include "Grid.hpp"
 
