@@ -220,7 +220,7 @@ static double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc, int &ro
 }
 
 
-// FTCS solution to 1D grid
+// FTCS solution for 1D grid
 static void FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     int colMax = grid.getCol();
     double deltaCol = grid.getDeltaCol();
@@ -266,48 +266,13 @@ static void FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
 }
 
 
-// FTCS solution to 2D grid
+// FTCS solution for 2D grid
 static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double deltaRow = grid.getDeltaRow();
     double deltaCol = grid.getDeltaCol();
 
-    // MDL: here we have to compute the max time step
-    // double deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-    // double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-    
-    // double minDelta2 = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
-    // double maxAlphaX = grid.getAlphaX().maxCoeff();
-    // double maxAlphaY = grid.getAlphaY().maxCoeff();
-    // double maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
-    
-    // double CFL_MDL = minDelta2 / (4*maxAlpha); // Formula from Marco --> seems to be unstable
-    // double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
-    
-    // cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
-    // cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
-    // double required_dt = timestep;
-    // cout << "FTCS_2D :: required dt=" << required_dt <<  endl;
-
-    // int inner_iterations = 1;
-    // double timestep = timestep;
-    // if (required_dt > CFL_MDL) {
-
-    //   inner_iterations = (int)ceil(required_dt / CFL_MDL);
-    //   timestep = required_dt / (double)inner_iterations;
-
-    //   cout << "FTCS_2D :: Required " << inner_iterations
-    //        << " inner iterations with dt=" << timestep << endl;
-    // } else {
-    //   cout << "FTCS_2D :: No inner iterations required, dt=" << required_dt
-    //        << endl;
-    // }
-
-    // we loop for inner iterations
-    // for (int it =0; it < inner_iterations; ++it){
-
-	// cout << "FTCS_2D :: iteration " << it+1 << "/" << inner_iterations <<  endl;
 	// matrix for concentrations at time t+1
 	MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
 	
@@ -470,7 +435,9 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 static void FTCS(Grid &grid, Boundary &bc, double &timestep) {
     if (grid.getDim() == 1) {
         FTCS_1D(grid, bc, timestep);
-    } else {
+    } else if (grid.getDim() == 2) {
         FTCS_2D(grid, bc, timestep);
+    } else {
+        throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }
 }
