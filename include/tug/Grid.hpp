@@ -6,6 +6,7 @@
  */
 
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 using namespace Eigen;
 
