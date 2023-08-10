@@ -9,6 +9,8 @@
 
 #include "FTCS.cpp"
 #include "TugUtils.hpp"
+#include <tug/progressbar.hpp>
+
 
 using namespace std;
 
@@ -210,6 +212,7 @@ void Simulation::run() {
 
     if (approach == FTCS_APPROACH) {
         auto begin = std::chrono::high_resolution_clock::now();
+        progressbar bar(iterations * innerIterations);
         for (int i = 0; i < iterations * innerIterations; i++) {
 	    // MDL: distinguish between "outer" and "inner" iterations
 	    // std::cout << ":: run(): Outer iteration " << i+1 << "/" << iterations << endl;
@@ -221,6 +224,7 @@ void Simulation::run() {
             }
 
             FTCS(this->grid, this->bc, this->timestep);
+            bar.update();
         }
         auto end = std::chrono::high_resolution_clock::now();
         auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);

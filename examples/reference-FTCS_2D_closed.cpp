@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     // Simulation
     Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
     sim.setTimestep(0.001);
-    sim.setIterations(100);
+    sim.setIterations(10000);
     sim.setOutputCSV(CSV_OUTPUT_OFF);
     sim.setOutputConsole(CONSOLE_OUTPUT_OFF);
 
