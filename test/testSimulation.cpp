@@ -7,7 +7,7 @@
 // include the configured header file
 #include <testSimulation.hpp>
 
-static Grid setupSimulation() {
+static Grid setupSimulation(APPROACH approach, double timestep, int iterations) {
     int row = 11;
     int col = 11;
     int domain_row = 10;
@@ -46,9 +46,10 @@ static Grid setupSimulation() {
 
 
     // Simulation
-    Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
-    sim.setTimestep(0.001);
-    sim.setIterations(7000);
+    Simulation sim = Simulation(grid, bc, approach);
+    sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+    sim.setTimestep(timestep);
+    sim.setIterations(iterations);
     sim.run();
 
     // RUN
@@ -56,12 +57,20 @@ static Grid setupSimulation() {
     
 }
 
-TEST_CASE("equality to reference matrix") {
+TEST_CASE("equality to reference matrix with FTCS") {
     // set string from the header file
     string test_path = testSimulationCSVDir;
     MatrixXd reference = CSV2Eigen(test_path);
-    Grid grid = setupSimulation();
+    Grid grid = setupSimulation(FTCS_APPROACH, 0.001, 7000);
     CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
+}
+
+TEST_CASE("equality to reference matrix with BTCS") {
+    // set string from the header file
+    string test_path = testSimulationCSVDir;
+    MatrixXd reference = CSV2Eigen(test_path);
+    Grid grid = setupSimulation(BTCS_APPROACH, 1, 7);
+    CHECK(checkSimilarityV2(reference, grid.getConcentrations(), 0.01) == true);
 }
 
 TEST_CASE("Initialize environment"){
@@ -69,8 +78,8 @@ TEST_CASE("Initialize environment"){
     Grid grid(rc, rc);
     Boundary boundary(grid);
 
-    CHECK_NOTHROW(Simulation sim(grid, boundary, FTCS_APPROACH));
-    }
+    CHECK_NOTHROW(Simulation sim(grid, boundary, BTCS_APPROACH));
+}
 
 TEST_CASE("Simulation environment"){
     int rc = 12;

@@ -150,6 +150,7 @@ string Simulation::createCSVfile() {
     while (filesystem::exists(filename)) {
         appendIdent += 1;
         appendIdentString = to_string(appendIdent);
+        // ?? TODO why double filename?
         filename = filename = approachString + "_" + row + "_" + col + "_" + numIterations + "-" + appendIdentString + ".csv";
     }
 
@@ -166,9 +167,11 @@ string Simulation::createCSVfile() {
         //boundary right
         //boundary top
         //boundary bottom
-        file << row << endl;
-        file << col << endl;
-        file << numIterations << endl;
+        IOFormat one_row(StreamPrecision, DontAlignCols, "", " ");
+        file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row) << endl;
+        file << bc.getBoundarySideValues(BC_SIDE_RIGHT).format(one_row) << endl;
+        file << bc.getBoundarySideValues(BC_SIDE_TOP).format(one_row) << endl;
+        file << bc.getBoundarySideValues(BC_SIDE_BOTTOM).format(one_row) << endl;
         // TODO
         // file << to_string(bc.printBoundarySide) << endl;
         file << endl << endl;
@@ -218,7 +221,7 @@ void Simulation::run() {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }
-            if (csv_output == CSV_OUTPUT_VERBOSE) {
+            if (csv_output >= CSV_OUTPUT_VERBOSE) {
                 printConcentrationsCSV(filename);
             }
 
@@ -229,7 +232,7 @@ void Simulation::run() {
         auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
 	// MDL: meaningful stdout messages
-        std::cout << ":: run() finished in " << milliseconds.count() << "ms" << endl;
+        std::cout << "\n:: run() finished in " << milliseconds.count() << "ms" << endl;
 
     } else if (approach == BTCS_APPROACH) {
 
@@ -237,7 +240,7 @@ void Simulation::run() {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }
-            if (csv_output == CSV_OUTPUT_VERBOSE && i > 0) {
+            if (csv_output >= CSV_OUTPUT_VERBOSE) {
                 printConcentrationsCSV(filename);
             }
 

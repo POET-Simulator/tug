@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     simulation.setIterations(100);
 
     // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
-    simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);
+    simulation.setOutputCSV(CSV_OUTPUT_XTREME);
     
     // **** RUN SIMULATION ****
     

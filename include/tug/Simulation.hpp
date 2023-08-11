@@ -16,7 +16,7 @@ enum CSV_OUTPUT {
     CSV_OUTPUT_OFF, // do not produce csv output
     CSV_OUTPUT_ON, // produce csv output with last concentration matrix
     CSV_OUTPUT_VERBOSE, // produce csv output with all concentration matrices
-    CSV_OUTPUT_XTREME // produce csv output with all concentration matrices and simulation environment
+    CSV_OUTPUT_XTREME // produce csv output with all concentration matrices and boundary conditions at beginning
 };
 
 enum CONSOLE_OUTPUT {
