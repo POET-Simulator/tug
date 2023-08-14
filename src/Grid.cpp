@@ -145,6 +145,14 @@ void Grid::setDomain(int domainRow, int domainCol) {
     this->deltaCol = double(this->domainCol)/double(this->col);
 }
 
+double Grid::getDelta() {
+    if (dim != 1) {
+        throw_invalid_argument("Grid is not one dimensional, you should probably use the 2D delta getters");
+    }
+
+    return this->deltaCol;
+}
+
 double Grid::getDeltaCol() {
     return this->deltaCol;
 }

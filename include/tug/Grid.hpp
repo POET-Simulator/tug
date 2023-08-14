@@ -133,6 +133,13 @@ class Grid {
         void setDomain(int domainRow, int domainCol);
 
         /**
+         * @brief Gets the delta value for 1D-Grid. Grid must be one dimensional.
+         * 
+         * @return double Delta value. 
+         */
+        double getDelta();
+
+        /**
          * @brief Gets the delta value in x-direction. 
          * 
          * @return double Delta value in x-direction.

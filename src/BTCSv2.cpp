@@ -1,9 +1,17 @@
+/**
+ * @file BTCS.cpp
+ * @brief Implementation of heterogenous BTCS (backward time-centered space) solution
+ *        of diffusion equation in 1D and 2D space.
+ * 
+ */
+
 #include "FTCS.cpp"
 #include <tug/Boundary.hpp>
 
 using namespace Eigen;
 
 
+// calculates coefficient for left boundary in constant case
 static tuple<double, double> calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int &rowIndex, double &sx) {
     double centerCoeff;
     double rightCoeff;
@@ -16,6 +24,7 @@ static tuple<double, double> calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int 
 }
 
 
+// calculates coefficient for left boundary in closed case
 static tuple<double, double> calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int &rowIndex, double &sx) {
     double centerCoeff;
     double rightCoeff;
@@ -27,6 +36,7 @@ static tuple<double, double> calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int &r
 }
 
 
+// calculates coefficient for right boundary in constant case
 static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha, int &rowIndex, int &n, double &sx) {
     double leftCoeff;
     double centerCoeff;
@@ -39,6 +49,7 @@ static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha, int
 }
 
 
+// calculates coefficient for right boundary in closed case
 static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int &rowIndex, int &n, double &sx) {
     double leftCoeff;
     double centerCoeff;
@@ -50,6 +61,7 @@ static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int &
 }
 
 
+// creates coefficient matrix for next time step from alphas in x-direction
 static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryElement> bcLeft, vector<BoundaryElement> bcRight, int numCols, int rowIndex, double sx) {
 
     // square matrix of column^2 dimension for the coefficients
@@ -102,6 +114,7 @@ static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryEl
 }
 
 
+// calculates explicity concentration at top boundary in constant case
 static double calcExplicitConcentrationsTopBoundaryConstant(MatrixXd &concentrations, 
                             MatrixXd &alpha, vector<BoundaryElement> &bcTop, int &rowIndex, int &i, double &sy) {
     double c;
@@ -120,6 +133,7 @@ static double calcExplicitConcentrationsTopBoundaryConstant(MatrixXd &concentrat
 }
 
 
+// calculates explicit concentration at top boundary in closed case
 static double calcExplicitConcentrationsTopBoundaryClosed(MatrixXd &concentrations, 
                             MatrixXd &alpha, int &rowIndex, int &i, double &sy) {
     double c;
@@ -136,6 +150,7 @@ static double calcExplicitConcentrationsTopBoundaryClosed(MatrixXd &concentratio
 }
 
 
+// calculates explicit concentration at bottom boundary in constant case
 static double calcExplicitConcentrationsBottomBoundaryConstant(MatrixXd &concentrations, 
                             MatrixXd &alpha, vector<BoundaryElement> &bcBottom, int &rowIndex, int &i, double &sy) {
     double c;
@@ -154,6 +169,7 @@ static double calcExplicitConcentrationsBottomBoundaryConstant(MatrixXd &concent
 }
 
 
+// calculates explicit concentration at bottom boundary in closed case
 static double calcExplicitConcentrationsBottomBoundaryClosed(MatrixXd &concentrations, 
                             MatrixXd &alpha, int &rowIndex, int &i, double &sy) {
     double c;
@@ -170,6 +186,7 @@ static double calcExplicitConcentrationsBottomBoundaryClosed(MatrixXd &concentra
 }
 
 
+// creates a solution vector for next time step from the current state of concentrations
 static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX, MatrixXd &alphaY, 
                                         vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, 
                                         vector<BoundaryElement> &bcTop, vector<BoundaryElement> &bcBottom, 
@@ -238,6 +255,8 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 }
 
 
+// solver for linear equation system; A corresponds to coefficient matrix,
+// b to the solution vector
 static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
     SparseLU<SparseMatrix<double>> solver;
     solver.analyzePattern(A);
@@ -250,7 +269,7 @@ static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
 // BTCS solution for 1D grid 
 static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     int length = grid.getLength();
-    double sx = timestep / (grid.getDeltaCol() * grid.getDeltaCol()); // TODO create method getDelta() for 1D case
+    double sx = timestep / (grid.getDelta() * grid.getDelta());
 
     VectorXd concentrations_t1(length);
 
@@ -312,7 +331,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         row_t1 = solve(A, b);
         
         for (int j = 0; j < colMax; j++) {
-            concentrations_t1(i,j) = row_t1(j); // TODO Eigen seq ??
+            concentrations_t1(i,j) = row_t1(j); // can potentially be improved by using Eigen method
         }
         
     }
@@ -329,7 +348,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         row_t1 = solve(A, b);
 
         for (int j = 0; j < rowMax; j++) {
-            concentrations(i,j) = row_t1(j); // TODO Eigen seq ??
+            concentrations(i,j) = row_t1(j); // can potentially be improved by using Eigen method
         }
     }
     concentrations.transposeInPlace();
