@@ -41,7 +41,6 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.inheritance_diagram',
-    'sphinx_sitemap',
     'breathe'
 ]
 
