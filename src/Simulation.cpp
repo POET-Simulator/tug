@@ -19,14 +19,6 @@ Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid)
     this->timestep = -1; // error per default
     this->iterations = -1;
     this->innerIterations = 1;
-
-    // MDL no: we need to distinguish between "required dt" and
-    // "number of (outer) iterations" at which the user needs an
-    // output and the actual CFL-allowed timestep and consequently the
-    // number of "inner" iterations which the explicit FTCS needs to
-    // reach them. The following, at least at the moment, cannot be
-    // computed here since "timestep" is not yet set when this
-    // function is called. I brought everything into "FTCS_2D"!
     
     this->csv_output = CSV_OUTPUT_OFF;
     this->console_output = CONSOLE_OUTPUT_OFF;
@@ -35,7 +27,6 @@ Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid)
 
 void Simulation::setOutputCSV(CSV_OUTPUT csv_output) {
     if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-        // throw invalid_argument("Invalid CSV output option given!");
         throw_invalid_argument("Invalid CSV output option given!");
     }
 
@@ -90,7 +81,7 @@ void Simulation::setTimestep(double timestep) {
     double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
 
     cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
-    cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
+    // cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
     cout << "FTCS_2D :: required dt=" << timestep <<  endl;
 
     if (timestep > CFL_MDL) {
@@ -139,7 +130,6 @@ string Simulation::createCSVfile() {
     int appendIdent = 0;
     string appendIdentString;
 
-     // APPROACH_ROW_COL_ITERATIONS
     string approachString = (approach == 0) ? "FTCS" : "BTCS";
     string row = to_string(grid.getRow());
     string col = to_string(grid.getCol());
@@ -150,7 +140,7 @@ string Simulation::createCSVfile() {
     while (filesystem::exists(filename)) {
         appendIdent += 1;
         appendIdentString = to_string(appendIdent);
-        filename = filename = approachString + "_" + row + "_" + col + "_" + numIterations + "-" + appendIdentString + ".csv";
+        filename = approachString + "_" + row + "_" + col + "_" + numIterations + "-" + appendIdentString + ".csv";
     }
 
     file.open(filename);
@@ -158,19 +148,14 @@ string Simulation::createCSVfile() {
         exit(1);
     }
 
+    // adds lines at the beginning of verbose output csv that represent the boundary conditions and their values
+    // -1 in case of closed boundary
     if (csv_output == CSV_OUTPUT_XTREME) {
-        //rows
-        //cols
-        //iterations
-        //boundary left
-        //boundary right
-        //boundary top
-        //boundary bottom
-        file << row << endl;
-        file << col << endl;
-        file << numIterations << endl;
-        // TODO
-        // file << to_string(bc.printBoundarySide) << endl;
+        IOFormat one_row(StreamPrecision, DontAlignCols, "", " ");
+        file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row) << endl; // boundary left
+        file << bc.getBoundarySideValues(BC_SIDE_RIGHT).format(one_row) << endl; // boundary right
+        file << bc.getBoundarySideValues(BC_SIDE_TOP).format(one_row) << endl; // boundary top
+        file << bc.getBoundarySideValues(BC_SIDE_BOTTOM).format(one_row) << endl; // boundary bottom
         file << endl << endl;
     }
 
@@ -209,27 +194,26 @@ void Simulation::run() {
         filename = createCSVfile();
     }
 
+    auto begin = std::chrono::high_resolution_clock::now();
+
     if (approach == FTCS_APPROACH) {
-        auto begin = std::chrono::high_resolution_clock::now();
-        progressbar bar(iterations * innerIterations);
         for (int i = 0; i < iterations * innerIterations; i++) {
-	    // MDL: distinguish between "outer" and "inner" iterations
-	    // std::cout << ":: run(): Outer iteration " << i+1 << "/" << iterations << endl;
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }
-            if (csv_output == CSV_OUTPUT_VERBOSE) {
+            if (csv_output >= CSV_OUTPUT_VERBOSE) {
                 printConcentrationsCSV(filename);
             }
 
             FTCS(this->grid, this->bc, this->timestep);
-            bar.update();
+    
+            if (i % (iterations * innerIterations / 100) == 0) {
+                double percentage = (double)i / ((double)iterations * (double)innerIterations) * 100;
+                if ((int)percentage % 10 == 0) {
+                    cout << "Progress: " << percentage << "%" << endl;
+                }
+            }
         }
-        auto end = std::chrono::high_resolution_clock::now();
-        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
-
-	// MDL: meaningful stdout messages
-        std::cout << ":: run() finished in " << milliseconds.count() << "ms" << endl;
 
     } else if (approach == BTCS_APPROACH) {
 
@@ -237,7 +221,7 @@ void Simulation::run() {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
             }
-            if (csv_output == CSV_OUTPUT_VERBOSE && i > 0) {
+            if (csv_output >= CSV_OUTPUT_VERBOSE) {
                 printConcentrationsCSV(filename);
             }
 
@@ -247,12 +231,19 @@ void Simulation::run() {
 
     }
 
+    auto end = std::chrono::high_resolution_clock::now();
+    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
     if (this->console_output > CONSOLE_OUTPUT_OFF) {
         printConcentrationsConsole();
     }
     if (this->csv_output > CSV_OUTPUT_OFF) {
         printConcentrationsCSV(filename);
     }
-
+    if (this->time_measure > TIME_MEASURE_OFF) {
+        string approachString = (approach == 0) ? "FTCS" : "BTCS";
+        string dimString = (grid.getDim() == 1) ? "-1D" : "-2D";
+        cout << approachString << dimString << ":: run() finished in " << milliseconds.count() << "ms" << endl;
+    }
     
 }

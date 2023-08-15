@@ -43,5 +43,5 @@ bool checkSimilarityV2(MatrixXd a, MatrixXd b, double maxDiff) {
 
     MatrixXd diff = a - b;
     double maxCoeff = diff.maxCoeff();
-    return maxCoeff < maxDiff;
+    return abs(maxCoeff) < maxDiff;
 }

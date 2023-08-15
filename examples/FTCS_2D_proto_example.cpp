@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
 
     // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
     simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);
+
     
     // **** RUN SIMULATION ****
     

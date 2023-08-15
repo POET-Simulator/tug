@@ -1,7 +1,7 @@
 /**
  * @file Boundary.hpp
- * @brief 
- * 
+ * @brief API of Boundary class, that holds all information for each boundary condition 
+ *        at the edges of the diffusion grid. 
  * 
  */
 #ifndef BOUNDARY_H_
@@ -13,11 +13,19 @@
 using namespace std;
 using namespace Eigen;
 
+/**
+ * @brief Enum defining the two implemented boundary conditions. 
+ * 
+ */
 enum BC_TYPE {
     BC_TYPE_CLOSED,
     BC_TYPE_CONSTANT
 };
 
+/**
+ * @brief Enum defining all 4 possible sides to a 1D and 2D grid. 
+ * 
+ */
 enum BC_SIDE {
     BC_SIDE_LEFT,
     BC_SIDE_RIGHT,
@@ -149,12 +157,18 @@ class Boundary {
        * @brief Returns the boundary condition of a specified side as a vector
        *        of BoundarsElement objects.
        *
-       * @param side Boundary side from which the boundaryconditions are to be returned.
+       * @param side Boundary side from which the boundary conditions are to be returned.
        * @return vector<BoundaryElement> Contains the boundary conditions as BoundaryElement objects.
        */
       vector<BoundaryElement> getBoundarySide(BC_SIDE side);
 
-      // TODO write documentation and tests for this method
+      /**
+       * @brief Get thes Boundary Side Values as a vector. Value is -1 in case some specific 
+                boundary is closed.
+       * 
+       * @param side Boundary side for which the values are to be returned.
+       * @return VectorXd Vector with values as doubles. 
+       */
       VectorXd getBoundarySideValues(BC_SIDE side);
 
       /**
@@ -192,9 +206,9 @@ class Boundary {
       double getBoundaryElementValue(BC_SIDE side, int index);
 
     private:
-        Grid grid;
+        Grid grid; // Boundary is directly dependent on the dimensions of a predefined
         
-        vector<vector<BoundaryElement>> boundaries;
+        vector<vector<BoundaryElement>> boundaries; // Vector with Boundary Element information
 };
 
 #endif

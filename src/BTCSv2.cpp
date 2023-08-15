@@ -1,19 +1,86 @@
+/**
+ * @file BTCS.cpp
+ * @brief Implementation of heterogenous BTCS (backward time-centered space) solution
+ *        of diffusion equation in 1D and 2D space.
+ * 
+ */
+
 #include "FTCS.cpp"
 #include <tug/Boundary.hpp>
 
 using namespace Eigen;
 
 
-static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, int numCols, int rowIndex, double sx) {
+// calculates coefficient for left boundary in constant case
+static tuple<double, double> calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int &rowIndex, double &sx) {
+    double centerCoeff;
+    double rightCoeff;
+
+    centerCoeff = 1 + sx * (calcAlphaIntercell(alpha(rowIndex,0), alpha(rowIndex,1))
+                                + 2 * alpha(rowIndex,0));
+    rightCoeff = -sx * calcAlphaIntercell(alpha(rowIndex,0), alpha(rowIndex,1));
+
+    return {centerCoeff, rightCoeff};
+}
+
+
+// calculates coefficient for left boundary in closed case
+static tuple<double, double> calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int &rowIndex, double &sx) {
+    double centerCoeff;
+    double rightCoeff;
+
+    centerCoeff = 1 + sx * calcAlphaIntercell(alpha(rowIndex,0), alpha(rowIndex,1));
+    rightCoeff = -sx * calcAlphaIntercell(alpha(rowIndex,0), alpha(rowIndex,1));
+
+    return {centerCoeff, rightCoeff};
+}
+
+
+// calculates coefficient for right boundary in constant case
+static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha, int &rowIndex, int &n, double &sx) {
+    double leftCoeff;
+    double centerCoeff;
+
+    leftCoeff = -sx * calcAlphaIntercell(alpha(rowIndex,n-1), alpha(rowIndex,n));
+    centerCoeff = 1 + sx * (calcAlphaIntercell(alpha(rowIndex,n-1), alpha(rowIndex,n))
+                                + 2 * alpha(rowIndex,n));
+
+    return {leftCoeff, centerCoeff};
+}
+
+
+// calculates coefficient for right boundary in closed case
+static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int &rowIndex, int &n, double &sx) {
+    double leftCoeff;
+    double centerCoeff;
+
+    leftCoeff = -sx * calcAlphaIntercell(alpha(rowIndex,n-1), alpha(rowIndex,n));
+    centerCoeff = 1 + sx * calcAlphaIntercell(alpha(rowIndex,n-1), alpha(rowIndex,n));
+
+    return {leftCoeff, centerCoeff};
+}
+
+
+// creates coefficient matrix for next time step from alphas in x-direction
+static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryElement> bcLeft, vector<BoundaryElement> bcRight, int numCols, int rowIndex, double sx) {
 
     // square matrix of column^2 dimension for the coefficients
     SparseMatrix<double> cm(numCols, numCols);
     cm.reserve(VectorXi::Constant(numCols, 3));
 
     // left column
-    cm.insert(0,0) = 1 + sx * (calcAlphaIntercell(alpha(rowIndex,0), alpha(rowIndex,1))
-                                + 2 * alpha(rowIndex,0));
-    cm.insert(0,1) = -sx * calcAlphaIntercell(alpha(rowIndex,0), alpha(rowIndex,1));
+    BC_TYPE type = bcLeft[rowIndex].getType();
+    if (type == BC_TYPE_CONSTANT) {
+        auto [centerCoeffTop, rightCoeffTop] = calcLeftBoundaryCoeffConstant(alpha, rowIndex, sx);
+        cm.insert(0,0) = centerCoeffTop;
+        cm.insert(0,1) = rightCoeffTop;
+    } else if (type == BC_TYPE_CLOSED) { 
+        auto [centerCoeffTop, rightCoeffTop] = calcLeftBoundaryCoeffClosed(alpha, rowIndex, sx);
+        cm.insert(0,0) = centerCoeffTop;
+        cm.insert(0,1) = rightCoeffTop;
+    } else {
+        throw_invalid_argument("Undefined Boundary Condition Type somewhere on Left or Top!");
+    }
 
     // inner columns
     int n = numCols-1;
@@ -28,22 +95,106 @@ static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, int numCols, int 
     }
 
     // right column
-    cm.insert(n,n-1) = -sx * calcAlphaIntercell(alpha(rowIndex,n-1), alpha(rowIndex,n));
-    cm.insert(n,n) = 1 + sx * (calcAlphaIntercell(alpha(rowIndex,n-1), alpha(rowIndex,n))
-                                + 2 * alpha(rowIndex,n));
+    type = bcRight[rowIndex].getType();
+    if (type == BC_TYPE_CONSTANT) {
+        auto [leftCoeffBottom, centerCoeffBottom] = calcRightBoundaryCoeffConstant(alpha, rowIndex, n, sx);
+        cm.insert(n,n-1) = leftCoeffBottom;
+        cm.insert(n,n) = centerCoeffBottom;
+    } else if (type == BC_TYPE_CLOSED) { 
+        auto [leftCoeffBottom, centerCoeffBottom] = calcRightBoundaryCoeffClosed(alpha, rowIndex, n, sx);
+        cm.insert(n,n-1) = leftCoeffBottom;
+        cm.insert(n,n) = centerCoeffBottom;
+    } else {
+        throw_invalid_argument("Undefined Boundary Condition Type somewhere on Right or Bottom!");
+    }
 
-    cm.makeCompressed();
+    cm.makeCompressed(); // important for Eigen solver
 
     return cm;
 }
 
 
+// calculates explicity concentration at top boundary in constant case
+static double calcExplicitConcentrationsTopBoundaryConstant(MatrixXd &concentrations, 
+                            MatrixXd &alpha, vector<BoundaryElement> &bcTop, int &rowIndex, int &i, double &sy) {
+    double c;
+
+    c = sy * calcAlphaIntercell(alpha(rowIndex,i), alpha(rowIndex+1,i))
+                            * concentrations(rowIndex,i)
+                        + (
+                            1 - sy * (
+                                calcAlphaIntercell(alpha(rowIndex,i), alpha(rowIndex+1,i))
+                                + 2 * alpha(rowIndex,i)
+                            )
+                        ) * concentrations(rowIndex,i)
+                        + sy * alpha(rowIndex,i) * bcTop[i].getValue();
+
+    return c;
+}
+
+
+// calculates explicit concentration at top boundary in closed case
+static double calcExplicitConcentrationsTopBoundaryClosed(MatrixXd &concentrations, 
+                            MatrixXd &alpha, int &rowIndex, int &i, double &sy) {
+    double c;
+
+    c = sy * calcAlphaIntercell(alpha(rowIndex,i), alpha(rowIndex+1,i))
+                            * concentrations(rowIndex,i)
+                        + (
+                            1 - sy * (
+                                calcAlphaIntercell(alpha(rowIndex,i), alpha(rowIndex+1,i))
+                            )
+                        ) * concentrations(rowIndex,i);
+
+    return c;
+}
+
+
+// calculates explicit concentration at bottom boundary in constant case
+static double calcExplicitConcentrationsBottomBoundaryConstant(MatrixXd &concentrations, 
+                            MatrixXd &alpha, vector<BoundaryElement> &bcBottom, int &rowIndex, int &i, double &sy) {
+    double c;
+
+    c = sy * alpha(rowIndex,i) * bcBottom[i].getValue()
+                        + (
+                            1 - sy * (
+                                2 * alpha(rowIndex,i)
+                                + calcAlphaIntercell(alpha(rowIndex-1,i), alpha(rowIndex,i))
+                            )
+                        ) * concentrations(rowIndex,i)
+                        + sy * calcAlphaIntercell(alpha(rowIndex-1,i), alpha(rowIndex,i)) 
+                            * concentrations(rowIndex-1,i);
+
+    return c;
+}
+
+
+// calculates explicit concentration at bottom boundary in closed case
+static double calcExplicitConcentrationsBottomBoundaryClosed(MatrixXd &concentrations, 
+                            MatrixXd &alpha, int &rowIndex, int &i, double &sy) {
+    double c;
+
+    c = (
+            1 - sy * (
+                + calcAlphaIntercell(alpha(rowIndex-1,i), alpha(rowIndex,i))
+            )
+        ) * concentrations(rowIndex,i)
+        + sy * calcAlphaIntercell(alpha(rowIndex-1,i), alpha(rowIndex,i)) 
+            * concentrations(rowIndex-1,i);
+
+    return c;
+}
+
+
+// creates a solution vector for next time step from the current state of concentrations
 static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX, MatrixXd &alphaY, 
-                                        VectorXd &bcLeft, VectorXd &bcRight, VectorXd &bcTop, 
-                                        VectorXd &bcBottom, int length, int rowIndex, double sx, double sy) {
+                                        vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, 
+                                        vector<BoundaryElement> &bcTop, vector<BoundaryElement> &bcBottom, 
+                                        int length, int rowIndex, double sx, double sy) {
 
     VectorXd sv(length);
     int numRows = concentrations.rows();
+    BC_TYPE type;
 
     // inner rows
     if (rowIndex > 0 && rowIndex < numRows-1) {
@@ -65,45 +216,47 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
     // first row
     if (rowIndex == 0) {
         for (int i = 0; i < length; i++) {
-            sv(i) = sy * calcAlphaIntercell(alphaY(rowIndex,i), alphaY(rowIndex+1,i))
-                            * concentrations(rowIndex,i)
-                        + (
-                            1 - sy * (
-                                calcAlphaIntercell(alphaY(rowIndex,i), alphaY(rowIndex+1,i))
-                                + 2 * alphaY(rowIndex,i)
-                            )
-                        ) * concentrations(rowIndex,i)
-                        + sy * alphaY(rowIndex,i) * bcTop(i)
-                    ;
+            type = bcTop[i].getType();
+            if (type == BC_TYPE_CONSTANT) {
+                sv(i) = calcExplicitConcentrationsTopBoundaryConstant(concentrations, alphaY, bcTop, rowIndex, i, sy);
+            } else if (type == BC_TYPE_CLOSED) {
+                sv(i) = calcExplicitConcentrationsTopBoundaryClosed(concentrations, alphaY, rowIndex, i, sy);
+            } else {
+                throw_invalid_argument("Undefined Boundary Condition Type somewhere on Left or Top!");
+            }
         }
     }
 
     // last row
     if (rowIndex == numRows-1) {
         for (int i = 0; i < length; i++) {
-            sv(i) = sy * alphaY(rowIndex,i) * bcBottom(i)
-                        + (
-                            1 - sy * (
-                                2 * alphaY(rowIndex,i)
-                                + calcAlphaIntercell(alphaY(rowIndex-1,i), alphaY(rowIndex,i))
-                            )
-                        ) * concentrations(rowIndex,i)
-                        + sy * calcAlphaIntercell(alphaY(rowIndex-1,i), alphaY(rowIndex,i)) 
-                            * concentrations(rowIndex-1,i)
-                    ;
+            type = bcBottom[i].getType();
+            if (type == BC_TYPE_CONSTANT) {
+                sv(i) = calcExplicitConcentrationsBottomBoundaryConstant(concentrations, alphaY, bcBottom, rowIndex, i, sy);
+            } else if (type == BC_TYPE_CLOSED) {
+                sv(i) = calcExplicitConcentrationsBottomBoundaryClosed(concentrations, alphaY, rowIndex, i, sy);
+            } else {
+                throw_invalid_argument("Undefined Boundary Condition Type somewhere on Right or Bottom!");
+            }
         }
     }
 
-    // first column -> additional fixed concentration change from perpendicular dimension
-    sv(0) += 2 * sx * alphaX(rowIndex,0) * bcLeft(rowIndex);
+    // first column -> additional fixed concentration change from perpendicular dimension in constant bc case
+    if (bcLeft[rowIndex].getType() == BC_TYPE_CONSTANT) {
+        sv(0) += 2 * sx * alphaX(rowIndex,0) * bcLeft[rowIndex].getValue();
+    }
 
-    // last column -> additional fixed concentration change from perpendicular dimension
-    sv(length-1) += 2 * sx * alphaX(rowIndex,length-1) * bcRight(rowIndex);
+    // last column -> additional fixed concentration change from perpendicular dimension in constant bc case
+    if (bcRight[rowIndex].getType() == BC_TYPE_CONSTANT) {
+        sv(length-1) += 2 * sx * alphaX(rowIndex,length-1) * bcRight[rowIndex].getValue();
+    }
 
     return sv;
 }
 
 
+// solver for linear equation system; A corresponds to coefficient matrix,
+// b to the solution vector
 static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
     SparseLU<SparseMatrix<double>> solver;
     solver.analyzePattern(A);
@@ -116,7 +269,7 @@ static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
 // BTCS solution for 1D grid 
 static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     int length = grid.getLength();
-    double sx = timestep / (grid.getDeltaCol() * grid.getDeltaCol()); // TODO create method getDelta() for 1D case
+    double sx = timestep / (grid.getDelta() * grid.getDelta());
 
     VectorXd concentrations_t1(length);
 
@@ -124,16 +277,20 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     VectorXd b(length);
 
     MatrixXd alpha = grid.getAlpha();
-    VectorXd bcLeft = bc.getBoundarySideValues(BC_SIDE_LEFT);
-    VectorXd bcRight = bc.getBoundarySideValues(BC_SIDE_RIGHT);
+    vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+    vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
 
     MatrixXd concentrations = grid.getConcentrations();
-    A = createCoeffMatrix(alpha, length, 0, sx); // this is exactly same as in 2D
+    A = createCoeffMatrix(alpha, bcLeft, bcRight, length, 0, sx); // this is exactly same as in 2D
     for (int i = 0; i < length; i++) {
-        b(i) = concentrations(0,i); // TODO check if this is really the only thing on right hand side of equation in 1D?
+        b(i) = concentrations(0,i);
     }
-    b(0) += 2 * sx * alpha(0,0) * bcLeft(0);
-    b(length-1) += 2 * sx * alpha(0,length-1) * bcRight(0);
+    if (bc.getBoundaryElementType(BC_SIDE_LEFT, 0) == BC_TYPE_CONSTANT) {
+        b(0) += 2 * sx * alpha(0,0) * bcLeft[0].getValue();
+    }
+    if (bc.getBoundaryElementType(BC_SIDE_RIGHT, 0) == BC_TYPE_CONSTANT) {
+        b(length-1) += 2 * sx * alpha(0,length-1) * bcRight[0].getValue();
+    }
 
     concentrations_t1 = solve(A, b);
 
@@ -160,21 +317,21 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
     MatrixXd alphaX = grid.getAlphaX();
     MatrixXd alphaY = grid.getAlphaY();
-    VectorXd bcLeft = bc.getBoundarySideValues(BC_SIDE_LEFT);
-    VectorXd bcRight = bc.getBoundarySideValues(BC_SIDE_RIGHT);
-    VectorXd bcTop = bc.getBoundarySideValues(BC_SIDE_TOP);
-    VectorXd bcBottom = bc.getBoundarySideValues(BC_SIDE_BOTTOM);
+    vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+    vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+    vector<BoundaryElement> bcTop = bc.getBoundarySide(BC_SIDE_TOP);
+    vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
     MatrixXd concentrations = grid.getConcentrations();
     for (int i = 0; i < rowMax; i++) {
       
-        A = createCoeffMatrix(alphaX, colMax, i, sx);
+        A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
         b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight, 
                                     bcTop, bcBottom, colMax, i, sx, sy);
         row_t1 = solve(A, b);
         
         for (int j = 0; j < colMax; j++) {
-            concentrations_t1(i,j) = row_t1(j);
+            concentrations_t1(i,j) = row_t1(j); // can potentially be improved by using Eigen method
         }
         
     }
@@ -184,13 +341,14 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     alphaY.transposeInPlace();
     for (int i = 0; i < colMax; i++) {
 
-        A = createCoeffMatrix(alphaY, rowMax, i, sy);
+        // swap alphas, boundary conditions and sx/sy for column-wise calculation
+        A = createCoeffMatrix(alphaY, bcLeft, bcRight, rowMax, i, sy);
         b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom, 
                                     bcLeft, bcRight, rowMax, i, sy, sx);
         row_t1 = solve(A, b);
 
         for (int j = 0; j < rowMax; j++) {
-            concentrations(i,j) = row_t1(j);
+            concentrations(i,j) = row_t1(j); // can potentially be improved by using Eigen method
         }
     }
     concentrations.transposeInPlace();
