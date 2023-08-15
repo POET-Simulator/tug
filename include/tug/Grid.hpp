@@ -163,8 +163,8 @@ class Grid {
         int domainRow; // number of domain rows
         double deltaCol; // delta in x-direction (between columns)
         double deltaRow; // delta in y-direction (between rows)
-        MatrixXd concentrations; 
-        MatrixXd alphaX;
-        MatrixXd alphaY;
+        MatrixXd concentrations; // Matrix holding grid concentrations 
+        MatrixXd alphaX; // Matrix holding alpha coefficients in x-direction
+        MatrixXd alphaY; // Matrix holding alpha coefficients in y-direction
 
 };

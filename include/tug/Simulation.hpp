@@ -1,34 +1,52 @@
 /**
  * @file Simulation.hpp
- * @brief  
+ * @brief API of Simulation class, that holds all information regarding a specific simulation
+ *        run like its timestep, number of iterations and output options. Simulation object
+ *        also holds a predefined Grid and Boundary object. 
+ *
  */
 #include "Boundary.hpp"
 #include <ios>
 
 using namespace std;
 
+/**
+ * @brief Enum defining the two implemented solution approaches. 
+ * 
+ */
 enum APPROACH {
     FTCS_APPROACH, // Forward Time-Centered Space
     BTCS_APPROACH // Backward Time-Centered Space
 };
 
+/**
+ * @brief Enum holding different options for .csv output.
+ * 
+ */
 enum CSV_OUTPUT {
     CSV_OUTPUT_OFF, // do not produce csv output
     CSV_OUTPUT_ON, // produce csv output with last concentration matrix
     CSV_OUTPUT_VERBOSE, // produce csv output with all concentration matrices
-    CSV_OUTPUT_XTREME // produce csv output with all concentration matrices and boundary conditions at beginning
+    CSV_OUTPUT_XTREME // csv output like VERBOSE but additional boundary conditions at beginning
 };
 
+/**
+ * @brief Enum holding different options for console output.
+ * 
+ */
 enum CONSOLE_OUTPUT {
     CONSOLE_OUTPUT_OFF, // do not print any output to console
     CONSOLE_OUTPUT_ON, // print before and after concentrations to console
     CONSOLE_OUTPUT_VERBOSE // print all concentration matrices to console
 };
 
+/**
+ * @brief Enum holding different options for time measurement. 
+ * 
+ */
 enum TIME_MEASURE {
     TIME_MEASURE_OFF, // do not print any time measures
-    TIME_MEASURE_ON, // print time measure after last iteration
-    TIME_MEASURE_VERBOSE // print time measures after each iteration
+    TIME_MEASURE_ON // print time measure after last iteration
 };
 
 /**

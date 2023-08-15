@@ -13,7 +13,6 @@ Grid::Grid(int length) {
     this->deltaCol = double(this->domainCol)/double(this->col); // -> 1
     this->dim = 1;
 
-    // TODO move to the case when Simulation is set to constant and use as default
     this->concentrations = MatrixXd::Constant(1, col, 20);
     this->alphaX = MatrixXd::Constant(1, col, 1);
 }
@@ -31,7 +30,6 @@ Grid::Grid(int row, int col) {
     this->deltaCol = double(this->domainCol)/double(this->col); // -> 1
     this->dim = 2;
 
-    // TODO move to the case when Simulation is set to constant and use as default
     this->concentrations = MatrixXd::Constant(row, col, 20);
     this->alphaX = MatrixXd::Constant(row, col, 1);
     this->alphaY = MatrixXd::Constant(row, col, 1);
