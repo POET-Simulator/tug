@@ -11,6 +11,8 @@
 #include <iostream>
 #include <omp.h>
 
+#define NUM_THREADS 6
+
 using namespace std;
 
 
@@ -269,7 +271,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// inner cells
 	// these are independent of the boundary condition type
 	// omp_set_num_threads(10);
-#pragma omp parallel for
+#pragma omp parallel for num_threads(NUM_THREADS)
 	for (int row = 1; row < rowMax-1; row++) {
 	    for (int col = 1; col < colMax-1; col++) {
 		concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
@@ -289,7 +291,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// left without corners / looping over rows
 	// hold column constant at index 0
 	int col = 0;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(NUM_THREADS)
 	for (int row = 1; row < rowMax-1; row++) {
 	    concentrations_t1(row, col) = grid.getConcentrations()(row,col)
 		+ timestep / (deltaCol*deltaCol) 
@@ -306,7 +308,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// right without corners / looping over rows
 	// hold column constant at max index
 	col = colMax-1;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(NUM_THREADS)
 	for (int row = 1; row < rowMax-1; row++) {
 	    concentrations_t1(row,col) = grid.getConcentrations()(row,col)
 		+ timestep / (deltaCol*deltaCol) 
@@ -324,7 +326,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// top without corners / looping over columns
 	// hold row constant at index 0
 	int row = 0;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(NUM_THREADS)
 	for (int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
@@ -341,7 +343,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// bottom without corners / looping over columns
 	// hold row constant at max index
 	row = rowMax-1;
-#pragma omp parallel for
+#pragma omp parallel for num_threads(NUM_THREADS)
 	for(int col=1; col<colMax-1;col++){
 	    concentrations_t1(row, col) = grid.getConcentrations()(row, col)
 		+ timestep / (deltaRow*deltaRow) 
