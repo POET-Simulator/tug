@@ -17,7 +17,6 @@ generally, for solving the following differential equation
    :caption: Contents:
 
 
-
 Indices and tables
 ==================
 
@@ -27,11 +26,12 @@ Indices and tables
 Table of Contents
 ^^^^^^^^^^^^^^^^^
 .. toctree::    
-   
+
     :maxdepth: 2
     self
     installation
     theory
     user
-    developper
+    developer
     examples
+    visualization

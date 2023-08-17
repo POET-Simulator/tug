@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<div id="container"></div>
+
+
+<form>
+    <label for="c_file">Select an output file: </label>
+    <input type="file" id="c_file" name="c_file" accept="text/csv" />
+</form>
+
+
+<script type="module">
+
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+// Declare the chart dimensions and margins.
+const width = 600;
+const height = 600;
+const svgMargin = { top: 50, right: 50, bottom: 50, left: 50 };
+
+var gridWidth = width - svgMargin.left - svgMargin.right;
+var gridHeight = height - svgMargin.top - svgMargin.bottom;
+const gap = 1;
+var state = 0;
+var numIterations = 0;
+var cellXcount = 0;
+var cellYcount = 0;
+var concentrations = [];
+
+// Create the outer SVG container.
+const svg = d3.create("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+svg.append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill-opacity", 0)
+    .attr("stroke-width", 4)
+    .attr("stroke", "black");
+
+var grid = svg.append("g")
+    .attr("class", "grid")
+    .attr("transform", `translate(${svgMargin.left}, ${svgMargin.top})`);
+
+ // color scale
+ var colorScale = d3.scaleLinear()
+        .range(["#d0d0ec", "#7f0000"])
+        .domain([1, 2000]);
+function getColor(c, max) {
+    if (c == -1) {
+        return "#000000";
+    }
+
+    colorScale.domain([0, max]);
+    return colorScale(c);
+}
+
+function calcMaxConcentrationInIteration(state) {
+    var maxRow = concentrations[state].map(function(row){ return Math.max.apply(Math, row); });
+    var maxC = Math.max.apply(null, maxRow);
+    return maxC;
+}
+
+// Load data from file
+async function createVisualFromFile(csv_input) {
+    // console.log(csv_input);
+    // var data = await d3.text(csv_input).then(function(csv){
+    // return d3.dsvFormat(" ").parseRows(csv);
+    // })
+    var data = d3.dsvFormat(" ").parseRows(csv_input);
+    // console.log(data);
+    var leftBoundary = data[0];
+    var rightBoundary = data[1];
+    var topBoundary = data[2];
+    var bottomBoundary = data[3];
+    cellXcount = topBoundary.length;
+    cellYcount = leftBoundary.length;
+    concentrations = []; // reset concentrations
+    grid.selectAll("rect").remove();
+    svg.selectAll("rect").remove();
+    state = 0;
+    console.log(topBoundary);
+
+    var cellWidth = gridWidth / cellXcount;
+    var cellHeight = gridHeight / cellYcount;
+    var iteration = [];
+    numIterations = (data.length - 6) / (cellYcount + 2);
+    console.log(numIterations);
+    for (let i = 0; i < numIterations; i++) {
+        iteration = [];
+        for (let j = 0; j < cellYcount; j++) {
+            iteration.push(data[i * (cellYcount + 2) + 6 + j])
+        }
+        concentrations.push(iteration);
+    }
+    console.log(concentrations);
+
+    var maxC = calcMaxConcentrationInIteration(state);
+    // Create grid
+    for (let i = 0; i < cellYcount; i++) {
+        for (let j = 0; j < cellXcount; j++) {
+            grid.append("rect")
+                .attr("x", i * cellWidth + gap/2)
+                .attr("y", j * cellHeight + gap/2)
+                .attr("width", cellWidth - gap)
+                .attr("height", cellHeight - gap)
+                .attr("fill", getColor(concentrations[state][i][j], maxC));
+        }
+    } 
+
+    // Create Boundaries
+    // left and right
+    for (let j = 0; j < cellYcount; j++) {
+        svg.append("rect")
+            .attr("x", svgMargin.left - 10)
+            .attr("y", svgMargin.top + j * cellHeight + gap/2)
+            .attr("width", 7)
+            .attr("height", cellHeight - gap)
+            .attr("fill", getColor(leftBoundary[j], maxC));
+        svg.append("rect")
+            .attr("x", width - svgMargin.right + 3)
+            .attr("y", svgMargin.top + j * cellHeight + gap/2)
+            .attr("width", 7)
+            .attr("height", cellHeight - gap)
+            .attr("fill", getColor(rightBoundary[j], maxC));
+    }
+
+    // top and bottom
+    for (let i = 0; i < cellXcount; i++) {
+        svg.append("rect")
+            .attr("x", svgMargin.left + i * cellWidth + gap/2)
+            .attr("y", svgMargin.top - 10)
+            .attr("width", cellWidth - gap)
+            .attr("height", 7)
+            .attr("fill", getColor(topBoundary[i], maxC));
+        svg.append("rect")
+            .attr("x", svgMargin.left + i * cellWidth + gap/2)
+            .attr("y", height - svgMargin.bottom + 3)
+            .attr("width", cellWidth - gap)
+            .attr("height", 7)
+            .attr("fill", getColor(bottomBoundary[i], maxC));
+    }
+}
+
+
+function updateGrid(new_state) {
+    var maxC = calcMaxConcentrationInIteration(new_state);
+    console.log(maxC);
+        grid.selectAll("rect")
+            .attr("fill", function (d,i) {
+                var row = Math.floor(i/20);
+                var col = i%20;
+                return getColor(concentrations[new_state][row][col], maxC);
+            })
+    }
+
+
+// key events for changing grid iteration state
+addEventListener("keydown", (event) => {
+  if (event.isComposing || event.keyCode === 81) {
+    if (state > 0) {
+        state -= 1;
+        updateGrid(state);
+    }
+  }
+  if (event.isComposing || event.keyCode === 69) {
+    if (state < numIterations-1) {
+        state += 1;
+        updateGrid(state);
+    }
+  }
+  if (event.isComposing || event.keyCode === 65) {
+    if (state > 9) {
+        state -= 10;
+    } else {
+        state = 0;
+    }
+    updateGrid(state);
+  }
+  if (event.isComposing || event.keyCode === 68) {
+    if (state < numIterations-10) {
+        state += 10;
+    } else {
+        state = numIterations-1;
+    }
+    updateGrid(state);
+  }
+});
+
+async function logFile() {
+    var file = document.getElementById("c_file").files[0]; 
+    const reader = new FileReader();
+    reader.readAsText(file);
+    console.log(reader.result);
+}
+
+function reader(file, callback) {
+  const fr = new FileReader();
+  fr.onload = () => callback(null, fr.result);
+  fr.onerror = (err) => callback(err);
+  fr.readAsText(file);
+}
+
+
+// document.getElementById("c_file").addEventListener("change", logFile);
+document.getElementById("c_file").addEventListener("change", (evt) => {
+  // No files, do nothing.
+  if (!evt.target.files) {
+    return;
+  }
+  reader(evt.target.files[0], (err, res) => {
+    console.log(res); // Base64 `data:image/...` String result.
+    createVisualFromFile(res);
+  });
+});
+
+
+
+// Append the SVG element.
+container.append(svg.node());
+
+</script>
