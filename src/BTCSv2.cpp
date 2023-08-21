@@ -333,7 +333,6 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
     MatrixXd concentrations = grid.getConcentrations();
     #pragma omp parallel for num_threads(NUM_THREADS_BTCS) private(A, b, row_t1)
-    {
     for (int i = 0; i < rowMax; i++) {
       
         
@@ -347,14 +346,14 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         
         concentrations_t1.row(i) = row_t1;
     }
-    }
+    
     concentrations_t1.transposeInPlace();
     concentrations.transposeInPlace();
     alphaX.transposeInPlace();
     alphaY.transposeInPlace();
     
     #pragma omp parallel for num_threads(NUM_THREADS_BTCS) private(A, b, row_t1)
-    {
+    
     for (int i = 0; i < colMax; i++) {
         // swap alphas, boundary conditions and sx/sy for column-wise calculation
         A = createCoeffMatrix(alphaY, bcLeft, bcRight, rowMax, i, sy);
@@ -365,7 +364,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
         concentrations.row(i) = row_t1;   
     }
-    }
+    
     concentrations.transposeInPlace();
 
     grid.setConcentrations(concentrations);
