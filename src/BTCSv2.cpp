@@ -342,7 +342,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     for (int i = 0; i < colMax; i++) {
 
         // swap alphas, boundary conditions and sx/sy for column-wise calculation
-        A = createCoeffMatrix(alphaY, bcLeft, bcRight, rowMax, i, sy);
+        A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
         b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom, 
                                     bcLeft, bcRight, rowMax, i, sy, sx);
         row_t1 = solve(A, b);

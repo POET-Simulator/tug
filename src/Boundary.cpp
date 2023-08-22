@@ -64,22 +64,36 @@ void Boundary::setBoundarySideClosed(BC_SIDE side) {
     if(grid.getDim() == 1){
         if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
           throw_invalid_argument(
-              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "For the one-dimensional case, only the BC_SIDE_LEFT and "
               "BC_SIDE_RIGHT borders exist.");
         }
     }
-    this->boundaries[side] = vector<BoundaryElement>(grid.getRow(), BoundaryElement());
+
+    int n;
+    if (side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT) {
+        n = grid.getRow();
+    } else {
+        n = grid.getCol();
+    }
+    this->boundaries[side] = vector<BoundaryElement>(n, BoundaryElement());
 }
 
 void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
     if(grid.getDim() == 1){
         if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
           throw_invalid_argument(
-              "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+              "For the one-dimensional case, only the BC_SIDE_LEFT and "
               "BC_SIDE_RIGHT borders exist.");
         }
     }
-    this->boundaries[side] = vector<BoundaryElement>(grid.getRow(), BoundaryElement(value));
+
+    int n;
+    if (side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT) {
+        n = grid.getRow();
+    } else {
+        n = grid.getCol();
+    }
+    this->boundaries[side] = vector<BoundaryElement>(n, BoundaryElement(value));
 }
 
 void Boundary::setBoundaryElementClosed(BC_SIDE side, int index) {
