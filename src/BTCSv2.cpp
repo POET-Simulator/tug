@@ -7,6 +7,9 @@
 
 #include "FTCS.cpp"
 #include <tug/Boundary.hpp>
+#include <omp.h>
+
+#define NUM_THREADS_BTCS 1
 
 using namespace Eigen;
 
@@ -62,7 +65,7 @@ static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int &
 
 
 // creates coefficient matrix for next time step from alphas in x-direction
-static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryElement> bcLeft, vector<BoundaryElement> bcRight, int numCols, int rowIndex, double sx) {
+static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, int &numCols, int &rowIndex, double &sx) {
 
     // square matrix of column^2 dimension for the coefficients
     SparseMatrix<double> cm(numCols, numCols);
@@ -84,6 +87,7 @@ static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryEl
 
     // inner columns
     int n = numCols-1;
+    #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
     for (int i = 1; i < n; i++) {
         cm.insert(i,i-1) = -sx * calcAlphaIntercell(alpha(rowIndex,i-1), alpha(rowIndex,i));
         cm.insert(i,i) = 1 + sx * (
@@ -190,7 +194,7 @@ static double calcExplicitConcentrationsBottomBoundaryClosed(MatrixXd &concentra
 static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX, MatrixXd &alphaY, 
                                         vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, 
                                         vector<BoundaryElement> &bcTop, vector<BoundaryElement> &bcBottom, 
-                                        int length, int rowIndex, double sx, double sy) {
+                                        int &length, int &rowIndex, double &sx, double &sy) {
 
     VectorXd sv(length);
     int numRows = concentrations.rows();
@@ -198,6 +202,7 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
     // inner rows
     if (rowIndex > 0 && rowIndex < numRows-1) {
+        #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
         for (int i = 0; i < length; i++) {
             sv(i) = sy * calcAlphaIntercell(alphaY(rowIndex,i), alphaY(rowIndex+1,i))
                             * concentrations(rowIndex+1,i)
@@ -215,6 +220,7 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
     // first row
     if (rowIndex == 0) {
+        #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
         for (int i = 0; i < length; i++) {
             type = bcTop[i].getType();
             if (type == BC_TYPE_CONSTANT) {
@@ -229,6 +235,7 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
     // last row
     if (rowIndex == numRows-1) {
+        #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
         for (int i = 0; i < length; i++) {
             type = bcBottom[i].getType();
             if (type == BC_TYPE_CONSTANT) {
@@ -258,6 +265,7 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 // solver for linear equation system; A corresponds to coefficient matrix,
 // b to the solution vector
 static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
+
     SparseLU<SparseMatrix<double>> solver;
     solver.analyzePattern(A);
     solver.factorize(A);
@@ -281,7 +289,8 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
     vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
 
     MatrixXd concentrations = grid.getConcentrations();
-    A = createCoeffMatrix(alpha, bcLeft, bcRight, length, 0, sx); // this is exactly same as in 2D
+    int rowIndex = 0;
+    A = createCoeffMatrix(alpha, bcLeft, bcRight, length, rowIndex, sx); // this is exactly same as in 2D
     for (int i = 0; i < length; i++) {
         b(i) = concentrations(0,i);
     }
@@ -323,34 +332,39 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
     vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
     MatrixXd concentrations = grid.getConcentrations();
+    #pragma omp parallel for num_threads(NUM_THREADS_BTCS) private(A, b, row_t1)
     for (int i = 0; i < rowMax; i++) {
       
+        
         A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
         b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight, 
                                     bcTop, bcBottom, colMax, i, sx, sy);
+        
+        SparseLU<SparseMatrix<double>> solver; 
+
         row_t1 = solve(A, b);
         
-        for (int j = 0; j < colMax; j++) {
-            concentrations_t1(i,j) = row_t1(j); // can potentially be improved by using Eigen method
-        }
-        
+        concentrations_t1.row(i) = row_t1;
     }
+    
     concentrations_t1.transposeInPlace();
     concentrations.transposeInPlace();
     alphaX.transposeInPlace();
     alphaY.transposeInPlace();
+    
+    #pragma omp parallel for num_threads(NUM_THREADS_BTCS) private(A, b, row_t1)
+    
     for (int i = 0; i < colMax; i++) {
-
         // swap alphas, boundary conditions and sx/sy for column-wise calculation
         A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
         b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom, 
                                     bcLeft, bcRight, rowMax, i, sy, sx);
+        
         row_t1 = solve(A, b);
 
-        for (int j = 0; j < rowMax; j++) {
-            concentrations(i,j) = row_t1(j); // can potentially be improved by using Eigen method
-        }
+        concentrations.row(i) = row_t1;   
     }
+    
     concentrations.transposeInPlace();
 
     grid.setConcentrations(concentrations);
