@@ -1,4 +1,4 @@
-add_library(tug BTCS.cpp BoundaryCondition.cpp Solver.cpp Boundary.cpp Grid.cpp Simulation.cpp FTCS.cpp BTCSv2.cpp)
+add_library(tug Boundary.cpp Grid.cpp Simulation.cpp FTCS.cpp BTCSv2.cpp)
 
 target_link_libraries(tug Eigen3::Eigen)
 

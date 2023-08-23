@@ -9,7 +9,7 @@ int main(int argc, char *argv[]) {
     int repetition = 10;
 
     ofstream myfile;
-    myfile.open("time_measure_experiment_openmp_thread_6.csv");
+    myfile.open("time_measure_experiment_openmp_thread_1_EigenLU.csv");
 
     for (int i = 0; i < size(n); i++){
         cout << "Grid size: " << n[i] << " x " << n[i] << endl << endl;
@@ -29,7 +29,8 @@ int main(int argc, char *argv[]) {
 
                 Boundary bc = Boundary(grid);
 
-                Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
+                Simulation sim = Simulation(grid, bc, BTCS_APPROACH);
+                sim.setSolver(EIGEN_LU_SOLVER);
 
 
                 sim.setTimestep(0.001);

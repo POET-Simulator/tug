@@ -1,5 +1,4 @@
 #include "TugUtils.hpp"
-#include "tug/BoundaryCondition.hpp"
 #include <iostream>
 #include <omp.h>
 #include <tug/Boundary.hpp>
@@ -129,7 +128,7 @@ VectorXd Boundary::getBoundarySideValues(BC_SIDE side) {
     VectorXd values(length);
 
     for (int i = 0; i < length; i++) {
-        if (getBoundaryElementType(side, i) == tug::bc::BC_TYPE_CLOSED) {
+        if (getBoundaryElementType(side, i) == BC_TYPE_CLOSED) {
             values(i) = -1;
             continue;
         }

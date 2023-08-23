@@ -7,8 +7,10 @@
 
 #include <fstream>
 
+#ifndef SIMULATION_H_
+#define SIMULATION_H_
+
 #include "BTCSv2.cpp"
-#include <tug/progressbar.hpp>
 
 
 using namespace std;
@@ -16,6 +18,7 @@ using namespace std;
 Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid), bc(bc) {
 
     this->approach = approach;
+    this->solver = THOMAS_ALGORITHM_SOLVER;
     this->timestep = -1; // error per default
     this->iterations = -1;
     this->innerIterations = 1;
@@ -54,53 +57,62 @@ void Simulation::setTimestep(double timestep) {
         throw_invalid_argument("Timestep has to be greater than zero.");
     }
 
-    double deltaRowSquare;
-    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-    double minDeltaSquare;
-    double maxAlphaX, maxAlphaY, maxAlpha;
-    if (grid.getDim() == 2) {
+    if (approach == FTCS_APPROACH) {
 
-        deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+        double deltaRowSquare;
+        double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+        double minDeltaSquare;
+        double maxAlphaX, maxAlphaY, maxAlpha;
+        string dim;
+        if (grid.getDim() == 2) {
+            dim = "2D";
 
-        minDeltaSquare = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
-        maxAlphaX = grid.getAlphaX().maxCoeff();
-        maxAlphaY = grid.getAlphaY().maxCoeff();
-        maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
+            deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
 
-    } else if (grid.getDim() == 1) {
-        minDeltaSquare = deltaColSquare;
-        maxAlpha = grid.getAlpha().maxCoeff();
+            minDeltaSquare = (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+            maxAlphaX = grid.getAlphaX().maxCoeff();
+            maxAlphaY = grid.getAlphaY().maxCoeff();
+            maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
 
-        
+        } else if (grid.getDim() == 1) {
+            dim = "1D";
+            minDeltaSquare = deltaColSquare;
+            maxAlpha = grid.getAlpha().maxCoeff();
+            
+        } else {
+            throw_invalid_argument("Critical error: Undefined number of dimensions!");
+        }
+
+        // Courant-Friedrichs-Lewy condition
+        double cfl = minDeltaSquare / (4*maxAlpha); 
+
+        // stability equation from Wikipedia; might be useful if applied cfl does not work in some cases
+        // double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare)));
+
+        cout << "FTCS_" << dim << " :: CFL condition MDL: " << cfl << endl;
+        cout << "FTCS_" << dim << " :: required dt=" << timestep <<  endl;
+
+        if (timestep > cfl) {
+
+            this->innerIterations = (int)ceil(timestep / cfl);
+            this->timestep = timestep / (double)innerIterations;
+
+            cerr << "Warning :: Timestep was adjusted, because of stability "
+                    "conditions. Time duration was approximately preserved by "
+                    "adjusting internal number of iterations."
+                << endl;
+            cout << "FTCS_" << dim << " :: Required " << this->innerIterations
+                << " inner iterations with dt=" << this->timestep << endl;
+
+        } else {
+
+            this->timestep = timestep;
+            cout << "FTCS_" << dim << " :: No inner iterations required, dt=" << timestep << endl;
+
+        }
+
     } else {
-        throw_invalid_argument("Critical error: Undefined number of dimensions!");
-    }
-
-    // TODO check formula 1D case
-    double CFL_MDL = minDeltaSquare / (4*maxAlpha); // Formula from Marco --> seems to be unstable
-    double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare))); // Formula from Wikipedia
-
-    cout << "FTCS_2D :: CFL condition MDL: " << CFL_MDL << endl;
-    // cout << "FTCS_2D :: CFL condition Wiki: " << CFL_Wiki << endl;
-    cout << "FTCS_2D :: required dt=" << timestep <<  endl;
-
-    if (timestep > CFL_MDL) {
-
-        this->innerIterations = (int)ceil(timestep / CFL_MDL);
-        this->timestep = timestep / (double)innerIterations;
-
-        cerr << "Warning: Timestep was adjusted, because of stability "
-                "conditions. Time duration was approximately preserved by "
-                "adjusting internal number of iterations."
-             << endl;
-        cout << "FTCS_2D :: Required " << this->innerIterations
-            << " inner iterations with dt=" << this->timestep << endl;
-
-    } else {
-
         this->timestep = timestep;
-        cout << "FTCS_2D :: No inner iterations required, dt=" << timestep << endl;
-
     }
 
 }
@@ -114,6 +126,16 @@ void Simulation::setIterations(int iterations) {
         throw_invalid_argument("Number of iterations must be greater than zero.");
     }
     this->iterations = iterations;
+}
+
+void Simulation::setSolver(SOLVER solver) {
+    if (this->approach == FTCS_APPROACH) {
+        cerr << "Warning: Solver was set, but FTCS approach initialized. Setting the solver "
+                "is thus without effect."
+             << endl;
+    }
+
+    this->solver = solver;
 }
 
 int Simulation::getIterations() {
@@ -196,7 +218,7 @@ void Simulation::run() {
 
     auto begin = std::chrono::high_resolution_clock::now();
 
-    if (approach == FTCS_APPROACH) {
+    if (approach == FTCS_APPROACH) { // FTCS case
         for (int i = 0; i < iterations * innerIterations; i++) {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
@@ -215,18 +237,32 @@ void Simulation::run() {
             }
         }
 
-    } else if (approach == BTCS_APPROACH) {
+    } else if (approach == BTCS_APPROACH) { // BTCS case
 
-        for (int i = 0; i < iterations * innerIterations; i++) {
-            if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
-                printConcentrationsConsole();
-            }
-            if (csv_output >= CSV_OUTPUT_VERBOSE) {
-                printConcentrationsCSV(filename);
-            }
+        if (solver == EIGEN_LU_SOLVER) {
+            for (int i = 0; i < iterations; i++) {
+                if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+                    printConcentrationsConsole();
+                }
+                if (csv_output >= CSV_OUTPUT_VERBOSE) {
+                    printConcentrationsCSV(filename);
+                }
 
-            BTCS(this->grid, this->bc, this->timestep);
-            
+                BTCS_LU(this->grid, this->bc, this->timestep);
+                
+            }
+        } else if (solver == THOMAS_ALGORITHM_SOLVER) {
+            for (int i = 0; i < iterations; i++) {
+                if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+                    printConcentrationsConsole();
+                }
+                if (csv_output >= CSV_OUTPUT_VERBOSE) {
+                    printConcentrationsCSV(filename);
+                }
+
+                BTCS_Thomas(this->grid, this->bc, this->timestep);
+                
+            }
         }
 
     }
@@ -247,3 +283,5 @@ void Simulation::run() {
     }
     
 }
+
+#endif

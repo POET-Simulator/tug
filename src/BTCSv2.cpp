@@ -264,7 +264,8 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
 // solver for linear equation system; A corresponds to coefficient matrix,
 // b to the solution vector
-static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
+// use of EigenLU solver
+static VectorXd EigenLUAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
 
     SparseLU<SparseMatrix<double>> solver;
     solver.analyzePattern(A);
@@ -273,9 +274,53 @@ static VectorXd solve(SparseMatrix<double> &A, VectorXd &b) {
     return solver.solve(b);
 }
 
+// solver for linear equation system; A corresponds to coefficient matrix, 
+// b to the solution vector
+// implementation of Thomas Algorithm
+static VectorXd ThomasAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
+    uint32_t n = b.size();
+
+    Eigen::VectorXd a_diag(n);
+    Eigen::VectorXd b_diag(n);
+    Eigen::VectorXd c_diag(n);
+    Eigen::VectorXd x_vec = b;
+
+    // Fill diagonals vectors
+    b_diag[0] = A.coeff(0, 0);
+    c_diag[0] = A.coeff(0, 1);
+
+    for (int i = 1; i < n - 1; i++) {
+        a_diag[i] = A.coeff(i, i - 1);
+        b_diag[i] = A.coeff(i, i);
+        c_diag[i] = A.coeff(i, i + 1);
+    }
+    a_diag[n - 1] = A.coeff(n - 1, n - 2);
+    b_diag[n - 1] = A.coeff(n - 1, n - 1);
+
+    // start solving - c_diag and x_vec are overwritten
+    n--;
+    c_diag[0] /= b_diag[0];
+    x_vec[0] /= b_diag[0];
+
+    for (int i = 1; i < n; i++) {
+        c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
+        x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
+                    (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+    }
+
+    x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
+                (b_diag[n] - a_diag[n] * c_diag[n - 1]);
+
+    for (int i = n; i-- > 0;) {
+        x_vec[i] -= c_diag[i] * x_vec[i + 1];
+    }
+
+    return x_vec;
+}
+
 
 // BTCS solution for 1D grid 
-static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
+static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b)) {
     int length = grid.getLength();
     double sx = timestep / (grid.getDelta() * grid.getDelta());
 
@@ -301,7 +346,7 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
         b(length-1) += 2 * sx * alpha(0,length-1) * bcRight[0].getValue();
     }
 
-    concentrations_t1 = solve(A, b);
+    concentrations_t1 = solverFunc(A, b);
 
     for (int j = 0; j < length; j++) {
         concentrations(0,j) = concentrations_t1(j);
@@ -312,7 +357,7 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
 
 
 // BTCS solution for 2D grid
-static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
+static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b)) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
@@ -342,7 +387,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         
         SparseLU<SparseMatrix<double>> solver; 
 
-        row_t1 = solve(A, b);
+        row_t1 = solverFunc(A, b);
         
         concentrations_t1.row(i) = row_t1;
     }
@@ -360,7 +405,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
         b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom, 
                                     bcLeft, bcRight, rowMax, i, sy, sx);
         
-        row_t1 = solve(A, b);
+        row_t1 = solverFunc(A, b);
 
         concentrations.row(i) = row_t1;   
     }
@@ -371,12 +416,23 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 }
 
 
-// entry point; differentiate between 1D and 2D grid
-static void BTCS(Grid &grid, Boundary &bc, double &timestep) {
+// entry point for EigenLU solver; differentiate between 1D and 2D grid
+static void BTCS_LU(Grid &grid, Boundary &bc, double &timestep) {
     if (grid.getDim() == 1) {
-        BTCS_1D(grid, bc, timestep);
+        BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
     } else if (grid.getDim() == 2) {
-        BTCS_2D(grid, bc, timestep);
+        BTCS_2D(grid, bc, timestep, EigenLUAlgorithm);
+    } else {
+        throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
+    }
+}
+
+// entry point for Thomas algorithm solver; differentiate 1D and 2D grid
+static void BTCS_Thomas(Grid &grid, Boundary &bc, double &timestep) {
+    if (grid.getDim() == 1) {
+        BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
+    } else if (grid.getDim() == 2) {
+        BTCS_2D(grid, bc, timestep, ThomasAlgorithm);
     } else {
         throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }

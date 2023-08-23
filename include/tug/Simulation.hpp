@@ -16,7 +16,16 @@ using namespace std;
  */
 enum APPROACH {
     FTCS_APPROACH, // Forward Time-Centered Space
-    BTCS_APPROACH // Backward Time-Centered Space
+    BTCS_APPROACH, // Backward Time-Centered Space solved with EigenLU solver
+};
+
+/**
+ * @brief Enum defining the Linear Equation solvers
+ * 
+ */
+enum SOLVER {
+    EIGEN_LU_SOLVER, // EigenLU solver
+    THOMAS_ALGORITHM_SOLVER // Thomas Algorithm solver; more efficient for tridiagonal matrices
 };
 
 /**
@@ -125,6 +134,15 @@ class Simulation {
       void setIterations(int iterations);
 
       /**
+       * @brief Set the desired linear equation solver to be used for BTCS approach. Without effect
+       *        in case of FTCS approach.
+       * 
+       * @param solver Solver to be used. Default is Thomas Algorithm as it is more efficient for 
+       *               tridiagonal Matrices. 
+       */
+      void setSolver(SOLVER solver);
+
+      /**
        * @brief Return the currently set iterations to be calculated.
        * 
        * @return int Number of iterations.
@@ -174,5 +192,6 @@ class Simulation {
         Grid &grid;
         Boundary &bc;
         APPROACH approach;
+        SOLVER solver;
 
 };
