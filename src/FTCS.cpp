@@ -259,7 +259,7 @@ static void FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
 
 
 // FTCS solution for 2D grid
-static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
+static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep, int numThreads) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double deltaRow = grid.getDeltaRow();
@@ -271,7 +271,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// inner cells
 	// these are independent of the boundary condition type
 	// omp_set_num_threads(10);
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(numThreads)
 	for (int row = 1; row < rowMax-1; row++) {
 	    for (int col = 1; col < colMax-1; col++) {
 		concentrations_t1(row, col) = grid.getConcentrations()(row, col) 
@@ -291,7 +291,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// left without corners / looping over rows
 	// hold column constant at index 0
 	int col = 0;
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(numThreads)
 	for (int row = 1; row < rowMax-1; row++) {
 	    concentrations_t1(row, col) = grid.getConcentrations()(row,col)
 		+ timestep / (deltaCol*deltaCol) 
@@ -308,7 +308,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// right without corners / looping over rows
 	// hold column constant at max index
 	col = colMax-1;
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(numThreads)
 	for (int row = 1; row < rowMax-1; row++) {
 	    concentrations_t1(row,col) = grid.getConcentrations()(row,col)
 		+ timestep / (deltaCol*deltaCol) 
@@ -326,7 +326,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// top without corners / looping over columns
 	// hold row constant at index 0
 	int row = 0;
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(numThreads)
 	for (int col=1; col<colMax-1;col++){
         concentrations_t1(row, col) = grid.getConcentrations()(row, col)
             + timestep / (deltaRow*deltaRow) 
@@ -343,7 +343,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 	// bottom without corners / looping over columns
 	// hold row constant at max index
 	row = rowMax-1;
-#pragma omp parallel for num_threads(NUM_THREADS)
+#pragma omp parallel for num_threads(numThreads)
 	for(int col=1; col<colMax-1;col++){
 	    concentrations_t1(row, col) = grid.getConcentrations()(row, col)
 		+ timestep / (deltaRow*deltaRow) 
@@ -424,11 +424,11 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep) {
 
 
 // entry point; differentiate between 1D and 2D grid
-static void FTCS(Grid &grid, Boundary &bc, double &timestep) {
+static void FTCS(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
     if (grid.getDim() == 1) {
         FTCS_1D(grid, bc, timestep);
     } else if (grid.getDim() == 2) {
-        FTCS_2D(grid, bc, timestep);
+        FTCS_2D(grid, bc, timestep, numThreads);
     } else {
         throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }

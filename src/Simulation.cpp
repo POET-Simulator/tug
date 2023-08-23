@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 #include <tug/Simulation.hpp>
+#include <omp.h>
 
 #include <fstream>
 
@@ -22,6 +23,7 @@ Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid)
     this->timestep = -1; // error per default
     this->iterations = -1;
     this->innerIterations = 1;
+    this->numThreads = omp_get_num_procs();
     
     this->csv_output = CSV_OUTPUT_OFF;
     this->console_output = CONSOLE_OUTPUT_OFF;
@@ -138,6 +140,17 @@ void Simulation::setSolver(SOLVER solver) {
     this->solver = solver;
 }
 
+void Simulation::setNumberThreads(int numThreads){
+    if(numThreads>0 && numThreads<=omp_get_num_procs()){
+        this->numThreads=numThreads;
+    }
+    else{
+        int maxThreadNumber = omp_get_num_procs(); 
+        
+        throw_invalid_argument("Number of threads exceeds the number of processor cores or is less than 1.");
+    }
+}
+
 int Simulation::getIterations() {
     return this->iterations;
 }
@@ -227,14 +240,14 @@ void Simulation::run() {
                 printConcentrationsCSV(filename);
             }
 
-            FTCS(this->grid, this->bc, this->timestep);
+            FTCS(this->grid, this->bc, this->timestep, this->numThreads);
     
-            if (i % (iterations * innerIterations / 100) == 0) {
-                double percentage = (double)i / ((double)iterations * (double)innerIterations) * 100;
-                if ((int)percentage % 10 == 0) {
-                    cout << "Progress: " << percentage << "%" << endl;
-                }
-            }
+            // if (i % (iterations * innerIterations / 100) == 0) {
+            //     double percentage = (double)i / ((double)iterations * (double)innerIterations) * 100;
+            //     if ((int)percentage % 10 == 0) {
+            //         cout << "Progress: " << percentage << "%" << endl;
+            //     }
+            // }
         }
 
     } else if (approach == BTCS_APPROACH) { // BTCS case
@@ -248,7 +261,7 @@ void Simulation::run() {
                     printConcentrationsCSV(filename);
                 }
 
-                BTCS_LU(this->grid, this->bc, this->timestep);
+                BTCS_LU(this->grid, this->bc, this->timestep, this->numThreads);
                 
             }
         } else if (solver == THOMAS_ALGORITHM_SOLVER) {
@@ -260,7 +273,7 @@ void Simulation::run() {
                     printConcentrationsCSV(filename);
                 }
 
-                BTCS_Thomas(this->grid, this->bc, this->timestep);
+                BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
                 
             }
         }

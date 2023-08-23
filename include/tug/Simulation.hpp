@@ -142,6 +142,8 @@ class Simulation {
        */
       void setSolver(SOLVER solver);
 
+      void setNumberThreads(int num_threads);
+
       /**
        * @brief Return the currently set iterations to be calculated.
        * 
@@ -185,6 +187,7 @@ class Simulation {
         double timestep;
         int iterations;
         int innerIterations;
+        int numThreads;
         CSV_OUTPUT csv_output;
         CONSOLE_OUTPUT console_output;
         TIME_MEASURE time_measure;

@@ -9,7 +9,7 @@
 #include <tug/Boundary.hpp>
 #include <omp.h>
 
-#define NUM_THREADS_BTCS 1
+#define NUM_THREADS_BTCS 10
 
 using namespace Eigen;
 
@@ -87,7 +87,6 @@ static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryEl
 
     // inner columns
     int n = numCols-1;
-    #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
     for (int i = 1; i < n; i++) {
         cm.insert(i,i-1) = -sx * calcAlphaIntercell(alpha(rowIndex,i-1), alpha(rowIndex,i));
         cm.insert(i,i) = 1 + sx * (
@@ -202,7 +201,6 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
     // inner rows
     if (rowIndex > 0 && rowIndex < numRows-1) {
-        #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
         for (int i = 0; i < length; i++) {
             sv(i) = sy * calcAlphaIntercell(alphaY(rowIndex,i), alphaY(rowIndex+1,i))
                             * concentrations(rowIndex+1,i)
@@ -220,7 +218,6 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
     // first row
     if (rowIndex == 0) {
-        #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
         for (int i = 0; i < length; i++) {
             type = bcTop[i].getType();
             if (type == BC_TYPE_CONSTANT) {
@@ -235,7 +232,6 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
 
     // last row
     if (rowIndex == numRows-1) {
-        #pragma omp parallel for num_threads(NUM_THREADS_BTCS)
         for (int i = 0; i < length; i++) {
             type = bcBottom[i].getType();
             if (type == BC_TYPE_CONSTANT) {
@@ -357,7 +353,7 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
 
 
 // BTCS solution for 2D grid
-static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b)) {
+static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b), int &numThreads) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
@@ -377,7 +373,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
     vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
     MatrixXd concentrations = grid.getConcentrations();
-    #pragma omp parallel for num_threads(NUM_THREADS_BTCS) private(A, b, row_t1)
+    #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
     for (int i = 0; i < rowMax; i++) {
       
         
@@ -397,7 +393,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
     alphaX.transposeInPlace();
     alphaY.transposeInPlace();
     
-    #pragma omp parallel for num_threads(NUM_THREADS_BTCS) private(A, b, row_t1)
+    #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
     
     for (int i = 0; i < colMax; i++) {
         // swap alphas, boundary conditions and sx/sy for column-wise calculation
@@ -417,22 +413,22 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
 
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
-static void BTCS_LU(Grid &grid, Boundary &bc, double &timestep) {
+static void BTCS_LU(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
     if (grid.getDim() == 1) {
         BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
     } else if (grid.getDim() == 2) {
-        BTCS_2D(grid, bc, timestep, EigenLUAlgorithm);
+        BTCS_2D(grid, bc, timestep, EigenLUAlgorithm, numThreads);
     } else {
         throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }
 }
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
-static void BTCS_Thomas(Grid &grid, Boundary &bc, double &timestep) {
+static void BTCS_Thomas(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
     if (grid.getDim() == 1) {
         BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
     } else if (grid.getDim() == 2) {
-        BTCS_2D(grid, bc, timestep, ThomasAlgorithm);
+        BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
     } else {
         throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }
