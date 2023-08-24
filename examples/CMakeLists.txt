@@ -1,3 +1,4 @@
+set(BUILD_WITH_EASY_PROFILER "1" PARENT_SCOPE)
 add_executable(FTCS_1D_proto_example FTCS_1D_proto_example.cpp)
 add_executable(FTCS_2D_proto_example FTCS_2D_proto_example.cpp)
 add_executable(BTCS_1D_proto_example BTCS_1D_proto_example.cpp)
@@ -9,7 +10,7 @@ target_link_libraries(FTCS_2D_proto_example tug)
 target_link_libraries(BTCS_1D_proto_example tug)
 target_link_libraries(BTCS_2D_proto_example tug)
 target_link_libraries(reference-FTCS_2D_closed tug)
-target_link_libraries(profiling_openmp tug)
+target_link_libraries(profiling_openmp tug easy_profiler)
 
 add_executable(FTCS_2D_proto_example_mdl FTCS_2D_proto_example_mdl.cpp)
 add_executable(FTCS_2D_proto_closed_mdl FTCS_2D_proto_closed_mdl.cpp)
