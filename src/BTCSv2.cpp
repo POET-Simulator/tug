@@ -1,5 +1,5 @@
 /**
- * @file BTCS.cpp
+ * @file BTCSv2.cpp
  * @brief Implementation of heterogenous BTCS (backward time-centered space) solution
  *        of diffusion equation in 1D and 2D space.
  * 
@@ -217,7 +217,7 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
     }
 
     // first row
-    if (rowIndex == 0) {
+    else if (rowIndex == 0) {
         for (int i = 0; i < length; i++) {
             type = bcTop[i].getType();
             if (type == BC_TYPE_CONSTANT) {
@@ -231,7 +231,7 @@ static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX,
     }
 
     // last row
-    if (rowIndex == numRows-1) {
+    else if (rowIndex == numRows-1) {
         for (int i = 0; i < length; i++) {
             type = bcBottom[i].getType();
             if (type == BC_TYPE_CONSTANT) {
@@ -373,6 +373,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
     vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
     MatrixXd concentrations = grid.getConcentrations();
+
     #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
     for (int i = 0; i < rowMax; i++) {
       
@@ -394,7 +395,6 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
     alphaY.transposeInPlace();
     
     #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
-    
     for (int i = 0; i < colMax; i++) {
         // swap alphas, boundary conditions and sx/sy for column-wise calculation
         A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
