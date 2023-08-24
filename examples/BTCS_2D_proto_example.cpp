@@ -8,8 +8,8 @@ int main(int argc, char *argv[]) {
     // **************
     // profiler::startListen();
     // create a grid with a 20 x 20 field
-    int row = 20;
-    int col = 20;
+    int row = 40;
+    int col = 50;
     Grid grid = Grid(row,col);
 
     // (optional) set the domain, e.g.:
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); // #row,#col,value
     // grid.setConcentrations(concentrations);
     MatrixXd concentrations = MatrixXd::Constant(row,col,0);
-    concentrations(0,0) = 2000;
+    concentrations(10,10) = 2000;
     grid.setConcentrations(concentrations);
     
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     simulation.setTimestep(0.1); // timestep
 
     // set the number of iterations
-    simulation.setIterations(100);
+    simulation.setIterations(300);
 
     // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON, CSV_OUTPUT_VERBOSE]
     simulation.setOutputCSV(CSV_OUTPUT_XTREME);

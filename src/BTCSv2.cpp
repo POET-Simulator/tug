@@ -15,7 +15,7 @@ using namespace Eigen;
 
 
 // calculates coefficient for left boundary in constant case
-static tuple<double, double> calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int &rowIndex, double &sx) {
+static tuple<double, double> calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int rowIndex, double sx) {
     double centerCoeff;
     double rightCoeff;
 
@@ -28,7 +28,7 @@ static tuple<double, double> calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int 
 
 
 // calculates coefficient for left boundary in closed case
-static tuple<double, double> calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int &rowIndex, double &sx) {
+static tuple<double, double> calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int rowIndex, double sx) {
     double centerCoeff;
     double rightCoeff;
 
@@ -40,7 +40,7 @@ static tuple<double, double> calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int &r
 
 
 // calculates coefficient for right boundary in constant case
-static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha, int &rowIndex, int &n, double &sx) {
+static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha, int rowIndex, int n, double sx) {
     double leftCoeff;
     double centerCoeff;
 
@@ -53,7 +53,7 @@ static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha, int
 
 
 // calculates coefficient for right boundary in closed case
-static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int &rowIndex, int &n, double &sx) {
+static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int rowIndex, int n, double sx) {
     double leftCoeff;
     double centerCoeff;
 
@@ -65,7 +65,7 @@ static tuple<double, double> calcRightBoundaryCoeffClosed(MatrixXd &alpha, int &
 
 
 // creates coefficient matrix for next time step from alphas in x-direction
-static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, int &numCols, int &rowIndex, double &sx) {
+static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, int numCols, int rowIndex, double sx) {
 
     // square matrix of column^2 dimension for the coefficients
     SparseMatrix<double> cm(numCols, numCols);
@@ -119,7 +119,7 @@ static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha, vector<BoundaryEl
 
 // calculates explicity concentration at top boundary in constant case
 static double calcExplicitConcentrationsTopBoundaryConstant(MatrixXd &concentrations, 
-                            MatrixXd &alpha, vector<BoundaryElement> &bcTop, int &rowIndex, int &i, double &sy) {
+                            MatrixXd &alpha, vector<BoundaryElement> &bcTop, int rowIndex, int i, double sy) {
     double c;
 
     c = sy * calcAlphaIntercell(alpha(rowIndex,i), alpha(rowIndex+1,i))
@@ -138,7 +138,7 @@ static double calcExplicitConcentrationsTopBoundaryConstant(MatrixXd &concentrat
 
 // calculates explicit concentration at top boundary in closed case
 static double calcExplicitConcentrationsTopBoundaryClosed(MatrixXd &concentrations, 
-                            MatrixXd &alpha, int &rowIndex, int &i, double &sy) {
+                            MatrixXd &alpha, int rowIndex, int i, double sy) {
     double c;
 
     c = sy * calcAlphaIntercell(alpha(rowIndex,i), alpha(rowIndex+1,i))
@@ -155,7 +155,7 @@ static double calcExplicitConcentrationsTopBoundaryClosed(MatrixXd &concentratio
 
 // calculates explicit concentration at bottom boundary in constant case
 static double calcExplicitConcentrationsBottomBoundaryConstant(MatrixXd &concentrations, 
-                            MatrixXd &alpha, vector<BoundaryElement> &bcBottom, int &rowIndex, int &i, double &sy) {
+                            MatrixXd &alpha, vector<BoundaryElement> &bcBottom, int rowIndex, int i, double sy) {
     double c;
 
     c = sy * alpha(rowIndex,i) * bcBottom[i].getValue()
@@ -174,7 +174,7 @@ static double calcExplicitConcentrationsBottomBoundaryConstant(MatrixXd &concent
 
 // calculates explicit concentration at bottom boundary in closed case
 static double calcExplicitConcentrationsBottomBoundaryClosed(MatrixXd &concentrations, 
-                            MatrixXd &alpha, int &rowIndex, int &i, double &sy) {
+                            MatrixXd &alpha, int rowIndex, int i, double sy) {
     double c;
 
     c = (
@@ -193,7 +193,7 @@ static double calcExplicitConcentrationsBottomBoundaryClosed(MatrixXd &concentra
 static VectorXd createSolutionVector(MatrixXd &concentrations, MatrixXd &alphaX, MatrixXd &alphaY, 
                                         vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight, 
                                         vector<BoundaryElement> &bcTop, vector<BoundaryElement> &bcBottom, 
-                                        int &length, int &rowIndex, double &sx, double &sy) {
+                                        int length, int rowIndex, double sx, double sy) {
 
     VectorXd sv(length);
     int numRows = concentrations.rows();
@@ -316,7 +316,7 @@ static VectorXd ThomasAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
 
 
 // BTCS solution for 1D grid 
-static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b)) {
+static void BTCS_1D(Grid &grid, Boundary &bc, double timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b)) {
     int length = grid.getLength();
     double sx = timestep / (grid.getDelta() * grid.getDelta());
 
@@ -353,7 +353,7 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
 
 
 // BTCS solution for 2D grid
-static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b), int &numThreads) {
+static void BTCS_2D(Grid &grid, Boundary &bc, double timestep, VectorXd (*solverFunc) (SparseMatrix<double> &A, VectorXd &b), int numThreads) {
     int rowMax = grid.getRow();
     int colMax = grid.getCol();
     double sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
@@ -413,7 +413,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double &timestep, VectorXd (*solve
 
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
-static void BTCS_LU(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
+static void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
     if (grid.getDim() == 1) {
         BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
     } else if (grid.getDim() == 2) {
@@ -424,7 +424,7 @@ static void BTCS_LU(Grid &grid, Boundary &bc, double &timestep, int &numThreads)
 }
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
-static void BTCS_Thomas(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
+static void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep, int numThreads) {
     if (grid.getDim() == 1) {
         BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
     } else if (grid.getDim() == 2) {
