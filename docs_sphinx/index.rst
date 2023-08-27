@@ -10,8 +10,9 @@ Welcome to the documentation of the TUG project, a simulation program
 for solving transport equations in one- and two-dimensional uniform
 grids using cell centered finite differences.
 
+---------
 Diffusion
------------
+---------
 
 TUG can solve diffusion problems with heterogeneous and anisotropic
 diffusion coefficients. The partial differential equation expressing
