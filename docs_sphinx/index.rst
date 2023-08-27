@@ -5,12 +5,25 @@
 
 Welcome to Tug's documentation!
 ===============================
-Welcome to the documentation of the TUG project, a simulation program 
-for solving one- and two-dimensional diffusion problems with heterogeneous diffusion coefficients, more 
-generally, for solving the following differential equation
+
+Welcome to the documentation of the TUG project, a simulation program
+for solving transport equations in one- and two-dimensional uniform
+grids using cell centered finite differences.
+
+Diffusion
+-----------
+
+TUG can solve diffusion problems with heterogeneous and anisotropic
+diffusion coefficients. The partial differential equation expressing
+diffusion reads:
 
 .. math::
-   \frac{\partial C}{\partial t} = \alpha_x \frac{\partial^2 C}{\partial x^2} + \alpha_y \frac{\partial^2 C}{\partial y^2}.
+   \frac{\partial C}{\partial t} =  \nabla \cdot \left[ \mathbf{\alpha} \nabla C \right]
+
+In 2D, the equation reads:
+   
+.. math::
+   \frac{\partial C}{\partial t} =  \frac{\partial}{\partial x}\left[ \alpha_x \frac{\partial C}{\partial x}\right] + \frac{\partial}{\partial y}\left[ \alpha_y \frac{\partial C}{\partial y}\right]
 
 .. toctree::
    :maxdepth: 2
