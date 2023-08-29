@@ -4,6 +4,7 @@ stages:
     - build
     - test
     - static_analyze
+    - doc
 
 build_release:
   stage: build
@@ -21,6 +22,23 @@ test:
     stage: test
     script:
         - ./build/test/testTug
+
+pages:
+  stage: doc
+  image: python:slim
+  before_script:
+    - apt-get update && apt-get install --no-install-recommends -y graphviz imagemagick doxygen make
+    - pip install --upgrade pip && pip install Sphinx Pillow breathe sphinx-rtd-theme
+    - mkdir public
+  script:
+    - pushd docs_sphinx
+    - make html
+    - popd && mv docs_sphinx/_build/html/* public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
 
 lint:
   stage: static_analyze
