@@ -232,6 +232,7 @@ void Simulation::run() {
     auto begin = std::chrono::high_resolution_clock::now();
 
     if (approach == FTCS_APPROACH) { // FTCS case
+
         for (int i = 0; i < iterations * innerIterations; i++) {
             if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
                 printConcentrationsConsole();
@@ -277,6 +278,10 @@ void Simulation::run() {
                 
             }
         }
+
+    } else if (approach == CRANK_NICOLSON_APPROACH) { // Crank-Nicolson case
+
+        // TODO 
 
     }
 

@@ -100,8 +100,6 @@ class BoundaryElement {
 /**
  * This class implements the functionality and management of the boundary
  * conditions in the grid to be simulated.
- * This class implements the functionality and management of the boundary
- * conditions in the grid to be simulated.
  */
 class Boundary {
     public:

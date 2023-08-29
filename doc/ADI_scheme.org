@@ -1,6 +1,7 @@
 #+TITLE: Finite Difference Schemes for the numerical solution of heterogeneous diffusion equation in 2D
 #+LaTeX_CLASS_OPTIONS: [a4paper,10pt]
 #+LATEX_HEADER: \usepackage{fullpage}
+#+LATEX_HEADER: \usepackage{charter}
 #+LATEX_HEADER: \usepackage{amsmath, systeme, cancel, xcolor}
 #+OPTIONS: toc:nil
 

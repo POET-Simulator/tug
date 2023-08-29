@@ -17,6 +17,7 @@ using namespace std;
 enum APPROACH {
     FTCS_APPROACH, // Forward Time-Centered Space
     BTCS_APPROACH, // Backward Time-Centered Space solved with EigenLU solver
+    CRANK_NICOLSON_APPROACH 
 };
 
 /**
@@ -67,8 +68,10 @@ enum TIME_MEASURE {
 class Simulation {
     public:
       /**
-       * @brief Set up a runnable simulation environment with the largest stable
-       *        time step and 1000 iterations by passing the required parameters.
+       * @brief Set up a simulation environment. The timestep and number of iterations
+       *        must be set. For the BTCS approach, the Thomas algorithm is used as 
+       *        the default linear equation solver as this is faster for tridiagonal
+       *        matrices. CSV output, console output and time measure are off by default. 
        *
        * @param grid Valid grid object
        * @param bc Valid boundary condition object
@@ -77,7 +80,7 @@ class Simulation {
       Simulation(Grid &grid, Boundary &bc, APPROACH approach);
 
       /**
-       * @brief Set the option to output the results to a CSV file.
+       * @brief Set the option to output the results to a CSV file. Off by default.
        *
        *
        * @param csv_output Valid output option. The following options can be set
@@ -93,7 +96,7 @@ class Simulation {
       void setOutputCSV(CSV_OUTPUT csv_output);
 
       /**
-       * @brief Set the options for outputting information to the console.
+       * @brief Set the options for outputting information to the console. Off by default. 
        *
        * @param console_output Valid output option. The following options can be set
        *                       here:
@@ -103,16 +106,17 @@ class Simulation {
        */
       void setOutputConsole(CONSOLE_OUTPUT console_output);
 
+    // TODO document method
       /**
-       * @brief Set the Time Measure object
+       * @brief Set the Time Measure object. Off by default. 
        *
-       * @param time_measure
+       * @param time_measure 
        */
       void setTimeMeasure(TIME_MEASURE time_measure);
 
       /**
        * @brief Setting the time step for each iteration step. Time step must be
-       *        greater than zero.
+       *        greater than zero. Setting the timestep is required. 
        *
        * @param timestep Valid timestep greater than zero. 
        */
@@ -127,7 +131,7 @@ class Simulation {
 
       /**
        * @brief Set the desired iterations to be calculated. A value greater
-       *        than zero must be specified here.
+       *        than zero must be specified here. Setting iterations is required. 
        *
        * @param iterations Number of iterations to be simulated.
        */
@@ -164,6 +168,7 @@ class Simulation {
        */
       void printConcentrationsConsole();
 
+    // TODO move create CSVfile to TugUtils
       /**
        * @brief Creates a CSV file with a name containing the current simulation
        *        parameters. If the data name already exists, an additional counter is
