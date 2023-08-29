@@ -142,6 +142,13 @@ class Simulation {
        */
       void setSolver(SOLVER solver);
 
+      /**
+       * @brief Set the number of desired openMP Threads.
+       *
+       * @param num_threads Number of desired threads. Must have a value between
+       *                    1 and the maximum available number of processors. The maximum number of
+       *                    processors is set as the default case.
+       */
       void setNumberThreads(int num_threads);
 
       /**
