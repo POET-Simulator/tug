@@ -4,6 +4,7 @@ add_executable(BTCS_1D_proto_example BTCS_1D_proto_example.cpp)
 add_executable(BTCS_2D_proto_example BTCS_2D_proto_example.cpp)
 add_executable(reference-FTCS_2D_closed reference-FTCS_2D_closed.cpp)
 add_executable(profiling_openmp profiling_openmp.cpp)
+
 target_link_libraries(FTCS_1D_proto_example tug)
 target_link_libraries(FTCS_2D_proto_example tug)
 target_link_libraries(BTCS_1D_proto_example tug)

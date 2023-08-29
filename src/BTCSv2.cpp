@@ -278,10 +278,10 @@ static VectorXd EigenLUAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
 static VectorXd ThomasAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
     uint32_t n = b.size();
 
-    VectorXd a_diag(n);
-    VectorXd b_diag(n);
-    VectorXd c_diag(n);
-    VectorXd x_vec = b;
+    Eigen::VectorXd a_diag(n);
+    Eigen::VectorXd b_diag(n);
+    Eigen::VectorXd c_diag(n);
+    Eigen::VectorXd x_vec = b;
 
     // Fill diagonals vectors
     b_diag[0] = A.coeff(0, 0);
@@ -367,7 +367,6 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double timestep, VectorXd (*solver
     SparseMatrix<double> A;
     VectorXd b;
 
-    // const MatrixXd &alphaX = grid.getAlphaX(); // TODO check if this helps performance
     MatrixXd alphaX = grid.getAlphaX();
     MatrixXd alphaY = grid.getAlphaY();
     vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
@@ -385,7 +384,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double timestep, VectorXd (*solver
         b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight, 
                                     bcTop, bcBottom, colMax, i, sx, sy);
         
-        SparseLU<SparseMatrix<double>> solver; // TODO what is this?
+        SparseLU<SparseMatrix<double>> solver; 
 
         row_t1 = solverFunc(A, b);
         
@@ -417,10 +416,10 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double timestep, VectorXd (*solver
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
 static void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
-    if (grid.getDim() == 2) {
-        BTCS_2D(grid, bc, timestep, EigenLUAlgorithm, numThreads);
-    } else if (grid.getDim() == 1) {
+    if (grid.getDim() == 1) {
         BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
+    } else if (grid.getDim() == 2) {
+        BTCS_2D(grid, bc, timestep, EigenLUAlgorithm, numThreads);
     } else {
         throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }
@@ -428,10 +427,10 @@ static void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
 static void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep, int numThreads) {
-    if (grid.getDim() == 2) {
-        BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
-    } else if (grid.getDim() == 1) {
+    if (grid.getDim() == 1) {
         BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
+    } else if (grid.getDim() == 2) {
+        BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
     } else {
         throw_invalid_argument("Error: Only 1- and 2-dimensional grids are defined!");
     }
