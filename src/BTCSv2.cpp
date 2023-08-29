@@ -1,7 +1,9 @@
 /**
  * @file BTCSv2.cpp
  * @brief Implementation of heterogenous BTCS (backward time-centered space) solution
- *        of diffusion equation in 1D and 2D space.
+ *        of diffusion equation in 1D and 2D space. Internally the alternating-direction
+ *        implicit (ADI) method is used. Version 2, because Version 1 was an 
+ *        implementation for the homogeneous BTCS solution. 
  * 
  */
 

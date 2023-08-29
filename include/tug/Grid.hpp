@@ -10,6 +10,7 @@
 
 using namespace Eigen;
 
+// TODO document default values and perhaps adjust them
 class Grid {
     public:
 
