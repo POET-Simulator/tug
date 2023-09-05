@@ -1,5 +1,11 @@
 add_library(tug Boundary.cpp Grid.cpp Simulation.cpp FTCS.cpp BTCSv2.cpp)
 
+option(TUG_WRITE_CSV "Write CSV during Thomas algorithm with consecutive numbers for each call" OFF)
+
+IF(TUG_WRITE_CSV)
+  target_compile_definitions(tug PRIVATE WRITE_THOMAS_CSV)
+endif()
+
 target_link_libraries(tug Eigen3::Eigen)
 
 if(TUG_USE_OPENMP AND OpenMP_CXX_FOUND)
