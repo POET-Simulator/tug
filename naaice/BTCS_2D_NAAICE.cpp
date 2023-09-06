@@ -11,6 +11,9 @@
 
 #include "files.hpp"
 
+/**
+ * Try to parse an input string into a given template type.
+ */
 template <typename T> inline T parseString(const std::string &str) {
   T result;
   std::istringstream iss(str);
@@ -22,6 +25,9 @@ template <typename T> inline T parseString(const std::string &str) {
   return result;
 }
 
+/**
+ * Splits a given string into a vector by using a delimiter character.
+ */
 template <typename T>
 std::vector<T> tokenize(const std::string &input, char delimiter) {
   std::vector<T> tokens;
@@ -35,6 +41,9 @@ std::vector<T> tokenize(const std::string &input, char delimiter) {
   return tokens;
 }
 
+/**
+ * Opens a file containing CSV and transform it into row-major 2D STL vector.
+ */
 template <typename T>
 std::vector<std::vector<T>> CSVToVector(const char *filename) {
   std::ifstream in_file(filename);
@@ -55,8 +64,12 @@ std::vector<std::vector<T>> CSVToVector(const char *filename) {
   return csv_data;
 }
 
+/**
+ * Converts a 2D STL vector, where values are stored row-major into a
+ * column-major Eigen::Matrix.
+ */
 template <typename T>
-Eigen::MatrixXd CMVecToRMMatrix(const std::vector<std::vector<T>> &vec,
+Eigen::MatrixXd rmVecTocmMatrix(const std::vector<std::vector<T>> &vec,
                                 std::uint32_t exp_rows,
                                 std::uint32_t exp_cols) {
   if (exp_rows != vec.size()) {
@@ -96,12 +109,12 @@ int main(int argc, char *argv[]) {
   grid.setDomain(0.005, 0.01);
 
   const auto init_values_vec = CSVToVector<double>(INPUT_CONC_FILE);
-  MatrixXd concentrations = CMVecToRMMatrix(init_values_vec, row, col);
+  MatrixXd concentrations = rmVecTocmMatrix(init_values_vec, row, col);
   grid.setConcentrations(concentrations);
 
   // // (optional) set alphas of the grid, e.g.:
   const auto alphax_vec = CSVToVector<double>(INPUT_ALPHAX_FILE);
-  MatrixXd alphax = CMVecToRMMatrix(alphax_vec, row, col);
+  MatrixXd alphax = rmVecTocmMatrix(alphax_vec, row, col);
 
   constexpr double alphay_val = 5e-10;
   MatrixXd alphay = MatrixXd::Constant(row, col, alphay_val); // row,col,value
@@ -123,8 +136,8 @@ int main(int argc, char *argv[]) {
   // // ************************
 
   // set up a simulation environment
-  Simulation simulation = Simulation(
-      grid, bc, BTCS_APPROACH); // grid,boundary,simulation-approach
+  Simulation simulation =
+      Simulation(grid, bc, BTCS_APPROACH); // grid,boundary,simulation-approach
 
   // set the timestep of the simulation
   simulation.setTimestep(360); // timestep
@@ -136,15 +149,9 @@ int main(int argc, char *argv[]) {
   // CSV_OUTPUT_VERBOSE]
   simulation.setOutputCSV(CSV_OUTPUT_ON);
 
+  // set output to the console to 'ON'
   simulation.setOutputConsole(CONSOLE_OUTPUT_ON);
 
   // // **** RUN SIMULATION ****
-
-  // // run the simulation
-
-  // // EASY_BLOCK("SIMULATION")
   simulation.run();
-  // // EASY_END_BLOCK;
-  // // profiler::dumpBlocksToFile("test_profile.prof");
-  // // profiler::stopListen();
 }
