@@ -23,7 +23,7 @@ the system. The diffusion process is simulated for a single iteration with a
 time step ($\Delta t$) of 360 seconds.
 
 
-# Setup
+# Usage
 
 To generate new makefiles using the `-DTUG_NAAICE_EXAMPLE=ON` option in CMake,
 compile the executable, and run it to generate the benchmark output, follow
