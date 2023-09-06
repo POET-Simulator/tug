@@ -1,8 +1,6 @@
 add_library(tug Boundary.cpp Grid.cpp Simulation.cpp FTCS.cpp BTCSv2.cpp)
 
-option(TUG_WRITE_CSV "Write CSV during Thomas algorithm with consecutive numbers for each call" OFF)
-
-IF(TUG_WRITE_CSV)
+IF(TUG_NAAICE_EXAMPLE)
   target_compile_definitions(tug PRIVATE WRITE_THOMAS_CSV)
 endif()
 

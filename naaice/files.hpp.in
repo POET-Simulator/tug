@@ -1,0 +1,7 @@
+#ifndef FILES_H_
+#define FILES_H_
+
+const char *INPUT_CONC_FILE = "@IN_CONC_FILE@";
+const char *INPUT_ALPHAX_FILE = "@IN_ALPHAX_FILE@";
+
+#endif // FILES_H_

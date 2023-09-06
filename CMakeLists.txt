@@ -42,3 +42,9 @@ if(TUG_ENABLE_TESTING)
 endif()
 
 add_subdirectory(examples)
+
+option(TUG_NAAICE_EXAMPLE "Enables NAAICE examples with export of CSV files" OFF)
+
+if (TUG_NAAICE_EXAMPLE)
+  add_subdirectory(naaice)
+endif()
