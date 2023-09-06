@@ -117,7 +117,7 @@ int Grid::getCol() {
     return col;
 }
 
-void Grid::setDomain(int domainLength) {
+void Grid::setDomain(double domainLength) {
     if (dim != 1) {
         throw_invalid_argument("Grid is not one dimensional, you should probaly use the 2D domain setter!");
     }
@@ -129,7 +129,7 @@ void Grid::setDomain(int domainLength) {
     this->deltaCol = double(this->domainCol)/double(this->col);
 }
 
-void Grid::setDomain(int domainRow, int domainCol) {
+void Grid::setDomain(double domainRow, double domainCol) {
     if (dim != 2) {
         throw_invalid_argument("Grid is not two dimensional, you should probably use the 1D domain setter!");
     }

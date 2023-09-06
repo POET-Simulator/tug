@@ -121,17 +121,17 @@ class Grid {
         /**
          * @brief Sets the domain length of a 1D-Grid. Grid must be one dimensional. 
          * 
-         * @param domainLength An integer of the domain length. Must be positive. 
+         * @param domainLength A double value of the domain length. Must be positive.
          */
-        void setDomain(int domainLength);
+        void setDomain(double domainLength);
 
         /**
          * @brief Sets the domain size of a 2D-Grid. Grid must be two dimensional.
          * 
-         * @param domainRow An integer of the domain size in y-direction. Must be positive. 
-         * @param domainCol An integer of the domain size in x-direction. Must be positive. 
+         * @param domainRow A double value of the domain size in y-direction. Must be positive. 
+         * @param domainCol A double value of the domain size in x-direction. Must be positive. 
          */
-        void setDomain(int domainRow, int domainCol);
+        void setDomain(double domainRow,double domainCol);
 
         /**
          * @brief Gets the delta value for 1D-Grid. Grid must be one dimensional.
@@ -160,8 +160,8 @@ class Grid {
         int col; // number of grid columns
         int row; // number of grid rows
         int dim; // 1D or 2D
-        int domainCol; // number of domain columns
-        int domainRow; // number of domain rows
+        double domainCol; // number of domain columns
+        double domainRow; // number of domain rows
         double deltaCol; // delta in x-direction (between columns)
         double deltaRow; // delta in y-direction (between rows)
         MatrixXd concentrations; // Matrix holding grid concentrations 
