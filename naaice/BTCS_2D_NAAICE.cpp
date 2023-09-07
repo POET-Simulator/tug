@@ -112,6 +112,8 @@ int main(int argc, char *argv[]) {
   MatrixXd concentrations = rmVecTocmMatrix(init_values_vec, row, col);
   grid.setConcentrations(concentrations);
 
+  const double sum_init = concentrations.sum();
+
   // // (optional) set alphas of the grid, e.g.:
   const auto alphax_vec = CSVToVector<double>(INPUT_ALPHAX_FILE);
   MatrixXd alphax = rmVecTocmMatrix(alphax_vec, row, col);
@@ -154,4 +156,12 @@ int main(int argc, char *argv[]) {
 
   // // **** RUN SIMULATION ****
   simulation.run();
+
+  const double sum_after = grid.getConcentrations().sum();
+
+  std::cout << "Sum of init field: " << std::to_string(sum_init)
+            << "\nSum after iteration: " << std::to_string(sum_after)
+            << std::endl;
+
+  return 0;
 }
