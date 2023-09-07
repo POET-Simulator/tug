@@ -1,4 +1,3 @@
-
 This directory contains a concise benchmark designed for validating FPGA
 offloading of the Thomas algorithm, primarily employed for solving linear
 equation systems structured within a tridiagonal matrix.
@@ -6,20 +5,19 @@ equation systems structured within a tridiagonal matrix.
 
 # Benchmark Setup
 
-The benchmark involves a domain measuring $0.5 \text{cm} \times 1 \text{cm}$,
-divided into a grid of dimensions $10 \times 5$. Each grid cell initially
-contains a specific concentration. The concentration in the first half along the
-x-dimension is set at $6.92023 \times 10^{-7}$, while in the second half, it&rsquo;s
-$2.02396 \times 10^{-8}$, creating a concentration gradient along the y-axis at
-the center of the grid.
+The benchmark defines a domain measuring $1 \text{cm} \times 0.5 \text{cm}$ (easting $\times$ northing),
+discretized in a $10 \times 5$ grid. Each grid cell initially
+contains a specific concentration. The concentration in the left domain half is set to $6.92023 \times 10^{-7}$, while in the right half to
+$2.02396 \times 10^{-8}$, creating an horizontal concentration discontinuity at
+the center of the grid. These initial concentrations are read from headerless csv file [init_conc.csv](./init_conc.csv).
 
-To achieve concentration equilibrium, we employ a simulation based on a
-heterogeneous 2D-ADI BTCS diffusion approach, detailed in the
-[ADI<sub>scheme.pdf</sub>](../doc/ADI_scheme.pdf) file. In the x-direction,
-diffusion coefficients range from $\alpha = 10^{-9}$ to $10^{-10}$, while in the
-y-direction, a constant value of $5 \times 10^{-10}$ is applied. A closed
-boundary condition is implemented, meaning concentrations cannot enter or exit
-the system. The diffusion process is simulated for a single iteration with a
+A diffusion time step is simulated with the
+heterogeneous 2D-ADI approach detailed in the
+[ADI_scheme.pdf](../doc/ADI_scheme.pdf) file. The x component of the
+diffusion coefficients, read from headerless csv file [alphax.csv](./alphax.csv) ranges from $\alpha = 10^{-9}$ to $10^{-10}$ (distributed randomly), while the
+y-component is held constant at $5 \times 10^{-10}$. Closed
+boundary conditions are enforced at all domain boundaries, meaning that concentration cannot enter or exit
+the system, or in other terms, that the sum of concentrations over the domain must stay constant. The benchmark simulates a single iteration with a
 time step ($\Delta t$) of 360 seconds.
 
 
