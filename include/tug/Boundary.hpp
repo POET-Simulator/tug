@@ -44,7 +44,8 @@ class BoundaryElement {
       /**
        * @brief Construct a new Boundary Element object for the closed case.
        *        The boundary type is here automatically set to the type
-       *        BC_TYPE_CLOSED, where the value takes NaN.
+       *        BC_TYPE_CLOSED, where the value takes -1 and does not hold any
+       *        physical meaning.
        */
       BoundaryElement();
 
@@ -107,7 +108,8 @@ class Boundary {
        * @brief Creates a boundary object based on the passed grid object and
        *        initializes the boundaries as closed.
        *
-       * @param grid Grid object on the basis of which the simulation is to take place.
+       * @param grid Grid object on the basis of which the simulation takes place
+       *             and from which the dimensions (in 2D case) are taken.
        */
       Boundary(Grid grid);
 
@@ -158,7 +160,7 @@ class Boundary {
        * @param side Boundary side from which the boundary conditions are to be returned.
        * @return vector<BoundaryElement> Contains the boundary conditions as BoundaryElement objects.
        */
-      vector<BoundaryElement> getBoundarySide(BC_SIDE side);
+      const vector<BoundaryElement> getBoundarySide(BC_SIDE side);
 
       /**
        * @brief Get thes Boundary Side Values as a vector. Value is -1 in case some specific 

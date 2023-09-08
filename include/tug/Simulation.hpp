@@ -72,6 +72,7 @@ class Simulation {
        *        must be set. For the BTCS approach, the Thomas algorithm is used as 
        *        the default linear equation solver as this is faster for tridiagonal
        *        matrices. CSV output, console output and time measure are off by default. 
+       *        Also, the number of cores is set to the maximum number of cores by default.
        *
        * @param grid Valid grid object
        * @param bc Valid boundary condition object
@@ -106,11 +107,12 @@ class Simulation {
        */
       void setOutputConsole(CONSOLE_OUTPUT console_output);
 
-    // TODO document method
       /**
-       * @brief Set the Time Measure object. Off by default. 
+       * @brief Set the Time Measure option. Off by default. 
        *
-       * @param time_measure 
+       * @param time_measure The following options are allowed:
+       *                     - TIME_MEASURE_OFF: Time of simulation is not printed to console
+       *                     - TIME_MEASURE_ON: Time of simulation run is printed to console
        */
       void setTimeMeasure(TIME_MEASURE time_measure);
 
@@ -151,7 +153,7 @@ class Simulation {
        *
        * @param num_threads Number of desired threads. Must have a value between
        *                    1 and the maximum available number of processors. The maximum number of
-       *                    processors is set as the default case.
+       *                    processors is set as the default case during Simulation construction.
        */
       void setNumberThreads(int num_threads);
 
@@ -168,14 +170,13 @@ class Simulation {
        */
       void printConcentrationsConsole();
 
-    // TODO move create CSVfile to TugUtils
       /**
        * @brief Creates a CSV file with a name containing the current simulation
        *        parameters. If the data name already exists, an additional counter is
        *        appended to the name. The name of the file is built up as follows:
        *        <approach> + <number rows> + <number columns> + <number of iterations>+<counter>.csv 
        *
-       * @return string Filename with given simulation parameter.
+       * @return string Filename with configured simulation parameters.
        */
       string createCSVfile();
 

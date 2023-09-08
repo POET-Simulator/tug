@@ -1,4 +1,4 @@
-#include "TugUtils.hpp"
+#include "TugUtils.cpp"
 #include <tug/Grid.hpp>
 #include <iostream>
 
@@ -43,7 +43,7 @@ void Grid::setConcentrations(MatrixXd concentrations) {
     this->concentrations = concentrations;
 }
 
-MatrixXd Grid::getConcentrations() {
+const MatrixXd Grid::getConcentrations() {
     return this->concentrations;
 }
 
@@ -73,7 +73,7 @@ void Grid::setAlpha(MatrixXd alphaX, MatrixXd alphaY) {
     this->alphaY = alphaY;
 }
 
-MatrixXd Grid::getAlpha() {
+const MatrixXd Grid::getAlpha() {
     if (dim != 1) {
         throw_invalid_argument("Grid is not one dimensional, you should probably use either getAlphaX() or getAlphaY()!");
     }
@@ -81,7 +81,7 @@ MatrixXd Grid::getAlpha() {
     return this->alphaX;
 }
 
-MatrixXd Grid::getAlphaX() {
+const MatrixXd Grid::getAlphaX() {
     if (dim != 2) {
         throw_invalid_argument("Grid is not two dimensional, you should probably use getAlpha()!");
     }
@@ -89,7 +89,7 @@ MatrixXd Grid::getAlphaX() {
     return this->alphaX;
 }
 
-MatrixXd Grid::getAlphaY() {
+const MatrixXd Grid::getAlphaY() {
     if (dim != 2) {
         throw_invalid_argument("Grid is not two dimensional, you should probably use getAlpha()!");
     }
