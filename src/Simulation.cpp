@@ -20,7 +20,7 @@ Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid)
 
     this->approach = approach;
     this->solver = THOMAS_ALGORITHM_SOLVER;
-    this->timestep = -1; // error per default
+    this->timestep = -1; // error per default; needs to be set
     this->iterations = -1;
     this->innerIterations = 1;
     this->numThreads = omp_get_num_procs();
@@ -59,7 +59,7 @@ void Simulation::setTimestep(double timestep) {
         throw_invalid_argument("Timestep has to be greater than zero.");
     }
 
-    if (approach == FTCS_APPROACH) {
+    if (approach == FTCS_APPROACH || approach == CRANK_NICOLSON_APPROACH) {
 
         double deltaRowSquare;
         double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
@@ -91,8 +91,9 @@ void Simulation::setTimestep(double timestep) {
         // stability equation from Wikipedia; might be useful if applied cfl does not work in some cases
         // double CFL_Wiki = 1 / (4 * maxAlpha * ((1/deltaRowSquare) + (1/deltaColSquare)));
 
-        cout << "FTCS_" << dim << " :: CFL condition MDL: " << cfl << endl;
-        cout << "FTCS_" << dim << " :: required dt=" << timestep <<  endl;
+        string approachPrefix = (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
+        cout << approachPrefix << "_" << dim << " :: CFL condition: " << cfl << endl;
+        cout << approachPrefix << "_" << dim << " :: required dt=" << timestep <<  endl;
 
         if (timestep > cfl) {
 
@@ -103,13 +104,13 @@ void Simulation::setTimestep(double timestep) {
                     "conditions. Time duration was approximately preserved by "
                     "adjusting internal number of iterations."
                 << endl;
-            cout << "FTCS_" << dim << " :: Required " << this->innerIterations
+            cout << approachPrefix << "_" << dim << " :: Required " << this->innerIterations
                 << " inner iterations with dt=" << this->timestep << endl;
 
         } else {
 
             this->timestep = timestep;
-            cout << "FTCS_" << dim << " :: No inner iterations required, dt=" << timestep << endl;
+            cout << approachPrefix << "_" << dim << " :: No inner iterations required, dt=" << timestep << endl;
 
         }
 
@@ -146,8 +147,10 @@ void Simulation::setNumberThreads(int numThreads){
     }
     else{
         int maxThreadNumber = omp_get_num_procs(); 
+        string outputMessage = "Number of threads exceeds the number of processor cores (" 
+                                + to_string(maxThreadNumber) + ") or is less than 1.";
         
-        throw_invalid_argument("Number of threads exceeds the number of processor cores or is less than 1.");
+        throw_invalid_argument(outputMessage);
     }
 }
 
@@ -165,7 +168,8 @@ string Simulation::createCSVfile() {
     int appendIdent = 0;
     string appendIdentString;
 
-    string approachString = (approach == 0) ? "FTCS" : "BTCS";
+    // string approachString = (approach == 0) ? "FTCS" : "BTCS";
+    string approachString = (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
     string row = to_string(grid.getRow());
     string col = to_string(grid.getCol());
     string numIterations = to_string(iterations);
@@ -281,7 +285,29 @@ void Simulation::run() {
 
     } else if (approach == CRANK_NICOLSON_APPROACH) { // Crank-Nicolson case
 
-        // TODO 
+        double beta = 0.5;
+
+        // TODO this implementation is very inefficient!
+        // a separate implementation that sets up a specific tridiagonal matrix for Crank-Nicolson would be better
+        MatrixXd concentrations;
+        MatrixXd concentrationsFTCS;
+        MatrixXd concentrationsResult;
+        for (int i = 0; i < iterations * innerIterations; i++) {
+            if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+                printConcentrationsConsole();
+            }
+            if (csv_output >= CSV_OUTPUT_VERBOSE) {
+                printConcentrationsCSV(filename);
+            }
+
+            concentrations = grid.getConcentrations();
+            FTCS(this->grid, this->bc, this->timestep, this->numThreads);
+            concentrationsFTCS = grid.getConcentrations();
+            grid.setConcentrations(concentrations);
+            BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
+            concentrationsResult = beta * concentrationsFTCS + (1-beta) * grid.getConcentrations();
+            grid.setConcentrations(concentrationsResult);
+        }
 
     }
 
@@ -295,7 +321,7 @@ void Simulation::run() {
         printConcentrationsCSV(filename);
     }
     if (this->time_measure > TIME_MEASURE_OFF) {
-        string approachString = (approach == 0) ? "FTCS" : "BTCS";
+        string approachString = (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
         string dimString = (grid.getDim() == 1) ? "-1D" : "-2D";
         cout << approachString << dimString << ":: run() finished in " << milliseconds.count() << "ms" << endl;
     }

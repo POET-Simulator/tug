@@ -1,4 +1,4 @@
-#include "TugUtils.hpp"
+#include "TugUtils.cpp"
 #include <iostream>
 #include <omp.h>
 #include <tug/Boundary.hpp>
@@ -9,7 +9,7 @@ using namespace std;
 BoundaryElement::BoundaryElement() {
     
     this->type = BC_TYPE_CLOSED;
-    this->value = NAN;
+    this->value = -1; // without meaning in closed case
 }
 
 BoundaryElement::BoundaryElement(double value) {
@@ -42,10 +42,8 @@ double BoundaryElement::getValue() {
 }
 
 Boundary::Boundary(Grid grid) : grid(grid) {
-    //probably to DEBUG assignment grid
-
     if (grid.getDim() == 1) {
-        this->boundaries = vector<vector<BoundaryElement>>(2);
+        this->boundaries = vector<vector<BoundaryElement>>(2); // in 1D only left and right boundary
 
         this->boundaries[BC_SIDE_LEFT].push_back(BoundaryElement());
         this->boundaries[BC_SIDE_RIGHT].push_back(BoundaryElement());
@@ -112,7 +110,7 @@ void Boundary::setBoundaryElementConstant(BC_SIDE side, int index, double value)
     this->boundaries[side][index].setValue(value);
 }
 
-vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
+const vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
     if(grid.getDim() == 1){
         if((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)){
           throw_invalid_argument(

@@ -10,13 +10,14 @@
 
 using namespace Eigen;
 
-// TODO document default values and perhaps adjust them
 class Grid {
     public:
 
         /**
          * @brief Constructs a new 1D-Grid object of a given length, which holds a matrix 
          *        with concentrations and a respective matrix of alpha coefficients. 
+         *        The domain length is per default the same as the length. The concentrations
+         *        are all 20 by default and the alpha coefficients are 1. 
          * 
          * @param length Length of the 1D-Grid. Must be greater than 3. 
          */
@@ -25,7 +26,10 @@ class Grid {
         /**
         * @brief Constructs a new 2D-Grid object of given dimensions, which holds a matrix
         *        with concentrations and the respective matrices of alpha coefficient for 
-        *        each direction. 
+        *        each direction. The domain in x- and y-direction is per default equal to 
+        *        the col length and row length, respectively. 
+        *        The concentrations are all 20 by default across the entire grid and the 
+        *        alpha coefficients 1 in both directions. 
         * 
         * @param row Length of the 2D-Grid in y-direction. Must be greater than 3. 
         * @param col Length of the 2D-Grid in x-direction. Must be greater than 3. 
@@ -36,8 +40,8 @@ class Grid {
         * @brief Sets the concentrations matrix for a 1D or 2D-Grid.
         * 
         * @param concentrations An Eigen3 MatrixXd holding the concentrations. Matrix must 
-        *                       have correct dimensions as defined in row and col, or length, 
-        *                       respectively. 
+        *                       have correct dimensions as defined in row and col. (Or length, 
+        *                       in 1D case). 
         */
         void setConcentrations(MatrixXd concentrations);
 
@@ -47,7 +51,7 @@ class Grid {
          * @return MatrixXd An Eigen3 matrix holding the concentrations and having the 
          *                  same dimensions as the grid. 
          */
-        MatrixXd getConcentrations();
+        const MatrixXd getConcentrations();
 
         /**
         * @brief Set the alpha coefficients of a 1D-Grid. Grid must be one dimensional. 
@@ -72,7 +76,7 @@ class Grid {
          * 
          * @return MatrixXd A matrix with 1 row holding the alpha coefficients. 
          */
-        MatrixXd getAlpha();
+        const MatrixXd getAlpha();
 
         /**
          * @brief Gets the matrix of alpha coefficients in x-direction of a 2D-Grid. Grid must be 
@@ -80,7 +84,7 @@ class Grid {
          * 
          * @return MatrixXd A matrix holding the alpha coefficients in x-direction. 
          */
-        MatrixXd getAlphaX();
+        const MatrixXd getAlphaX();
 
         /**
          * @brief Gets the matrix of alpha coefficients in y-direction of a 2D-Grid. Grid must be 
@@ -88,7 +92,7 @@ class Grid {
          * 
          * @return MatrixXd A matrix holding the alpha coefficients in y-direction. 
          */
-        MatrixXd getAlphaY();
+        const MatrixXd getAlphaY();
 
         /**
          * @brief Gets the dimensions of the grid. 
@@ -121,17 +125,17 @@ class Grid {
         /**
          * @brief Sets the domain length of a 1D-Grid. Grid must be one dimensional. 
          * 
-         * @param domainLength An integer of the domain length. Must be positive. 
+         * @param domainLength A double value of the domain length. Must be positive.
          */
-        void setDomain(int domainLength);
+        void setDomain(double domainLength);
 
         /**
          * @brief Sets the domain size of a 2D-Grid. Grid must be two dimensional.
          * 
-         * @param domainRow An integer of the domain size in y-direction. Must be positive. 
-         * @param domainCol An integer of the domain size in x-direction. Must be positive. 
+         * @param domainRow A double value of the domain size in y-direction. Must be positive. 
+         * @param domainCol A double value of the domain size in x-direction. Must be positive. 
          */
-        void setDomain(int domainRow, int domainCol);
+        void setDomain(double domainRow,double domainCol);
 
         /**
          * @brief Gets the delta value for 1D-Grid. Grid must be one dimensional.
@@ -160,8 +164,8 @@ class Grid {
         int col; // number of grid columns
         int row; // number of grid rows
         int dim; // 1D or 2D
-        int domainCol; // number of domain columns
-        int domainRow; // number of domain rows
+        double domainCol; // number of domain columns
+        double domainRow; // number of domain rows
         double deltaCol; // delta in x-direction (between columns)
         double deltaRow; // delta in y-direction (between rows)
         MatrixXd concentrations; // Matrix holding grid concentrations 
