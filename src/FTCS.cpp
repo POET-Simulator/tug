@@ -11,8 +11,6 @@
 #include <iostream>
 #include <omp.h>
 
-#define NUM_THREADS 6
-
 using namespace std;
 
 

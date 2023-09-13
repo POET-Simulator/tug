@@ -23,7 +23,7 @@ Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach) : grid(grid)
     this->timestep = -1; // error per default; needs to be set
     this->iterations = -1;
     this->innerIterations = 1;
-    this->numThreads = omp_get_num_procs();
+    this->numThreads = omp_get_num_procs()-1;
     
     this->csv_output = CSV_OUTPUT_OFF;
     this->console_output = CONSOLE_OUTPUT_OFF;

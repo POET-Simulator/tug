@@ -72,7 +72,7 @@ class Simulation {
        *        must be set. For the BTCS approach, the Thomas algorithm is used as 
        *        the default linear equation solver as this is faster for tridiagonal
        *        matrices. CSV output, console output and time measure are off by default. 
-       *        Also, the number of cores is set to the maximum number of cores by default.
+       *        Also, the number of cores is set to the maximum number of cores -1 by default.
        *
        * @param grid Valid grid object
        * @param bc Valid boundary condition object
