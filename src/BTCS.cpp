@@ -10,6 +10,8 @@
 #include "Schemes.hpp"
 #include "TugUtils.hpp"
 
+#include <Eigen/src/Core/util/Meta.h>
+#include <cstddef>
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
 
@@ -78,20 +80,26 @@ createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
   cm.reserve(Eigen::VectorXi::Constant(numCols, 3));
 
   // left column
-  BC_TYPE type = bcLeft[rowIndex].getType();
-  if (type == BC_TYPE_CONSTANT) {
+
+  switch (bcLeft[rowIndex].getType()) {
+  case BC_TYPE_CONSTANT: {
     auto [centerCoeffTop, rightCoeffTop] =
         calcLeftBoundaryCoeffConstant(alpha, rowIndex, sx);
     cm.insert(0, 0) = centerCoeffTop;
     cm.insert(0, 1) = rightCoeffTop;
-  } else if (type == BC_TYPE_CLOSED) {
+    break;
+  }
+  case BC_TYPE_CLOSED: {
     auto [centerCoeffTop, rightCoeffTop] =
         calcLeftBoundaryCoeffClosed(alpha, rowIndex, sx);
     cm.insert(0, 0) = centerCoeffTop;
     cm.insert(0, 1) = rightCoeffTop;
-  } else {
+    break;
+  }
+  default: {
     throw_invalid_argument(
         "Undefined Boundary Condition Type somewhere on Left or Top!");
+  }
   }
 
   // inner columns
@@ -108,20 +116,26 @@ createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
   }
 
   // right column
-  type = bcRight[rowIndex].getType();
-  if (type == BC_TYPE_CONSTANT) {
+
+  switch (bcRight[rowIndex].getType()) {
+  case BC_TYPE_CONSTANT: {
     auto [leftCoeffBottom, centerCoeffBottom] =
         calcRightBoundaryCoeffConstant(alpha, rowIndex, n, sx);
     cm.insert(n, n - 1) = leftCoeffBottom;
     cm.insert(n, n) = centerCoeffBottom;
-  } else if (type == BC_TYPE_CLOSED) {
+    break;
+  }
+  case BC_TYPE_CLOSED: {
     auto [leftCoeffBottom, centerCoeffBottom] =
         calcRightBoundaryCoeffClosed(alpha, rowIndex, n, sx);
     cm.insert(n, n - 1) = leftCoeffBottom;
     cm.insert(n, n) = centerCoeffBottom;
-  } else {
+    break;
+  }
+  default: {
     throw_invalid_argument(
         "Undefined Boundary Condition Type somewhere on Right or Bottom!");
+  }
   }
 
   cm.makeCompressed(); // important for Eigen solver
@@ -130,69 +144,53 @@ createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
 }
 
 // calculates explicity concentration at top boundary in constant case
-static double calcExplicitConcentrationsTopBoundaryConstant(
+static inline double calcExplicitConcentrationsTopBoundaryConstant(
     Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alpha,
     std::vector<BoundaryElement> &bcTop, int rowIndex, int i, double sy) {
-  double c;
-
-  c = sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
-          concentrations(rowIndex, i) +
-      (1 -
-       sy * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) +
-             2 * alpha(rowIndex, i))) *
-          concentrations(rowIndex, i) +
-      sy * alpha(rowIndex, i) * bcTop[i].getValue();
-
-  return c;
+  return sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
+             concentrations(rowIndex, i) +
+         (1 -
+          sy * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) +
+                2 * alpha(rowIndex, i))) *
+             concentrations(rowIndex, i) +
+         sy * alpha(rowIndex, i) * bcTop[i].getValue();
 }
 
 // calculates explicit concentration at top boundary in closed case
-static double
+static inline double
 calcExplicitConcentrationsTopBoundaryClosed(Eigen::MatrixXd &concentrations,
                                             Eigen::MatrixXd &alpha,
                                             int rowIndex, int i, double sy) {
-  double c;
-
-  c = sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
-          concentrations(rowIndex, i) +
-      (1 -
-       sy * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)))) *
-          concentrations(rowIndex, i);
-
-  return c;
+  return sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
+             concentrations(rowIndex, i) +
+         (1 - sy * (calcAlphaIntercell(alpha(rowIndex, i),
+                                       alpha(rowIndex + 1, i)))) *
+             concentrations(rowIndex, i);
 }
 
 // calculates explicit concentration at bottom boundary in constant case
-static double calcExplicitConcentrationsBottomBoundaryConstant(
+static inline double calcExplicitConcentrationsBottomBoundaryConstant(
     Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alpha,
     std::vector<BoundaryElement> &bcBottom, int rowIndex, int i, double sy) {
-  double c;
-
-  c = sy * alpha(rowIndex, i) * bcBottom[i].getValue() +
-      (1 -
-       sy * (2 * alpha(rowIndex, i) +
-             calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)))) *
-          concentrations(rowIndex, i) +
-      sy * calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)) *
-          concentrations(rowIndex - 1, i);
-
-  return c;
+  return sy * alpha(rowIndex, i) * bcBottom[i].getValue() +
+         (1 - sy * (2 * alpha(rowIndex, i) +
+                    calcAlphaIntercell(alpha(rowIndex - 1, i),
+                                       alpha(rowIndex, i)))) *
+             concentrations(rowIndex, i) +
+         sy * calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)) *
+             concentrations(rowIndex - 1, i);
 }
 
 // calculates explicit concentration at bottom boundary in closed case
-static double
+static inline double
 calcExplicitConcentrationsBottomBoundaryClosed(Eigen::MatrixXd &concentrations,
                                                Eigen::MatrixXd &alpha,
                                                int rowIndex, int i, double sy) {
-  double c;
-
-  c = (1 -
-       sy * (+calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)))) *
-          concentrations(rowIndex, i) +
-      sy * calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)) *
-          concentrations(rowIndex - 1, i);
-
-  return c;
+  return (1 - sy * (+calcAlphaIntercell(alpha(rowIndex - 1, i),
+                                        alpha(rowIndex, i)))) *
+             concentrations(rowIndex, i) +
+         sy * calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)) *
+             concentrations(rowIndex - 1, i);
 }
 
 // creates a solution vector for next time step from the current state of
@@ -205,8 +203,7 @@ static Eigen::VectorXd createSolutionVector(
     double sy) {
 
   Eigen::VectorXd sv(length);
-  int numRows = concentrations.rows();
-  BC_TYPE type;
+  const std::size_t numRows = concentrations.rows();
 
   // inner rows
   if (rowIndex > 0 && rowIndex < numRows - 1) {
@@ -229,14 +226,18 @@ static Eigen::VectorXd createSolutionVector(
   // first row
   else if (rowIndex == 0) {
     for (int i = 0; i < length; i++) {
-      type = bcTop[i].getType();
-      if (type == BC_TYPE_CONSTANT) {
+      switch (bcTop[i].getType()) {
+      case BC_TYPE_CONSTANT: {
         sv(i) = calcExplicitConcentrationsTopBoundaryConstant(
             concentrations, alphaY, bcTop, rowIndex, i, sy);
-      } else if (type == BC_TYPE_CLOSED) {
+        break;
+      }
+      case BC_TYPE_CLOSED: {
         sv(i) = calcExplicitConcentrationsTopBoundaryClosed(
             concentrations, alphaY, rowIndex, i, sy);
-      } else {
+        break;
+      }
+      default:
         throw_invalid_argument(
             "Undefined Boundary Condition Type somewhere on Left or Top!");
       }
@@ -246,14 +247,18 @@ static Eigen::VectorXd createSolutionVector(
   // last row
   else if (rowIndex == numRows - 1) {
     for (int i = 0; i < length; i++) {
-      type = bcBottom[i].getType();
-      if (type == BC_TYPE_CONSTANT) {
+      switch (bcBottom[i].getType()) {
+      case BC_TYPE_CONSTANT: {
         sv(i) = calcExplicitConcentrationsBottomBoundaryConstant(
             concentrations, alphaY, bcBottom, rowIndex, i, sy);
-      } else if (type == BC_TYPE_CLOSED) {
+        break;
+      }
+      case BC_TYPE_CLOSED: {
         sv(i) = calcExplicitConcentrationsBottomBoundaryClosed(
             concentrations, alphaY, rowIndex, i, sy);
-      } else {
+        break;
+      }
+      default:
         throw_invalid_argument(
             "Undefined Boundary Condition Type somewhere on Right or Bottom!");
       }
@@ -294,7 +299,7 @@ static Eigen::VectorXd EigenLUAlgorithm(Eigen::SparseMatrix<double> &A,
 // implementation of Thomas Algorithm
 static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
                                        Eigen::VectorXd &b) {
-  uint32_t n = b.size();
+  Eigen::Index n = b.size();
 
   Eigen::VectorXd a_diag(n);
   Eigen::VectorXd b_diag(n);
@@ -305,7 +310,7 @@ static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
   b_diag[0] = A.coeff(0, 0);
   c_diag[0] = A.coeff(0, 1);
 
-  for (int i = 1; i < n - 1; i++) {
+  for (Eigen::Index i = 1; i < n - 1; i++) {
     a_diag[i] = A.coeff(i, i - 1);
     b_diag[i] = A.coeff(i, i);
     c_diag[i] = A.coeff(i, i + 1);
@@ -318,7 +323,7 @@ static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
   c_diag[0] /= b_diag[0];
   x_vec[0] /= b_diag[0];
 
-  for (int i = 1; i < n; i++) {
+  for (Eigen::Index i = 1; i < n; i++) {
     c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
     x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
                (b_diag[i] - a_diag[i] * c_diag[i - 1]);
@@ -327,7 +332,7 @@ static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
   x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
              (b_diag[n] - a_diag[n] * c_diag[n - 1]);
 
-  for (int i = n; i-- > 0;) {
+  for (Eigen::Index i = n; i-- > 0;) {
     x_vec[i] -= c_diag[i] * x_vec[i + 1];
   }
 
