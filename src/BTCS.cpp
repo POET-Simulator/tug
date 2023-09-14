@@ -118,54 +118,26 @@ createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
   return cm;
 }
 
-// calculates explicity concentration at top boundary in constant case
-static inline double calcExplicitConcentrationsTopBoundaryConstant(
-    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alpha,
-    std::vector<BoundaryElement> &bcTop, int rowIndex, int i, double sy) {
-  return sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
-             concentrations(rowIndex, i) +
-         (1 -
-          sy * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) +
-                2 * alpha(rowIndex, i))) *
-             concentrations(rowIndex, i) +
-         sy * alpha(rowIndex, i) * bcTop[i].getValue();
+// calculates explicit concentration at boundary in closed case
+template <typename T>
+constexpr T calcExplicitConcentrationsBoundaryClosed(T conc_center,
+                                                     T alpha_center,
+                                                     T alpha_neigbor, T sy) {
+  return sy * calcAlphaIntercell(alpha_center, alpha_neigbor) * conc_center +
+         (1 - sy * (calcAlphaIntercell(alpha_center, alpha_neigbor))) *
+             conc_center;
 }
 
-// calculates explicit concentration at top boundary in closed case
-static inline double
-calcExplicitConcentrationsTopBoundaryClosed(Eigen::MatrixXd &concentrations,
-                                            Eigen::MatrixXd &alpha,
-                                            int rowIndex, int i, double sy) {
-  return sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
-             concentrations(rowIndex, i) +
-         (1 - sy * (calcAlphaIntercell(alpha(rowIndex, i),
-                                       alpha(rowIndex + 1, i)))) *
-             concentrations(rowIndex, i);
-}
-
-// calculates explicit concentration at bottom boundary in constant case
-static inline double calcExplicitConcentrationsBottomBoundaryConstant(
-    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alpha,
-    std::vector<BoundaryElement> &bcBottom, int rowIndex, int i, double sy) {
-  return sy * alpha(rowIndex, i) * bcBottom[i].getValue() +
-         (1 - sy * (2 * alpha(rowIndex, i) +
-                    calcAlphaIntercell(alpha(rowIndex - 1, i),
-                                       alpha(rowIndex, i)))) *
-             concentrations(rowIndex, i) +
-         sy * calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)) *
-             concentrations(rowIndex - 1, i);
-}
-
-// calculates explicit concentration at bottom boundary in closed case
-static inline double
-calcExplicitConcentrationsBottomBoundaryClosed(Eigen::MatrixXd &concentrations,
-                                               Eigen::MatrixXd &alpha,
-                                               int rowIndex, int i, double sy) {
-  return (1 - sy * (+calcAlphaIntercell(alpha(rowIndex - 1, i),
-                                        alpha(rowIndex, i)))) *
-             concentrations(rowIndex, i) +
-         sy * calcAlphaIntercell(alpha(rowIndex - 1, i), alpha(rowIndex, i)) *
-             concentrations(rowIndex - 1, i);
+// calculates explicity concentration at boundary in constant case
+template <typename T>
+constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
+                                                       T alpha_center,
+                                                       T alpha_neighbor, T sy) {
+  return sy * calcAlphaIntercell(alpha_center, alpha_neighbor) * conc_center +
+         (1 - sy * (calcAlphaIntercell(alpha_center, alpha_center) +
+                    2 * alpha_center)) *
+             conc_center +
+         sy * alpha_center * conc_bc;
 }
 
 // creates a solution vector for next time step from the current state of
@@ -203,13 +175,15 @@ static Eigen::VectorXd createSolutionVector(
     for (int i = 0; i < length; i++) {
       switch (bcTop[i].getType()) {
       case BC_TYPE_CONSTANT: {
-        sv(i) = calcExplicitConcentrationsTopBoundaryConstant(
-            concentrations, alphaY, bcTop, rowIndex, i, sy);
+        sv(i) = calcExplicitConcentrationsBoundaryConstant(
+            concentrations(rowIndex, i), bcTop[i].getValue(),
+            alphaY(rowIndex, i), alphaY(rowIndex + 1, i), sy);
         break;
       }
       case BC_TYPE_CLOSED: {
-        sv(i) = calcExplicitConcentrationsTopBoundaryClosed(
-            concentrations, alphaY, rowIndex, i, sy);
+        sv(i) = calcExplicitConcentrationsBoundaryClosed(
+            concentrations(rowIndex, i), alphaY(rowIndex, i),
+            alphaY(rowIndex + 1, i), sy);
         break;
       }
       default:
@@ -224,13 +198,15 @@ static Eigen::VectorXd createSolutionVector(
     for (int i = 0; i < length; i++) {
       switch (bcBottom[i].getType()) {
       case BC_TYPE_CONSTANT: {
-        sv(i) = calcExplicitConcentrationsBottomBoundaryConstant(
-            concentrations, alphaY, bcBottom, rowIndex, i, sy);
+        sv(i) = calcExplicitConcentrationsBoundaryConstant(
+            concentrations(rowIndex, i), bcBottom[i].getValue(),
+            alphaY(rowIndex, i), alphaY(rowIndex - 1, i), sy);
         break;
       }
       case BC_TYPE_CLOSED: {
-        sv(i) = calcExplicitConcentrationsBottomBoundaryClosed(
-            concentrations, alphaY, rowIndex, i, sy);
+        sv(i) = calcExplicitConcentrationsBoundaryClosed(
+            concentrations(rowIndex, i), alphaY(rowIndex, i),
+            alphaY(rowIndex - 1, i), sy);
         break;
       }
       default:
