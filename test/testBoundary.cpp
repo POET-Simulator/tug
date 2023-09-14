@@ -13,7 +13,7 @@ TEST_CASE("BoundaryElement") {
     BoundaryElement boundaryElementClosed = BoundaryElement();
     CHECK_NOTHROW(BoundaryElement());
     CHECK_EQ(boundaryElementClosed.getType(), BC_TYPE_CLOSED);
-    CHECK_EQ(isnan(boundaryElementClosed.getValue()), isnan(NAN));
+    CHECK_EQ(boundaryElementClosed.getValue(), -1);
     CHECK_THROWS(boundaryElementClosed.setValue(0.2));
   }
 
