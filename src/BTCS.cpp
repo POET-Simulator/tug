@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
+#include <utility>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -21,52 +22,26 @@
 #define omp_get_thread_num() 0
 #endif
 
-// calculates coefficient for left boundary in constant case
-static inline std::tuple<double, double>
-calcLeftBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, double sx) {
-  const double centerCoeff =
-      1 + sx * (calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1)) +
-                2 * alpha(rowIndex, 0));
-  const double rightCoeff =
-      -sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
+// calculates coefficient for boundary in constant case
+template <class T>
+constexpr std::pair<T, T> calcBoundaryCoeffConstant(T alpha_center,
+                                                    T alpha_side, T sx) {
+  const T centerCoeff = 1 + sx * (calcAlphaIntercell(alpha_center, alpha_side) +
+                                  2 * alpha_center);
+  const T sideCoeff = -sx * calcAlphaIntercell(alpha_center, alpha_side);
 
-  return {centerCoeff, rightCoeff};
+  return {centerCoeff, sideCoeff};
 }
 
-// calculates coefficient for left boundary in closed case
-static inline std::tuple<double, double>
-calcLeftBoundaryCoeffClosed(Eigen::MatrixXd &alpha, int rowIndex, double sx) {
-  const double centerCoeff =
-      1 + sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
-  const double rightCoeff =
-      -sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
+// calculates coefficient for boundary in closed case
+template <class T>
+constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
+                                                  T sx) {
+  const T centerCoeff = 1 + sx * calcAlphaIntercell(alpha_center, alpha_side);
 
-  return {centerCoeff, rightCoeff};
-}
+  const T sideCoeff = -sx * calcAlphaIntercell(alpha_center, alpha_side);
 
-// calculates coefficient for right boundary in constant case
-static inline std::tuple<double, double>
-calcRightBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, int n,
-                               double sx) {
-  const double leftCoeff =
-      -sx * calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n));
-  const double centerCoeff =
-      1 + sx * (calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n)) +
-                2 * alpha(rowIndex, n));
-
-  return {leftCoeff, centerCoeff};
-}
-
-// calculates coefficient for right boundary in closed case
-static inline std::tuple<double, double>
-calcRightBoundaryCoeffClosed(Eigen::MatrixXd &alpha, int rowIndex, int n,
-                             double sx) {
-  const double leftCoeff =
-      -sx * calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n));
-  const double centerCoeff =
-      1 + sx * calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n));
-
-  return {leftCoeff, centerCoeff};
+  return {centerCoeff, sideCoeff};
 }
 
 // creates coefficient matrix for next time step from alphas in x-direction
@@ -84,14 +59,14 @@ createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
   switch (bcLeft[rowIndex].getType()) {
   case BC_TYPE_CONSTANT: {
     auto [centerCoeffTop, rightCoeffTop] =
-        calcLeftBoundaryCoeffConstant(alpha, rowIndex, sx);
+        calcBoundaryCoeffConstant(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
     cm.insert(0, 0) = centerCoeffTop;
     cm.insert(0, 1) = rightCoeffTop;
     break;
   }
   case BC_TYPE_CLOSED: {
     auto [centerCoeffTop, rightCoeffTop] =
-        calcLeftBoundaryCoeffClosed(alpha, rowIndex, sx);
+        calcBoundaryCoeffClosed(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
     cm.insert(0, 0) = centerCoeffTop;
     cm.insert(0, 1) = rightCoeffTop;
     break;
@@ -119,15 +94,15 @@ createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
 
   switch (bcRight[rowIndex].getType()) {
   case BC_TYPE_CONSTANT: {
-    auto [leftCoeffBottom, centerCoeffBottom] =
-        calcRightBoundaryCoeffConstant(alpha, rowIndex, n, sx);
+    auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffConstant(
+        alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
     cm.insert(n, n - 1) = leftCoeffBottom;
     cm.insert(n, n) = centerCoeffBottom;
     break;
   }
   case BC_TYPE_CLOSED: {
-    auto [leftCoeffBottom, centerCoeffBottom] =
-        calcRightBoundaryCoeffClosed(alpha, rowIndex, n, sx);
+    auto [centerCoeffBottom, leftCoeffBottom] =
+        calcBoundaryCoeffClosed(alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
     cm.insert(n, n - 1) = leftCoeffBottom;
     cm.insert(n, n) = centerCoeffBottom;
     break;

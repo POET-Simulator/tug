@@ -25,7 +25,8 @@
   })
 
 // calculates arithmetic or harmonic mean of alpha between two cells
-constexpr double calcAlphaIntercell(double alpha1, double alpha2,
+template <typename T>
+constexpr T calcAlphaIntercell(T alpha1, T alpha2,
                                     bool useHarmonic = true) {
   if (useHarmonic) {
     return double(2) / ((double(1) / alpha1) + (double(1) / alpha2));
