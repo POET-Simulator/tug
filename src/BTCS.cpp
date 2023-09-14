@@ -10,9 +10,14 @@
 #include "Schemes.hpp"
 #include "TugUtils.hpp"
 
-#include <omp.h>
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_thread_num() 0
+#endif
 
 // calculates coefficient for left boundary in constant case
 static std::tuple<double, double>

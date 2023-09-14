@@ -10,8 +10,13 @@
 
 #include <cstddef>
 #include <iostream>
-#include <omp.h>
 #include <tug/Boundary.hpp>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_thread_num() 0
+#endif
 
 // calculates horizontal change on one cell independent of boundary type
 static double calcHorizontalChange(Grid &grid, int &row, int &col) {
