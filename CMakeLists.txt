@@ -33,7 +33,11 @@ endif()
 
 option(TUG_ENABLE_TESTING
   "Run tests after succesfull compilation"
-  ON)
+  OFF)
+
+option(TUG_ENABLE_EXAMPLES
+  "Compile example applications"
+  OFF)
 
 add_subdirectory(src)
 
@@ -41,4 +45,6 @@ if(TUG_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
-add_subdirectory(examples)
+if(TUG_ENABLE_EXAMPLES)
+  add_subdirectory(examples)
+endif()
