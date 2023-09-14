@@ -8,6 +8,9 @@
 // include the configured header file
 #include <testSimulation.hpp>
 
+using namespace Eigen;
+using namespace std;
+
 static Grid setupSimulation(APPROACH approach, double timestep,
                             int iterations) {
   int row = 11;

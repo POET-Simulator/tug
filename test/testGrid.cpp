@@ -2,6 +2,10 @@
 #include <doctest/doctest.h>
 #include <tug/Grid.hpp>
 
+using namespace Eigen;
+using namespace std;
+
+
 TEST_CASE("1D Grid, too small length") {
   int l = 2;
   CHECK_THROWS(Grid(l));

@@ -5,6 +5,8 @@
 #include <tug/Boundary.hpp>
 #include <typeinfo>
 
+using namespace std;
+
 TEST_CASE("BoundaryElement") {
 
   SUBCASE("Closed case") {
