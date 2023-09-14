@@ -15,8 +15,8 @@ Grid::Grid(int length) {
   this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
   this->dim = 1;
 
-  this->concentrations = MatrixXd::Constant(1, col, 20);
-  this->alphaX = MatrixXd::Constant(1, col, 1);
+  this->concentrations = Eigen::MatrixXd::Constant(1, col, 20);
+  this->alphaX = Eigen::MatrixXd::Constant(1, col, 1);
 }
 
 Grid::Grid(int row, int col) {
@@ -33,12 +33,12 @@ Grid::Grid(int row, int col) {
   this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
   this->dim = 2;
 
-  this->concentrations = MatrixXd::Constant(row, col, 20);
-  this->alphaX = MatrixXd::Constant(row, col, 1);
-  this->alphaY = MatrixXd::Constant(row, col, 1);
+  this->concentrations = Eigen::MatrixXd::Constant(row, col, 20);
+  this->alphaX = Eigen::MatrixXd::Constant(row, col, 1);
+  this->alphaY = Eigen::MatrixXd::Constant(row, col, 1);
 }
 
-void Grid::setConcentrations(MatrixXd concentrations) {
+void Grid::setConcentrations(Eigen::MatrixXd concentrations) {
   if (concentrations.rows() != this->row ||
       concentrations.cols() != this->col) {
     throw_invalid_argument(
@@ -48,9 +48,9 @@ void Grid::setConcentrations(MatrixXd concentrations) {
   this->concentrations = concentrations;
 }
 
-const MatrixXd Grid::getConcentrations() { return this->concentrations; }
+const Eigen::MatrixXd Grid::getConcentrations() { return this->concentrations; }
 
-void Grid::setAlpha(MatrixXd alpha) {
+void Grid::setAlpha(Eigen::MatrixXd alpha) {
   if (dim != 1) {
     throw_invalid_argument("Grid is not one dimensional, you should probably "
                            "use 2D setter function!");
@@ -63,7 +63,7 @@ void Grid::setAlpha(MatrixXd alpha) {
   this->alphaX = alpha;
 }
 
-void Grid::setAlpha(MatrixXd alphaX, MatrixXd alphaY) {
+void Grid::setAlpha(Eigen::MatrixXd alphaX, Eigen::MatrixXd alphaY) {
   if (dim != 2) {
     throw_invalid_argument("Grid is not two dimensional, you should probably "
                            "use 1D setter function!");
@@ -81,7 +81,7 @@ void Grid::setAlpha(MatrixXd alphaX, MatrixXd alphaY) {
   this->alphaY = alphaY;
 }
 
-const MatrixXd Grid::getAlpha() {
+const Eigen::MatrixXd Grid::getAlpha() {
   if (dim != 1) {
     throw_invalid_argument("Grid is not one dimensional, you should probably "
                            "use either getAlphaX() or getAlphaY()!");
@@ -90,7 +90,7 @@ const MatrixXd Grid::getAlpha() {
   return this->alphaX;
 }
 
-const MatrixXd Grid::getAlphaX() {
+const Eigen::MatrixXd Grid::getAlphaX() {
   if (dim != 2) {
     throw_invalid_argument(
         "Grid is not two dimensional, you should probably use getAlpha()!");
@@ -99,7 +99,7 @@ const MatrixXd Grid::getAlphaX() {
   return this->alphaX;
 }
 
-const MatrixXd Grid::getAlphaY() {
+const Eigen::MatrixXd Grid::getAlphaY() {
   if (dim != 2) {
     throw_invalid_argument(
         "Grid is not two dimensional, you should probably use getAlpha()!");

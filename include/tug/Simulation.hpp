@@ -12,8 +12,6 @@
 #include "Boundary.hpp"
 #include "Grid.hpp"
 
-using namespace std;
-
 /**
  * @brief Enum defining the two implemented solution approaches.
  *
@@ -193,7 +191,7 @@ public:
    *
    * @return string Filename with configured simulation parameters.
    */
-  string createCSVfile();
+  std::string createCSVfile();
 
   /**
    * @brief Writes the currently calculated concentration values of the grid
@@ -202,7 +200,7 @@ public:
    * @param filename Name of the file to which the concentration values are
    *                 to be written.
    */
-  void printConcentrationsCSV(string filename);
+  void printConcentrationsCSV(std::string filename);
 
   /**
    * @brief Method starts the simulation process with the previously set

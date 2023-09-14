@@ -10,9 +10,6 @@
 #include "Grid.hpp"
 #include <cstddef>
 
-using namespace std;
-using namespace Eigen;
-
 /**
  * @brief Enum defining the two implemented boundary conditions.
  *
@@ -156,7 +153,7 @@ public:
    * @return vector<BoundaryElement> Contains the boundary conditions as
    * BoundaryElement objects.
    */
-  const vector<BoundaryElement> getBoundarySide(BC_SIDE side);
+  const std::vector<BoundaryElement> getBoundarySide(BC_SIDE side);
 
   /**
    * @brief Get thes Boundary Side Values as a vector. Value is -1 in case some
@@ -165,7 +162,7 @@ public:
    * @param side Boundary side for which the values are to be returned.
    * @return VectorXd Vector with values as doubles.
    */
-  VectorXd getBoundarySideValues(BC_SIDE side);
+  Eigen::VectorXd getBoundarySideValues(BC_SIDE side);
 
   /**
    * @brief Returns the boundary condition of a specified element on a given
@@ -207,7 +204,7 @@ public:
 private:
   Grid grid; // Boundary is directly dependent on the dimensions of a predefined
 
-  vector<vector<BoundaryElement>>
+  std::vector<std::vector<BoundaryElement>>
       boundaries; // Vector with Boundary Element information
 };
 

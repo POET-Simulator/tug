@@ -14,13 +14,9 @@
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
 
-#define NUM_THREADS_BTCS 10
-
-using namespace Eigen;
-
 // calculates coefficient for left boundary in constant case
-static tuple<double, double>
-calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int rowIndex, double sx) {
+static std::tuple<double, double>
+calcLeftBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, double sx) {
   double centerCoeff;
   double rightCoeff;
 
@@ -33,8 +29,8 @@ calcLeftBoundaryCoeffConstant(MatrixXd &alpha, int rowIndex, double sx) {
 }
 
 // calculates coefficient for left boundary in closed case
-static tuple<double, double>
-calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int rowIndex, double sx) {
+static std::tuple<double, double>
+calcLeftBoundaryCoeffClosed(Eigen::MatrixXd &alpha, int rowIndex, double sx) {
   double centerCoeff;
   double rightCoeff;
 
@@ -46,9 +42,9 @@ calcLeftBoundaryCoeffClosed(MatrixXd &alpha, int rowIndex, double sx) {
 }
 
 // calculates coefficient for right boundary in constant case
-static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha,
-                                                            int rowIndex, int n,
-                                                            double sx) {
+static std::tuple<double, double>
+calcRightBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, int n,
+                               double sx) {
   double leftCoeff;
   double centerCoeff;
 
@@ -62,8 +58,9 @@ static tuple<double, double> calcRightBoundaryCoeffConstant(MatrixXd &alpha,
 }
 
 // calculates coefficient for right boundary in closed case
-static tuple<double, double>
-calcRightBoundaryCoeffClosed(MatrixXd &alpha, int rowIndex, int n, double sx) {
+static std::tuple<double, double>
+calcRightBoundaryCoeffClosed(Eigen::MatrixXd &alpha, int rowIndex, int n,
+                             double sx) {
   double leftCoeff;
   double centerCoeff;
 
@@ -76,15 +73,14 @@ calcRightBoundaryCoeffClosed(MatrixXd &alpha, int rowIndex, int n, double sx) {
 }
 
 // creates coefficient matrix for next time step from alphas in x-direction
-static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha,
-                                              vector<BoundaryElement> &bcLeft,
-                                              vector<BoundaryElement> &bcRight,
-                                              int numCols, int rowIndex,
-                                              double sx) {
+static Eigen::SparseMatrix<double>
+createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
+                  std::vector<BoundaryElement> &bcRight, int numCols,
+                  int rowIndex, double sx) {
 
   // square matrix of column^2 dimension for the coefficients
-  SparseMatrix<double> cm(numCols, numCols);
-  cm.reserve(VectorXi::Constant(numCols, 3));
+  Eigen::SparseMatrix<double> cm(numCols, numCols);
+  cm.reserve(Eigen::VectorXi::Constant(numCols, 3));
 
   // left column
   BC_TYPE type = bcLeft[rowIndex].getType();
@@ -140,8 +136,8 @@ static SparseMatrix<double> createCoeffMatrix(MatrixXd &alpha,
 
 // calculates explicity concentration at top boundary in constant case
 static double calcExplicitConcentrationsTopBoundaryConstant(
-    MatrixXd &concentrations, MatrixXd &alpha, vector<BoundaryElement> &bcTop,
-    int rowIndex, int i, double sy) {
+    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alpha,
+    std::vector<BoundaryElement> &bcTop, int rowIndex, int i, double sy) {
   double c;
 
   c = sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
@@ -156,8 +152,10 @@ static double calcExplicitConcentrationsTopBoundaryConstant(
 }
 
 // calculates explicit concentration at top boundary in closed case
-static double calcExplicitConcentrationsTopBoundaryClosed(
-    MatrixXd &concentrations, MatrixXd &alpha, int rowIndex, int i, double sy) {
+static double
+calcExplicitConcentrationsTopBoundaryClosed(Eigen::MatrixXd &concentrations,
+                                            Eigen::MatrixXd &alpha,
+                                            int rowIndex, int i, double sy) {
   double c;
 
   c = sy * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex + 1, i)) *
@@ -171,8 +169,8 @@ static double calcExplicitConcentrationsTopBoundaryClosed(
 
 // calculates explicit concentration at bottom boundary in constant case
 static double calcExplicitConcentrationsBottomBoundaryConstant(
-    MatrixXd &concentrations, MatrixXd &alpha,
-    vector<BoundaryElement> &bcBottom, int rowIndex, int i, double sy) {
+    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alpha,
+    std::vector<BoundaryElement> &bcBottom, int rowIndex, int i, double sy) {
   double c;
 
   c = sy * alpha(rowIndex, i) * bcBottom[i].getValue() +
@@ -187,8 +185,10 @@ static double calcExplicitConcentrationsBottomBoundaryConstant(
 }
 
 // calculates explicit concentration at bottom boundary in closed case
-static double calcExplicitConcentrationsBottomBoundaryClosed(
-    MatrixXd &concentrations, MatrixXd &alpha, int rowIndex, int i, double sy) {
+static double
+calcExplicitConcentrationsBottomBoundaryClosed(Eigen::MatrixXd &concentrations,
+                                               Eigen::MatrixXd &alpha,
+                                               int rowIndex, int i, double sy) {
   double c;
 
   c = (1 -
@@ -202,13 +202,14 @@ static double calcExplicitConcentrationsBottomBoundaryClosed(
 
 // creates a solution vector for next time step from the current state of
 // concentrations
-static VectorXd createSolutionVector(
-    MatrixXd &concentrations, MatrixXd &alphaX, MatrixXd &alphaY,
-    vector<BoundaryElement> &bcLeft, vector<BoundaryElement> &bcRight,
-    vector<BoundaryElement> &bcTop, vector<BoundaryElement> &bcBottom,
-    int length, int rowIndex, double sx, double sy) {
+static Eigen::VectorXd createSolutionVector(
+    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alphaX,
+    Eigen::MatrixXd &alphaY, std::vector<BoundaryElement> &bcLeft,
+    std::vector<BoundaryElement> &bcRight, std::vector<BoundaryElement> &bcTop,
+    std::vector<BoundaryElement> &bcBottom, int length, int rowIndex, double sx,
+    double sy) {
 
-  VectorXd sv(length);
+  Eigen::VectorXd sv(length);
   int numRows = concentrations.rows();
   BC_TYPE type;
 
@@ -283,9 +284,10 @@ static VectorXd createSolutionVector(
 // solver for linear equation system; A corresponds to coefficient matrix,
 // b to the solution vector
 // use of EigenLU solver
-static VectorXd EigenLUAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
+static Eigen::VectorXd EigenLUAlgorithm(Eigen::SparseMatrix<double> &A,
+                                        Eigen::VectorXd &b) {
 
-  SparseLU<SparseMatrix<double>> solver;
+  Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
   solver.analyzePattern(A);
   solver.factorize(A);
 
@@ -295,7 +297,8 @@ static VectorXd EigenLUAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
 // solver for linear equation system; A corresponds to coefficient matrix,
 // b to the solution vector
 // implementation of Thomas Algorithm
-static VectorXd ThomasAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
+static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
+                                       Eigen::VectorXd &b) {
   uint32_t n = b.size();
 
   Eigen::VectorXd a_diag(n);
@@ -337,22 +340,23 @@ static VectorXd ThomasAlgorithm(SparseMatrix<double> &A, VectorXd &b) {
 }
 
 // BTCS solution for 1D grid
-static void BTCS_1D(Grid &grid, Boundary &bc, double timestep,
-                    VectorXd (*solverFunc)(SparseMatrix<double> &A,
-                                           VectorXd &b)) {
+static void
+BTCS_1D(Grid &grid, Boundary &bc, double timestep,
+        Eigen::VectorXd (*solverFunc)(Eigen::SparseMatrix<double> &A,
+                                      Eigen::VectorXd &b)) {
   int length = grid.getLength();
   double sx = timestep / (grid.getDelta() * grid.getDelta());
 
-  VectorXd concentrations_t1(length);
+  Eigen::VectorXd concentrations_t1(length);
 
-  SparseMatrix<double> A;
-  VectorXd b(length);
+  Eigen::SparseMatrix<double> A;
+  Eigen::VectorXd b(length);
 
-  MatrixXd alpha = grid.getAlpha();
-  vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
-  vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+  Eigen::MatrixXd alpha = grid.getAlpha();
+  std::vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  std::vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
 
-  MatrixXd concentrations = grid.getConcentrations();
+  Eigen::MatrixXd concentrations = grid.getConcentrations();
   int rowIndex = 0;
   A = createCoeffMatrix(alpha, bcLeft, bcRight, length, rowIndex,
                         sx); // this is exactly same as in 2D
@@ -376,29 +380,31 @@ static void BTCS_1D(Grid &grid, Boundary &bc, double timestep,
 }
 
 // BTCS solution for 2D grid
-static void BTCS_2D(Grid &grid, Boundary &bc, double timestep,
-                    VectorXd (*solverFunc)(SparseMatrix<double> &A,
-                                           VectorXd &b),
-                    int numThreads) {
+static void
+BTCS_2D(Grid &grid, Boundary &bc, double timestep,
+        Eigen::VectorXd (*solverFunc)(Eigen::SparseMatrix<double> &A,
+                                      Eigen::VectorXd &b),
+        int numThreads) {
   int rowMax = grid.getRow();
   int colMax = grid.getCol();
   double sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
   double sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
 
-  MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
-  VectorXd row_t1(colMax);
+  Eigen::MatrixXd concentrations_t1 =
+      Eigen::MatrixXd::Constant(rowMax, colMax, 0);
+  Eigen::VectorXd row_t1(colMax);
 
-  SparseMatrix<double> A;
-  VectorXd b;
+  Eigen::SparseMatrix<double> A;
+  Eigen::VectorXd b;
 
-  MatrixXd alphaX = grid.getAlphaX();
-  MatrixXd alphaY = grid.getAlphaY();
-  vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
-  vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
-  vector<BoundaryElement> bcTop = bc.getBoundarySide(BC_SIDE_TOP);
-  vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
+  Eigen::MatrixXd alphaX = grid.getAlphaX();
+  Eigen::MatrixXd alphaY = grid.getAlphaY();
+  std::vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  std::vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+  std::vector<BoundaryElement> bcTop = bc.getBoundarySide(BC_SIDE_TOP);
+  std::vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
-  MatrixXd concentrations = grid.getConcentrations();
+  Eigen::MatrixXd concentrations = grid.getConcentrations();
 
 #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < rowMax; i++) {
@@ -407,7 +413,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double timestep,
     b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
                              bcTop, bcBottom, colMax, i, sx, sy);
 
-    SparseLU<SparseMatrix<double>> solver;
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 
     row_t1 = solverFunc(A, b);
 

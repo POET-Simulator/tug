@@ -63,7 +63,7 @@ void Simulation::setTimestep(double timestep) {
     double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
     double minDeltaSquare;
     double maxAlphaX, maxAlphaY, maxAlpha;
-    string dim;
+    std::string dim;
     if (grid.getDim() == 2) {
       dim = "2D";
 
@@ -91,31 +91,31 @@ void Simulation::setTimestep(double timestep) {
     // not work in some cases double CFL_Wiki = 1 / (4 * maxAlpha *
     // ((1/deltaRowSquare) + (1/deltaColSquare)));
 
-    string approachPrefix =
+    std::string approachPrefix =
         (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
-    cout << approachPrefix << "_" << dim << " :: CFL condition: " << cfl
-         << endl;
-    cout << approachPrefix << "_" << dim << " :: required dt=" << timestep
-         << endl;
+    std::cout << approachPrefix << "_" << dim << " :: CFL condition: " << cfl
+         << std::endl;
+    std::cout << approachPrefix << "_" << dim << " :: required dt=" << timestep
+         << std::endl;
 
     if (timestep > cfl) {
 
       this->innerIterations = (int)ceil(timestep / cfl);
       this->timestep = timestep / (double)innerIterations;
 
-      cerr << "Warning :: Timestep was adjusted, because of stability "
+      std::cerr << "Warning :: Timestep was adjusted, because of stability "
               "conditions. Time duration was approximately preserved by "
               "adjusting internal number of iterations."
-           << endl;
-      cout << approachPrefix << "_" << dim << " :: Required "
+           << std::endl;
+      std::cout << approachPrefix << "_" << dim << " :: Required "
            << this->innerIterations
-           << " inner iterations with dt=" << this->timestep << endl;
+           << " inner iterations with dt=" << this->timestep << std::endl;
 
     } else {
 
       this->timestep = timestep;
-      cout << approachPrefix << "_" << dim
-           << " :: No inner iterations required, dt=" << timestep << endl;
+      std::cout << approachPrefix << "_" << dim
+           << " :: No inner iterations required, dt=" << timestep << std::endl;
     }
 
   } else {
@@ -134,10 +134,10 @@ void Simulation::setIterations(int iterations) {
 
 void Simulation::setSolver(SOLVER solver) {
   if (this->approach == FTCS_APPROACH) {
-    cerr << "Warning: Solver was set, but FTCS approach initialized. Setting "
+    std::cerr << "Warning: Solver was set, but FTCS approach initialized. Setting "
             "the solver "
             "is thus without effect."
-         << endl;
+         << std::endl;
   }
 
   this->solver = solver;
@@ -148,9 +148,9 @@ void Simulation::setNumberThreads(int numThreads) {
     this->numThreads = numThreads;
   } else {
     int maxThreadNumber = omp_get_num_procs();
-    string outputMessage =
+    std::string outputMessage =
         "Number of threads exceeds the number of processor cores (" +
-        to_string(maxThreadNumber) + ") or is less than 1.";
+        std::to_string(maxThreadNumber) + ") or is less than 1.";
 
     throw_invalid_argument(outputMessage);
   }
@@ -159,28 +159,28 @@ void Simulation::setNumberThreads(int numThreads) {
 int Simulation::getIterations() { return this->iterations; }
 
 void Simulation::printConcentrationsConsole() {
-  cout << grid.getConcentrations() << endl;
-  cout << endl;
+  std::cout << grid.getConcentrations() << std::endl;
+  std::cout << std::endl;
 }
 
-string Simulation::createCSVfile() {
-  ofstream file;
+std::string Simulation::createCSVfile() {
+  std::ofstream file;
   int appendIdent = 0;
-  string appendIdentString;
+  std::string appendIdentString;
 
   // string approachString = (approach == 0) ? "FTCS" : "BTCS";
-  string approachString =
+  std::string approachString =
       (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
-  string row = to_string(grid.getRow());
-  string col = to_string(grid.getCol());
-  string numIterations = to_string(iterations);
+  std::string row = std::to_string(grid.getRow());
+  std::string col = std::to_string(grid.getCol());
+  std::string numIterations = std::to_string(iterations);
 
-  string filename =
+  std::string filename =
       approachString + "_" + row + "_" + col + "_" + numIterations + ".csv";
 
-  while (filesystem::exists(filename)) {
+  while (std::filesystem::exists(filename)) {
     appendIdent += 1;
-    appendIdentString = to_string(appendIdent);
+    appendIdentString = std::to_string(appendIdent);
     filename = approachString + "_" + row + "_" + col + "_" + numIterations +
                "-" + appendIdentString + ".csv";
   }
@@ -193,16 +193,16 @@ string Simulation::createCSVfile() {
   // adds lines at the beginning of verbose output csv that represent the
   // boundary conditions and their values -1 in case of closed boundary
   if (csv_output == CSV_OUTPUT_XTREME) {
-    IOFormat one_row(StreamPrecision, DontAlignCols, "", " ");
+    Eigen::IOFormat one_row(Eigen::StreamPrecision, Eigen::DontAlignCols, "", " ");
     file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row)
-         << endl; // boundary left
+         << std::endl; // boundary left
     file << bc.getBoundarySideValues(BC_SIDE_RIGHT).format(one_row)
-         << endl; // boundary right
+         << std::endl; // boundary right
     file << bc.getBoundarySideValues(BC_SIDE_TOP).format(one_row)
-         << endl; // boundary top
+         << std::endl; // boundary top
     file << bc.getBoundarySideValues(BC_SIDE_BOTTOM).format(one_row)
-         << endl; // boundary bottom
-    file << endl << endl;
+         << std::endl; // boundary bottom
+    file << std::endl << std::endl;
   }
 
   file.close();
@@ -210,17 +210,17 @@ string Simulation::createCSVfile() {
   return filename;
 }
 
-void Simulation::printConcentrationsCSV(string filename) {
-  ofstream file;
+void Simulation::printConcentrationsCSV(std::string filename) {
+  std::ofstream file;
 
   file.open(filename, std::ios_base::app);
   if (!file) {
     exit(1);
   }
 
-  IOFormat do_not_align(StreamPrecision, DontAlignCols);
-  file << grid.getConcentrations().format(do_not_align) << endl;
-  file << endl << endl;
+  Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
+  file << grid.getConcentrations().format(do_not_align) << std::endl;
+  file << std::endl << std::endl;
   file.close();
 }
 
@@ -232,7 +232,7 @@ void Simulation::run() {
     throw_invalid_argument("Number of iterations are not set!");
   }
 
-  string filename;
+  std::string filename;
   if (this->console_output > CONSOLE_OUTPUT_OFF) {
     printConcentrationsConsole();
   }
@@ -295,9 +295,9 @@ void Simulation::run() {
     // TODO this implementation is very inefficient!
     // a separate implementation that sets up a specific tridiagonal matrix for
     // Crank-Nicolson would be better
-    MatrixXd concentrations;
-    MatrixXd concentrationsFTCS;
-    MatrixXd concentrationsResult;
+    Eigen::MatrixXd concentrations;
+    Eigen::MatrixXd concentrationsFTCS;
+    Eigen::MatrixXd concentrationsResult;
     for (int i = 0; i < iterations * innerIterations; i++) {
       if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
         printConcentrationsConsole();
@@ -328,10 +328,10 @@ void Simulation::run() {
     printConcentrationsCSV(filename);
   }
   if (this->time_measure > TIME_MEASURE_OFF) {
-    string approachString =
+    std::string approachString =
         (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
-    string dimString = (grid.getDim() == 1) ? "-1D" : "-2D";
-    cout << approachString << dimString << ":: run() finished in "
-         << milliseconds.count() << "ms" << endl;
+    std::string dimString = (grid.getDim() == 1) ? "-1D" : "-2D";
+    std::cout << approachString << dimString << ":: run() finished in "
+         << milliseconds.count() << "ms" << std::endl;
   }
 }

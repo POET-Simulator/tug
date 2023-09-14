@@ -5,8 +5,6 @@
 #include <stdexcept>
 #include <tug/Boundary.hpp>
 
-using namespace std;
-
 BoundaryElement::BoundaryElement() {
 
   this->type = BC_TYPE_CLOSED;
@@ -38,22 +36,22 @@ double BoundaryElement::getValue() { return this->value; }
 
 Boundary::Boundary(Grid grid) : grid(grid) {
   if (grid.getDim() == 1) {
-    this->boundaries = vector<vector<BoundaryElement>>(
+    this->boundaries = std::vector<std::vector<BoundaryElement>>(
         2); // in 1D only left and right boundary
 
     this->boundaries[BC_SIDE_LEFT].push_back(BoundaryElement());
     this->boundaries[BC_SIDE_RIGHT].push_back(BoundaryElement());
   } else if (grid.getDim() == 2) {
-    this->boundaries = vector<vector<BoundaryElement>>(4);
+    this->boundaries = std::vector<std::vector<BoundaryElement>>(4);
 
     this->boundaries[BC_SIDE_LEFT] =
-        vector<BoundaryElement>(grid.getRow(), BoundaryElement());
+        std::vector<BoundaryElement>(grid.getRow(), BoundaryElement());
     this->boundaries[BC_SIDE_RIGHT] =
-        vector<BoundaryElement>(grid.getRow(), BoundaryElement());
+        std::vector<BoundaryElement>(grid.getRow(), BoundaryElement());
     this->boundaries[BC_SIDE_TOP] =
-        vector<BoundaryElement>(grid.getCol(), BoundaryElement());
+        std::vector<BoundaryElement>(grid.getCol(), BoundaryElement());
     this->boundaries[BC_SIDE_BOTTOM] =
-        vector<BoundaryElement>(grid.getCol(), BoundaryElement());
+        std::vector<BoundaryElement>(grid.getCol(), BoundaryElement());
   }
 }
 
@@ -72,7 +70,7 @@ void Boundary::setBoundarySideClosed(BC_SIDE side) {
   } else {
     n = grid.getCol();
   }
-  this->boundaries[side] = vector<BoundaryElement>(n, BoundaryElement());
+  this->boundaries[side] = std::vector<BoundaryElement>(n, BoundaryElement());
 }
 
 void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
@@ -90,7 +88,7 @@ void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
   } else {
     n = grid.getCol();
   }
-  this->boundaries[side] = vector<BoundaryElement>(n, BoundaryElement(value));
+  this->boundaries[side] = std::vector<BoundaryElement>(n, BoundaryElement(value));
 }
 
 void Boundary::setBoundaryElementClosed(BC_SIDE side, int index) {
@@ -111,7 +109,7 @@ void Boundary::setBoundaryElementConstant(BC_SIDE side, int index,
   this->boundaries[side][index].setValue(value);
 }
 
-const vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
+const std::vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
   if (grid.getDim() == 1) {
     if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
       throw_invalid_argument(
@@ -122,9 +120,9 @@ const vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
   return this->boundaries[side];
 }
 
-VectorXd Boundary::getBoundarySideValues(BC_SIDE side) {
+Eigen::VectorXd Boundary::getBoundarySideValues(BC_SIDE side) {
   int length = boundaries[side].size();
-  VectorXd values(length);
+  Eigen::VectorXd values(length);
 
   for (int i = 0; i < length; i++) {
     if (getBoundaryElementType(side, i) == BC_TYPE_CLOSED) {

@@ -13,8 +13,6 @@
 #include <omp.h>
 #include <tug/Boundary.hpp>
 
-using namespace std;
-
 // calculates horizontal change on one cell independent of boundary type
 static double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
@@ -222,7 +220,7 @@ static void FTCS_1D(Grid &grid, Boundary &bc, double &timestep) {
   double deltaCol = grid.getDeltaCol();
 
   // matrix for concentrations at time t+1
-  MatrixXd concentrations_t1 = MatrixXd::Constant(1, colMax, 0);
+  Eigen::MatrixXd concentrations_t1 = Eigen::MatrixXd::Constant(1, colMax, 0);
 
   // only one row in 1D case -> row constant at index 0
   int row = 0;
@@ -262,7 +260,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep,
   double deltaCol = grid.getDeltaCol();
 
   // matrix for concentrations at time t+1
-  MatrixXd concentrations_t1 = MatrixXd::Constant(rowMax, colMax, 0);
+  Eigen::MatrixXd concentrations_t1 = Eigen::MatrixXd::Constant(rowMax, colMax, 0);
 
   // inner cells
   // these are independent of the boundary condition type
