@@ -1,7 +1,7 @@
 #include <chrono>
+#include <fstream>
 #include <stdexcept>
 #include <string>
-#include <fstream>
 
 using namespace std;
 
@@ -29,10 +29,11 @@ using namespace std;
   })
 
 // calculates arithmetic or harmonic mean of alpha between two cells
-static double calcAlphaIntercell(const double &alpha1, const double &alpha2, bool useHarmonic = true) {
-    if (useHarmonic) {
-        return double(2) / ((double(1)/alpha1) + (double(1)/alpha2));
-    } else {
-        return 0.5 * (alpha1 + alpha2);
-    }
+static double calcAlphaIntercell(const double &alpha1, const double &alpha2,
+                                 bool useHarmonic = true) {
+  if (useHarmonic) {
+    return double(2) / ((double(1) / alpha1) + (double(1) / alpha2));
+  } else {
+    return 0.5 * (alpha1 + alpha2);
+  }
 }
