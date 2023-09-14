@@ -20,42 +20,35 @@
 #endif
 
 // calculates coefficient for left boundary in constant case
-static std::tuple<double, double>
+static inline std::tuple<double, double>
 calcLeftBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, double sx) {
-  double centerCoeff;
-  double rightCoeff;
-
-  centerCoeff =
+  const double centerCoeff =
       1 + sx * (calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1)) +
                 2 * alpha(rowIndex, 0));
-  rightCoeff = -sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
+  const double rightCoeff =
+      -sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
 
   return {centerCoeff, rightCoeff};
 }
 
 // calculates coefficient for left boundary in closed case
-static std::tuple<double, double>
+static inline std::tuple<double, double>
 calcLeftBoundaryCoeffClosed(Eigen::MatrixXd &alpha, int rowIndex, double sx) {
-  double centerCoeff;
-  double rightCoeff;
-
-  centerCoeff =
+  const double centerCoeff =
       1 + sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
-  rightCoeff = -sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
+  const double rightCoeff =
+      -sx * calcAlphaIntercell(alpha(rowIndex, 0), alpha(rowIndex, 1));
 
   return {centerCoeff, rightCoeff};
 }
 
 // calculates coefficient for right boundary in constant case
-static std::tuple<double, double>
+static inline std::tuple<double, double>
 calcRightBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, int n,
                                double sx) {
-  double leftCoeff;
-  double centerCoeff;
-
-  leftCoeff =
+  const double leftCoeff =
       -sx * calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n));
-  centerCoeff =
+  const double centerCoeff =
       1 + sx * (calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n)) +
                 2 * alpha(rowIndex, n));
 
@@ -63,15 +56,12 @@ calcRightBoundaryCoeffConstant(Eigen::MatrixXd &alpha, int rowIndex, int n,
 }
 
 // calculates coefficient for right boundary in closed case
-static std::tuple<double, double>
+static inline std::tuple<double, double>
 calcRightBoundaryCoeffClosed(Eigen::MatrixXd &alpha, int rowIndex, int n,
                              double sx) {
-  double leftCoeff;
-  double centerCoeff;
-
-  leftCoeff =
+  const double leftCoeff =
       -sx * calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n));
-  centerCoeff =
+  const double centerCoeff =
       1 + sx * calcAlphaIntercell(alpha(rowIndex, n - 1), alpha(rowIndex, n));
 
   return {leftCoeff, centerCoeff};

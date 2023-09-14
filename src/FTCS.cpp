@@ -19,73 +19,67 @@
 #endif
 
 // calculates horizontal change on one cell independent of boundary type
-static double calcHorizontalChange(Grid &grid, int &row, int &col) {
+static inline double calcHorizontalChange(Grid &grid, int &row, int &col) {
 
-  double result = calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
-                                     grid.getAlphaX()(row, col)) *
-                      grid.getConcentrations()(row, col + 1) -
-                  (calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
-                                      grid.getAlphaX()(row, col)) +
-                   calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
-                                      grid.getAlphaX()(row, col))) *
-                      grid.getConcentrations()(row, col) +
-                  calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
-                                     grid.getAlphaX()(row, col)) *
-                      grid.getConcentrations()(row, col - 1);
-
-  return result;
+  return calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
+                            grid.getAlphaX()(row, col)) *
+             grid.getConcentrations()(row, col + 1) -
+         (calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
+                             grid.getAlphaX()(row, col)) +
+          calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
+                             grid.getAlphaX()(row, col))) *
+             grid.getConcentrations()(row, col) +
+         calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
+                            grid.getAlphaX()(row, col)) *
+             grid.getConcentrations()(row, col - 1);
 }
 
 // calculates vertical change on one cell independent of boundary type
-static double calcVerticalChange(Grid &grid, int &row, int &col) {
+static inline double calcVerticalChange(Grid &grid, int &row, int &col) {
 
-  double result = calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
-                                     grid.getAlphaY()(row, col)) *
-                      grid.getConcentrations()(row + 1, col) -
-                  (calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
-                                      grid.getAlphaY()(row, col)) +
-                   calcAlphaIntercell(grid.getAlphaY()(row - 1, col),
-                                      grid.getAlphaY()(row, col))) *
-                      grid.getConcentrations()(row, col) +
-                  calcAlphaIntercell(grid.getAlphaY()(row - 1, col),
-                                     grid.getAlphaY()(row, col)) *
-                      grid.getConcentrations()(row - 1, col);
-
-  return result;
+  return calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
+                            grid.getAlphaY()(row, col)) *
+             grid.getConcentrations()(row + 1, col) -
+         (calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
+                             grid.getAlphaY()(row, col)) +
+          calcAlphaIntercell(grid.getAlphaY()(row - 1, col),
+                             grid.getAlphaY()(row, col))) *
+             grid.getConcentrations()(row, col) +
+         calcAlphaIntercell(grid.getAlphaY()(row - 1, col),
+                            grid.getAlphaY()(row, col)) *
+             grid.getConcentrations()(row - 1, col);
 }
 
 // calculates horizontal change on one cell with a constant left boundary
-static double calcHorizontalChangeLeftBoundaryConstant(Grid &grid, Boundary &bc,
-                                                       int &row, int &col) {
+static inline double calcHorizontalChangeLeftBoundaryConstant(Grid &grid,
+                                                              Boundary &bc,
+                                                              int &row,
+                                                              int &col) {
 
-  double result = calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
-                                     grid.getAlphaX()(row, col)) *
-                      grid.getConcentrations()(row, col + 1) -
-                  (calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
-                                      grid.getAlphaX()(row, col)) +
-                   2 * grid.getAlphaX()(row, col)) *
-                      grid.getConcentrations()(row, col) +
-                  2 * grid.getAlphaX()(row, col) *
-                      bc.getBoundaryElementValue(BC_SIDE_LEFT, row);
-
-  return result;
+  return calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
+                            grid.getAlphaX()(row, col)) *
+             grid.getConcentrations()(row, col + 1) -
+         (calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
+                             grid.getAlphaX()(row, col)) +
+          2 * grid.getAlphaX()(row, col)) *
+             grid.getConcentrations()(row, col) +
+         2 * grid.getAlphaX()(row, col) *
+             bc.getBoundaryElementValue(BC_SIDE_LEFT, row);
 }
 
 // calculates horizontal change on one cell with a closed left boundary
-static double calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row,
-                                                     int &col) {
+static inline double
+calcHorizontalChangeLeftBoundaryClosed(Grid &grid, int &row, int &col) {
 
-  double result = calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
-                                     grid.getAlphaX()(row, col)) *
-                  (grid.getConcentrations()(row, col + 1) -
-                   grid.getConcentrations()(row, col));
-
-  return result;
+  return calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
+                            grid.getAlphaX()(row, col)) *
+         (grid.getConcentrations()(row, col + 1) -
+          grid.getConcentrations()(row, col));
 }
 
 // checks boundary condition type for a cell on the left edge of grid
-static double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc,
-                                               int &row, int &col) {
+static inline double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc,
+                                                      int &row, int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CONSTANT) {
     return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CLOSED) {
@@ -96,38 +90,35 @@ static double calcHorizontalChangeLeftBoundary(Grid &grid, Boundary &bc,
 }
 
 // calculates horizontal change on one cell with a constant right boundary
-static double calcHorizontalChangeRightBoundaryConstant(Grid &grid,
-                                                        Boundary &bc, int &row,
-                                                        int &col) {
+static inline double calcHorizontalChangeRightBoundaryConstant(Grid &grid,
+                                                               Boundary &bc,
+                                                               int &row,
+                                                               int &col) {
 
-  double result = 2 * grid.getAlphaX()(row, col) *
-                      bc.getBoundaryElementValue(BC_SIDE_RIGHT, row) -
-                  (calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
-                                      grid.getAlphaX()(row, col)) +
-                   2 * grid.getAlphaX()(row, col)) *
-                      grid.getConcentrations()(row, col) +
-                  calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
-                                     grid.getAlphaX()(row, col)) *
-                      grid.getConcentrations()(row, col - 1);
-
-  return result;
+  return 2 * grid.getAlphaX()(row, col) *
+             bc.getBoundaryElementValue(BC_SIDE_RIGHT, row) -
+         (calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
+                             grid.getAlphaX()(row, col)) +
+          2 * grid.getAlphaX()(row, col)) *
+             grid.getConcentrations()(row, col) +
+         calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
+                            grid.getAlphaX()(row, col)) *
+             grid.getConcentrations()(row, col - 1);
 }
 
 // calculates horizontal change on one cell with a closed right boundary
-static double calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row,
-                                                      int &col) {
+static inline double
+calcHorizontalChangeRightBoundaryClosed(Grid &grid, int &row, int &col) {
 
-  double result = -(calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
-                                       grid.getAlphaX()(row, col)) *
-                    (grid.getConcentrations()(row, col) -
-                     grid.getConcentrations()(row, col - 1)));
-
-  return result;
+  return -(calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
+                              grid.getAlphaX()(row, col)) *
+           (grid.getConcentrations()(row, col) -
+            grid.getConcentrations()(row, col - 1)));
 }
 
 // checks boundary condition type for a cell on the right edge of grid
-static double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc,
-                                                int &row, int &col) {
+static inline double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc,
+                                                       int &row, int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CONSTANT) {
     return calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CLOSED) {
@@ -138,37 +129,34 @@ static double calcHorizontalChangeRightBoundary(Grid &grid, Boundary &bc,
 }
 
 // calculates vertical change on one cell with a constant top boundary
-static double calcVerticalChangeTopBoundaryConstant(Grid &grid, Boundary &bc,
-                                                    int &row, int &col) {
+static inline double calcVerticalChangeTopBoundaryConstant(Grid &grid,
+                                                           Boundary &bc,
+                                                           int &row, int &col) {
 
-  double result = calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
-                                     grid.getAlphaY()(row, col)) *
-                      grid.getConcentrations()(row + 1, col) -
-                  (calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
-                                      grid.getAlphaY()(row, col)) +
-                   2 * grid.getAlphaY()(row, col)) *
-                      grid.getConcentrations()(row, col) +
-                  2 * grid.getAlphaY()(row, col) *
-                      bc.getBoundaryElementValue(BC_SIDE_TOP, col);
-
-  return result;
+  return calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
+                            grid.getAlphaY()(row, col)) *
+             grid.getConcentrations()(row + 1, col) -
+         (calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
+                             grid.getAlphaY()(row, col)) +
+          2 * grid.getAlphaY()(row, col)) *
+             grid.getConcentrations()(row, col) +
+         2 * grid.getAlphaY()(row, col) *
+             bc.getBoundaryElementValue(BC_SIDE_TOP, col);
 }
 
 // calculates vertical change on one cell with a closed top boundary
-static double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row,
-                                                  int &col) {
+static inline double calcVerticalChangeTopBoundaryClosed(Grid &grid, int &row,
+                                                         int &col) {
 
-  double result = calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
-                                     grid.getConcentrations()(row, col)) *
-                  (grid.getConcentrations()(row + 1, col) -
-                   grid.getConcentrations()(row, col));
-
-  return result;
+  return calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
+                            grid.getConcentrations()(row, col)) *
+         (grid.getConcentrations()(row + 1, col) -
+          grid.getConcentrations()(row, col));
 }
 
 // checks boundary condition type for a cell on the top edge of grid
-static double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row,
-                                            int &col) {
+static inline double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc,
+                                                   int &row, int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CONSTANT) {
     return calcVerticalChangeTopBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CLOSED) {
@@ -179,37 +167,35 @@ static double calcVerticalChangeTopBoundary(Grid &grid, Boundary &bc, int &row,
 }
 
 // calculates vertical change on one cell with a constant bottom boundary
-static double calcVerticalChangeBottomBoundaryConstant(Grid &grid, Boundary &bc,
-                                                       int &row, int &col) {
+static inline double calcVerticalChangeBottomBoundaryConstant(Grid &grid,
+                                                              Boundary &bc,
+                                                              int &row,
+                                                              int &col) {
 
-  double result = 2 * grid.getAlphaY()(row, col) *
-                      bc.getBoundaryElementValue(BC_SIDE_BOTTOM, col) -
-                  (calcAlphaIntercell(grid.getAlphaY()(row, col),
-                                      grid.getAlphaY()(row - 1, col)) +
-                   2 * grid.getAlphaY()(row, col)) *
-                      grid.getConcentrations()(row, col) +
-                  calcAlphaIntercell(grid.getAlphaY()(row, col),
-                                     grid.getAlphaY()(row - 1, col)) *
-                      grid.getConcentrations()(row - 1, col);
-
-  return result;
+  return 2 * grid.getAlphaY()(row, col) *
+             bc.getBoundaryElementValue(BC_SIDE_BOTTOM, col) -
+         (calcAlphaIntercell(grid.getAlphaY()(row, col),
+                             grid.getAlphaY()(row - 1, col)) +
+          2 * grid.getAlphaY()(row, col)) *
+             grid.getConcentrations()(row, col) +
+         calcAlphaIntercell(grid.getAlphaY()(row, col),
+                            grid.getAlphaY()(row - 1, col)) *
+             grid.getConcentrations()(row - 1, col);
 }
 
 // calculates vertical change on one cell with a closed bottom boundary
-static double calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row,
-                                                     int &col) {
+static inline double
+calcVerticalChangeBottomBoundaryClosed(Grid &grid, int &row, int &col) {
 
-  double result = -(calcAlphaIntercell(grid.getAlphaY()(row, col),
-                                       grid.getAlphaY()(row - 1, col)) *
-                    (grid.getConcentrations()(row, col) -
-                     grid.getConcentrations()(row - 1, col)));
-
-  return result;
+  return -(calcAlphaIntercell(grid.getAlphaY()(row, col),
+                              grid.getAlphaY()(row - 1, col)) *
+           (grid.getConcentrations()(row, col) -
+            grid.getConcentrations()(row - 1, col)));
 }
 
 // checks boundary condition type for a cell on the bottom edge of grid
-static double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc,
-                                               int &row, int &col) {
+static inline double calcVerticalChangeBottomBoundary(Grid &grid, Boundary &bc,
+                                                      int &row, int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CONSTANT) {
     return calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CLOSED) {
@@ -265,7 +251,8 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep,
   double deltaCol = grid.getDeltaCol();
 
   // matrix for concentrations at time t+1
-  Eigen::MatrixXd concentrations_t1 = Eigen::MatrixXd::Constant(rowMax, colMax, 0);
+  Eigen::MatrixXd concentrations_t1 =
+      Eigen::MatrixXd::Constant(rowMax, colMax, 0);
 
   // inner cells
   // these are independent of the boundary condition type
