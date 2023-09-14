@@ -1,4 +1,5 @@
-#include "TestUtils.cpp"
+#include "TestUtils.hpp"
+
 #include <doctest/doctest.h>
 #include <stdio.h>
 #include <string>

@@ -1,4 +1,5 @@
-#include <../src/FTCS.cpp>
+#include <TugUtils.hpp>
+
 #include <doctest/doctest.h>
 #include <limits>
 

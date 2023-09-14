@@ -5,7 +5,9 @@
  *
  */
 
-#include "TugUtils.cpp"
+#include "Schemes.hpp"
+#include "TugUtils.hpp"
+
 #include <cstddef>
 #include <iostream>
 #include <omp.h>
@@ -377,7 +379,7 @@ static void FTCS_2D(Grid &grid, Boundary &bc, double &timestep,
 }
 
 // entry point; differentiate between 1D and 2D grid
-static void FTCS(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
+void FTCS(Grid &grid, Boundary &bc, double &timestep, int &numThreads) {
   if (grid.getDim() == 1) {
     FTCS_1D(grid, bc, timestep);
   } else if (grid.getDim() == 2) {

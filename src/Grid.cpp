@@ -1,4 +1,5 @@
-#include "TugUtils.cpp"
+#include "TugUtils.hpp"
+
 #include <iostream>
 #include <tug/Grid.hpp>
 

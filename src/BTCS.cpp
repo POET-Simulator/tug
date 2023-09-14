@@ -7,9 +7,12 @@
  *
  */
 
-#include "FTCS.cpp"
+#include "Schemes.hpp"
+#include "TugUtils.hpp"
+
 #include <omp.h>
 #include <tug/Boundary.hpp>
+#include <tug/Grid.hpp>
 
 #define NUM_THREADS_BTCS 10
 
@@ -434,7 +437,7 @@ static void BTCS_2D(Grid &grid, Boundary &bc, double timestep,
 }
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
-static void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
+void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
   } else if (grid.getDim() == 2) {
@@ -446,8 +449,7 @@ static void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
 }
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
-static void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep,
-                        int numThreads) {
+void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep, int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
   } else if (grid.getDim() == 2) {

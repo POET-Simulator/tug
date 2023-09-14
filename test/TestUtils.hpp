@@ -9,7 +9,7 @@
 using namespace std;
 using namespace Eigen;
 
-MatrixXd CSV2Eigen(string file2Convert) {
+inline MatrixXd CSV2Eigen(string file2Convert) {
 
   vector<double> matrixEntries;
 
@@ -37,11 +37,11 @@ MatrixXd CSV2Eigen(string file2Convert) {
       matrixEntries.size() / matrixRowNumber);
 }
 
-bool checkSimilarity(MatrixXd a, MatrixXd b, double precision = 1e-5) {
+inline bool checkSimilarity(MatrixXd a, MatrixXd b, double precision = 1e-5) {
   return a.isApprox(b, precision);
 }
 
-bool checkSimilarityV2(MatrixXd a, MatrixXd b, double maxDiff) {
+inline bool checkSimilarityV2(MatrixXd a, MatrixXd b, double maxDiff) {
 
   MatrixXd diff = a - b;
   double maxCoeff = diff.maxCoeff();

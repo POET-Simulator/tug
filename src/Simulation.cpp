@@ -1,19 +1,17 @@
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
 #include <omp.h>
 #include <stdexcept>
 #include <string>
+
 #include <tug/Simulation.hpp>
 
-#include <fstream>
+#include "TugUtils.hpp"
 
 #ifndef SIMULATION_H_
 #define SIMULATION_H_
-
-#include "BTCSv2.cpp"
-
-using namespace std;
 
 Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach)
     : grid(grid), bc(bc) {
