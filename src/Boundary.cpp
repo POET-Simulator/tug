@@ -1,20 +1,13 @@
 #include "TugUtils.hpp"
 
-#include <iostream>
-#include <omp.h>
+#include <cstddef>
 #include <stdexcept>
 #include <tug/Boundary.hpp>
 
-BoundaryElement::BoundaryElement() {
+BoundaryElement::BoundaryElement() {}
 
-  this->type = BC_TYPE_CLOSED;
-  this->value = -1; // without meaning in closed case
-}
-
-BoundaryElement::BoundaryElement(double value) {
-  this->type = BC_TYPE_CONSTANT;
-  this->value = value;
-}
+BoundaryElement::BoundaryElement(double _value)
+    : value(_value), type(BC_TYPE_CONSTANT) {}
 
 void BoundaryElement::setType(BC_TYPE type) { this->type = type; }
 
@@ -64,12 +57,9 @@ void Boundary::setBoundarySideClosed(BC_SIDE side) {
     }
   }
 
-  int n;
-  if (side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT) {
-    n = grid.getRow();
-  } else {
-    n = grid.getCol();
-  }
+  const bool is_vertical = side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT;
+  const int n = is_vertical ? grid.getRow() : grid.getCol();
+
   this->boundaries[side] = std::vector<BoundaryElement>(n, BoundaryElement());
 }
 
@@ -82,13 +72,11 @@ void Boundary::setBoundarySideConstant(BC_SIDE side, double value) {
     }
   }
 
-  int n;
-  if (side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT) {
-    n = grid.getRow();
-  } else {
-    n = grid.getCol();
-  }
-  this->boundaries[side] = std::vector<BoundaryElement>(n, BoundaryElement(value));
+  const bool is_vertical = side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT;
+  const int n = is_vertical ? grid.getRow() : grid.getCol();
+
+  this->boundaries[side] =
+      std::vector<BoundaryElement>(n, BoundaryElement(value));
 }
 
 void Boundary::setBoundaryElementClosed(BC_SIDE side, int index) {
@@ -121,7 +109,7 @@ const std::vector<BoundaryElement> Boundary::getBoundarySide(BC_SIDE side) {
 }
 
 Eigen::VectorXd Boundary::getBoundarySideValues(BC_SIDE side) {
-  int length = boundaries[side].size();
+  const std::size_t length = boundaries[side].size();
   Eigen::VectorXd values(length);
 
   for (int i = 0; i < length; i++) {

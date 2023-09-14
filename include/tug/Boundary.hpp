@@ -81,8 +81,8 @@ public:
   double getValue();
 
 private:
-  BC_TYPE type;
-  double value;
+  BC_TYPE type{BC_TYPE_CLOSED};
+  double value{-1};
 };
 
 /**
