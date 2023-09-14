@@ -211,4 +211,4 @@ private:
       boundaries; // Vector with Boundary Element information
 };
 
-#endif
+#endif // BOUNDARY_H_

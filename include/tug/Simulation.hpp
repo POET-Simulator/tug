@@ -5,8 +5,12 @@
  * options. Simulation object also holds a predefined Grid and Boundary object.
  *
  */
+
+#ifndef SIMULATION_H_
+#define SIMULATION_H_
+
 #include "Boundary.hpp"
-#include <ios>
+#include "Grid.hpp"
 
 using namespace std;
 
@@ -220,3 +224,5 @@ private:
   APPROACH approach;
   SOLVER solver;
 };
+
+#endif // SIMULATION_H_

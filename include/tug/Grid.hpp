@@ -1,3 +1,6 @@
+#ifndef GRID_H_
+#define GRID_H_
+
 /**
  * @file Grid.hpp
  * @brief API of Grid class, that holds a matrix with concenctrations and a
@@ -174,3 +177,5 @@ private:
   MatrixXd alphaX;         // Matrix holding alpha coefficients in x-direction
   MatrixXd alphaY;         // Matrix holding alpha coefficients in y-direction
 };
+
+#endif // GRID_H_
