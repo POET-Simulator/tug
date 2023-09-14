@@ -43,7 +43,7 @@ public:
    * must have correct dimensions as defined in row and col. (Or length, in 1D
    * case).
    */
-  void setConcentrations(Eigen::MatrixXd concentrations);
+  void setConcentrations(const Eigen::MatrixXd &concentrations);
 
   /**
    * @brief Gets the concentrations matrix for a Grid.
@@ -51,7 +51,7 @@ public:
    * @return MatrixXd An Eigen3 matrix holding the concentrations and having the
    *                  same dimensions as the grid.
    */
-  const Eigen::MatrixXd getConcentrations();
+  const Eigen::MatrixXd &getConcentrations() { return this->concentrations; }
 
   /**
    * @brief Set the alpha coefficients of a 1D-Grid. Grid must be one
@@ -60,7 +60,7 @@ public:
    * @param alpha An Eigen3 MatrixXd with 1 row holding the alpha coefficients.
    * Matrix columns must have same size as length of grid.
    */
-  void setAlpha(Eigen::MatrixXd alpha);
+  void setAlpha(const Eigen::MatrixXd &alpha);
 
   /**
    * @brief Set the alpha coefficients of a 2D-Grid. Grid must be two
@@ -71,7 +71,7 @@ public:
    * @param alphaY An Eigen3 MatrixXd holding the alpha coefficients in
    * y-direction. Matrix must be of same size as the grid.
    */
-  void setAlpha(Eigen::MatrixXd alphaX, Eigen::MatrixXd alphaY);
+  void setAlpha(const Eigen::MatrixXd &alphaX, const Eigen::MatrixXd &alphaY);
 
   /**
    * @brief Gets the matrix of alpha coefficients of a 1D-Grid. Grid must be one
@@ -79,7 +79,7 @@ public:
    *
    * @return MatrixXd A matrix with 1 row holding the alpha coefficients.
    */
-  const Eigen::MatrixXd getAlpha();
+  const Eigen::MatrixXd &getAlpha();
 
   /**
    * @brief Gets the matrix of alpha coefficients in x-direction of a 2D-Grid.
@@ -87,7 +87,7 @@ public:
    *
    * @return MatrixXd A matrix holding the alpha coefficients in x-direction.
    */
-  const Eigen::MatrixXd getAlphaX();
+  const Eigen::MatrixXd &getAlphaX();
 
   /**
    * @brief Gets the matrix of alpha coefficients in y-direction of a 2D-Grid.
@@ -95,7 +95,7 @@ public:
    *
    * @return MatrixXd A matrix holding the alpha coefficients in y-direction.
    */
-  const Eigen::MatrixXd getAlphaY();
+  const Eigen::MatrixXd &getAlphaY();
 
   /**
    * @brief Gets the dimensions of the grid.
@@ -165,12 +165,12 @@ public:
 
 private:
   int col;                        // number of grid columns
-  int row;                        // number of grid rows
+  int row{1};                     // number of grid rows
   int dim;                        // 1D or 2D
   double domainCol;               // number of domain columns
-  double domainRow;               // number of domain rows
+  double domainRow{0};            // number of domain rows
   double deltaCol;                // delta in x-direction (between columns)
-  double deltaRow;                // delta in y-direction (between rows)
+  double deltaRow{0};             // delta in y-direction (between rows)
   Eigen::MatrixXd concentrations; // Matrix holding grid concentrations
   Eigen::MatrixXd alphaX; // Matrix holding alpha coefficients in x-direction
   Eigen::MatrixXd alphaY; // Matrix holding alpha coefficients in y-direction

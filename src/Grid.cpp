@@ -3,42 +3,38 @@
 #include <iostream>
 #include <tug/Grid.hpp>
 
-Grid::Grid(int length) {
+constexpr double MAT_INIT_VAL = 0;
+
+Grid::Grid(int length) : col(length), domainCol(length) {
   if (length <= 3) {
     throw_invalid_argument(
         "Given grid length too small. Must be greater than 3.");
   }
 
-  this->row = 1;
-  this->col = length;
-  this->domainCol = length; // default: same size as length
-  this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
   this->dim = 1;
+  this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
 
-  this->concentrations = Eigen::MatrixXd::Constant(1, col, 20);
-  this->alphaX = Eigen::MatrixXd::Constant(1, col, 1);
+  this->concentrations = Eigen::MatrixXd::Constant(1, col, MAT_INIT_VAL);
+  this->alphaX = Eigen::MatrixXd::Constant(1, col, MAT_INIT_VAL);
 }
 
-Grid::Grid(int row, int col) {
+Grid::Grid(int _row, int _col)
+    : row(_row), col(_col), domainRow(_row), domainCol(_col) {
   if (row <= 3 || col <= 3) {
     throw_invalid_argument(
         "Given grid dimensions too small. Must each be greater than 3.");
   }
 
-  this->row = row;
-  this->col = col;
-  this->domainRow = row; // default: same size as row
-  this->domainCol = col; // default: same size as col
+  this->dim = 2;
   this->deltaRow = double(this->domainRow) / double(this->row); // -> 1
   this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
-  this->dim = 2;
 
-  this->concentrations = Eigen::MatrixXd::Constant(row, col, 20);
-  this->alphaX = Eigen::MatrixXd::Constant(row, col, 1);
-  this->alphaY = Eigen::MatrixXd::Constant(row, col, 1);
+  this->concentrations = Eigen::MatrixXd::Constant(row, col, MAT_INIT_VAL);
+  this->alphaX = Eigen::MatrixXd::Constant(row, col, MAT_INIT_VAL);
+  this->alphaY = Eigen::MatrixXd::Constant(row, col, MAT_INIT_VAL);
 }
 
-void Grid::setConcentrations(Eigen::MatrixXd concentrations) {
+void Grid::setConcentrations(const Eigen::MatrixXd &concentrations) {
   if (concentrations.rows() != this->row ||
       concentrations.cols() != this->col) {
     throw_invalid_argument(
@@ -48,9 +44,7 @@ void Grid::setConcentrations(Eigen::MatrixXd concentrations) {
   this->concentrations = concentrations;
 }
 
-const Eigen::MatrixXd Grid::getConcentrations() { return this->concentrations; }
-
-void Grid::setAlpha(Eigen::MatrixXd alpha) {
+void Grid::setAlpha(const Eigen::MatrixXd &alpha) {
   if (dim != 1) {
     throw_invalid_argument("Grid is not one dimensional, you should probably "
                            "use 2D setter function!");
@@ -63,7 +57,8 @@ void Grid::setAlpha(Eigen::MatrixXd alpha) {
   this->alphaX = alpha;
 }
 
-void Grid::setAlpha(Eigen::MatrixXd alphaX, Eigen::MatrixXd alphaY) {
+void Grid::setAlpha(const Eigen::MatrixXd &alphaX,
+                    const Eigen::MatrixXd &alphaY) {
   if (dim != 2) {
     throw_invalid_argument("Grid is not two dimensional, you should probably "
                            "use 1D setter function!");
@@ -81,7 +76,7 @@ void Grid::setAlpha(Eigen::MatrixXd alphaX, Eigen::MatrixXd alphaY) {
   this->alphaY = alphaY;
 }
 
-const Eigen::MatrixXd Grid::getAlpha() {
+const Eigen::MatrixXd &Grid::getAlpha() {
   if (dim != 1) {
     throw_invalid_argument("Grid is not one dimensional, you should probably "
                            "use either getAlphaX() or getAlphaY()!");
@@ -90,7 +85,7 @@ const Eigen::MatrixXd Grid::getAlpha() {
   return this->alphaX;
 }
 
-const Eigen::MatrixXd Grid::getAlphaX() {
+const Eigen::MatrixXd &Grid::getAlphaX() {
   if (dim != 2) {
     throw_invalid_argument(
         "Grid is not two dimensional, you should probably use getAlpha()!");
@@ -99,7 +94,7 @@ const Eigen::MatrixXd Grid::getAlphaX() {
   return this->alphaX;
 }
 
-const Eigen::MatrixXd Grid::getAlphaY() {
+const Eigen::MatrixXd &Grid::getAlphaY() {
   if (dim != 2) {
     throw_invalid_argument(
         "Grid is not two dimensional, you should probably use getAlpha()!");
