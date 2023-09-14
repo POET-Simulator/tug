@@ -2,16 +2,15 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <omp.h>
 #include <stdexcept>
 #include <string>
 
 #include <tug/Simulation.hpp>
 
+#include "Schemes.hpp"
 #include "TugUtils.hpp"
-
-#ifndef SIMULATION_H_
-#define SIMULATION_H_
 
 Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach)
     : grid(grid), bc(bc) {
@@ -336,5 +335,3 @@ void Simulation::run() {
          << milliseconds.count() << "ms" << endl;
   }
 }
-
-#endif
