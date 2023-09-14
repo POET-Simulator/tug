@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <omp.h>
+#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -12,20 +12,8 @@
 #include "Schemes.hpp"
 #include "TugUtils.hpp"
 
-Simulation::Simulation(Grid &grid, Boundary &bc, APPROACH approach)
-    : grid(grid), bc(bc) {
-
-  this->approach = approach;
-  this->solver = THOMAS_ALGORITHM_SOLVER;
-  this->timestep = -1; // error per default; needs to be set
-  this->iterations = -1;
-  this->innerIterations = 1;
-  this->numThreads = omp_get_num_procs() - 1;
-
-  this->csv_output = CSV_OUTPUT_OFF;
-  this->console_output = CONSOLE_OUTPUT_OFF;
-  this->time_measure = TIME_MEASURE_OFF;
-}
+Simulation::Simulation(Grid &_grid, Boundary &_bc, APPROACH _approach)
+    : grid(_grid), bc(_bc), approach(_approach) {}
 
 void Simulation::setOutputCSV(CSV_OUTPUT csv_output) {
   if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
@@ -59,30 +47,31 @@ void Simulation::setTimestep(double timestep) {
 
   if (approach == FTCS_APPROACH || approach == CRANK_NICOLSON_APPROACH) {
 
-    double deltaRowSquare;
-    double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-    double minDeltaSquare;
-    double maxAlphaX, maxAlphaY, maxAlpha;
-    std::string dim;
+    const double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+    // will be 0 if 1D, else ...
+    const double deltaRowSquare = grid.getDim() != 1
+                                      ? grid.getDeltaRow() * grid.getDeltaRow()
+                                      : deltaColSquare;
+    const double minDeltaSquare =
+        (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
+
+    double maxAlpha = std::numeric_limits<double>::quiet_NaN();
+
+    // determine maximum alpha
     if (grid.getDim() == 2) {
-      dim = "2D";
 
-      deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-
-      minDeltaSquare =
-          (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
-      maxAlphaX = grid.getAlphaX().maxCoeff();
-      maxAlphaY = grid.getAlphaY().maxCoeff();
+      const double maxAlphaX = grid.getAlphaX().maxCoeff();
+      const double maxAlphaY = grid.getAlphaY().maxCoeff();
       maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
 
     } else if (grid.getDim() == 1) {
-      dim = "1D";
-      minDeltaSquare = deltaColSquare;
       maxAlpha = grid.getAlpha().maxCoeff();
 
     } else {
       throw_invalid_argument("Critical error: Undefined number of dimensions!");
     }
+
+    const std::string dim = std::to_string(grid.getDim()) + "D";
 
     // Courant-Friedrichs-Lewy condition
     double cfl = minDeltaSquare / (4 * maxAlpha);
@@ -91,12 +80,11 @@ void Simulation::setTimestep(double timestep) {
     // not work in some cases double CFL_Wiki = 1 / (4 * maxAlpha *
     // ((1/deltaRowSquare) + (1/deltaColSquare)));
 
-    std::string approachPrefix =
-        (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
+    const std::string &approachPrefix = this->approach_names[approach];
     std::cout << approachPrefix << "_" << dim << " :: CFL condition: " << cfl
-         << std::endl;
+              << std::endl;
     std::cout << approachPrefix << "_" << dim << " :: required dt=" << timestep
-         << std::endl;
+              << std::endl;
 
     if (timestep > cfl) {
 
@@ -104,18 +92,19 @@ void Simulation::setTimestep(double timestep) {
       this->timestep = timestep / (double)innerIterations;
 
       std::cerr << "Warning :: Timestep was adjusted, because of stability "
-              "conditions. Time duration was approximately preserved by "
-              "adjusting internal number of iterations."
-           << std::endl;
+                   "conditions. Time duration was approximately preserved by "
+                   "adjusting internal number of iterations."
+                << std::endl;
       std::cout << approachPrefix << "_" << dim << " :: Required "
-           << this->innerIterations
-           << " inner iterations with dt=" << this->timestep << std::endl;
+                << this->innerIterations
+                << " inner iterations with dt=" << this->timestep << std::endl;
 
     } else {
 
       this->timestep = timestep;
       std::cout << approachPrefix << "_" << dim
-           << " :: No inner iterations required, dt=" << timestep << std::endl;
+                << " :: No inner iterations required, dt=" << timestep
+                << std::endl;
     }
 
   } else {
@@ -134,10 +123,11 @@ void Simulation::setIterations(int iterations) {
 
 void Simulation::setSolver(SOLVER solver) {
   if (this->approach == FTCS_APPROACH) {
-    std::cerr << "Warning: Solver was set, but FTCS approach initialized. Setting "
-            "the solver "
-            "is thus without effect."
-         << std::endl;
+    std::cerr
+        << "Warning: Solver was set, but FTCS approach initialized. Setting "
+           "the solver "
+           "is thus without effect."
+        << std::endl;
   }
 
   this->solver = solver;
@@ -169,8 +159,7 @@ std::string Simulation::createCSVfile() {
   std::string appendIdentString;
 
   // string approachString = (approach == 0) ? "FTCS" : "BTCS";
-  std::string approachString =
-      (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
+  const std::string &approachString = this->approach_names[approach];
   std::string row = std::to_string(grid.getRow());
   std::string col = std::to_string(grid.getCol());
   std::string numIterations = std::to_string(iterations);
@@ -193,7 +182,8 @@ std::string Simulation::createCSVfile() {
   // adds lines at the beginning of verbose output csv that represent the
   // boundary conditions and their values -1 in case of closed boundary
   if (csv_output == CSV_OUTPUT_XTREME) {
-    Eigen::IOFormat one_row(Eigen::StreamPrecision, Eigen::DontAlignCols, "", " ");
+    Eigen::IOFormat one_row(Eigen::StreamPrecision, Eigen::DontAlignCols, "",
+                            " ");
     file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row)
          << std::endl; // boundary left
     file << bc.getBoundarySideValues(BC_SIDE_RIGHT).format(one_row)
@@ -210,7 +200,7 @@ std::string Simulation::createCSVfile() {
   return filename;
 }
 
-void Simulation::printConcentrationsCSV(std::string filename) {
+void Simulation::printConcentrationsCSV(const std::string &filename) {
   std::ofstream file;
 
   file.open(filename, std::ios_base::app);
@@ -328,10 +318,9 @@ void Simulation::run() {
     printConcentrationsCSV(filename);
   }
   if (this->time_measure > TIME_MEASURE_OFF) {
-    std::string approachString =
-        (approach == 0) ? "FTCS" : ((approach == 1) ? "BTCS" : "CRNI");
-    std::string dimString = (grid.getDim() == 1) ? "-1D" : "-2D";
+    const std::string &approachString = this->approach_names[approach];
+    const std::string dimString = std::to_string(grid.getDim()) + "D";
     std::cout << approachString << dimString << ":: run() finished in "
-         << milliseconds.count() << "ms" << std::endl;
+              << milliseconds.count() << "ms" << std::endl;
   }
 }

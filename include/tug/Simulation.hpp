@@ -11,6 +11,14 @@
 
 #include "Boundary.hpp"
 #include "Grid.hpp"
+#include <string>
+#include <vector>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_num_procs() 1
+#endif
 
 /**
  * @brief Enum defining the two implemented solution approaches.
@@ -200,7 +208,7 @@ public:
    * @param filename Name of the file to which the concentration values are
    *                 to be written.
    */
-  void printConcentrationsCSV(std::string filename);
+  void printConcentrationsCSV(const std::string &filename);
 
   /**
    * @brief Method starts the simulation process with the previously set
@@ -209,18 +217,20 @@ public:
   void run();
 
 private:
-  double timestep;
-  int iterations;
-  int innerIterations;
-  int numThreads;
-  CSV_OUTPUT csv_output;
-  CONSOLE_OUTPUT console_output;
-  TIME_MEASURE time_measure;
+  double timestep{-1};
+  int iterations{-1};
+  int innerIterations{1};
+  int numThreads{omp_get_num_procs()};
+  CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
+  CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT_OFF};
+  TIME_MEASURE time_measure{TIME_MEASURE_OFF};
 
   Grid &grid;
   Boundary &bc;
   APPROACH approach;
-  SOLVER solver;
+  SOLVER solver{THOMAS_ALGORITHM_SOLVER};
+
+  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
 };
 
 #endif // SIMULATION_H_
