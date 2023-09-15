@@ -22,7 +22,7 @@ subprocess.call('doxygen Doxyfile.in', shell=True)
 # -- Project information -----------------------------------------------------
 
 project = 'TUG'
-copyright = 'MIT'
+copyright = 'GPL2'
 author = 'Philipp Ungrund, Hannes Signer'
 
 

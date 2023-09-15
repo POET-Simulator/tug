@@ -60,7 +60,7 @@ need to manually link your application/library to =tug=.
    into according =CMakeLists.txt= file:
 
    #+BEGIN_SRC
-   target_link_libraries(your_libapp tug)
+   target_link_libraries(<your_target> tug)
    #+END_SRC
 
 6. Build your application/library with =CMake=.
@@ -121,6 +121,3 @@ If you can't get access to this =gitlab= instance:
    Also provide us the SHA of the commit you've downloaded.
 
 Thank you for your contributions in advance!
-
-* License
-TODO?

@@ -33,7 +33,15 @@ endif()
 
 option(TUG_ENABLE_TESTING
   "Run tests after succesfull compilation"
-  ON)
+  OFF)
+
+option(TUG_HANNESPHILIPP_EXAMPLES
+  "Compile example applications"
+  OFF)
+
+option(TUG_NAAICE_EXAMPLE
+  "Enables NAAICE examples with export of CSV files"
+  OFF)
 
 add_subdirectory(src)
 
@@ -41,9 +49,9 @@ if(TUG_ENABLE_TESTING)
   add_subdirectory(test)
 endif()
 
-add_subdirectory(examples)
-
-option(TUG_NAAICE_EXAMPLE "Enables NAAICE examples with export of CSV files" OFF)
+if(TUG_HANNESPHILIPP_EXAMPLES)
+  add_subdirectory(examples)
+endif()
 
 if (TUG_NAAICE_EXAMPLE)
   add_subdirectory(naaice)
