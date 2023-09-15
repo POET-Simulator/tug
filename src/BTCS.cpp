@@ -22,6 +22,8 @@
 #define omp_get_thread_num() 0
 #endif
 
+namespace tug {
+
 // calculates coefficient for boundary in constant case
 template <class T>
 constexpr std::pair<T, T> calcBoundaryCoeffConstant(T alpha_center,
@@ -436,3 +438,4 @@ template void BTCS_LU(Grid<double> &grid, Boundary<double> &bc, double timestep,
                       int numThreads);
 template void BTCS_LU(Grid<float> &grid, Boundary<float> &bc, float timestep,
                       int numThreads);
+} // namespace tug

@@ -25,6 +25,8 @@
 #define omp_get_num_procs() 1
 #endif
 
+namespace tug {
+
 /**
  * @brief Enum defining the two implemented solution approaches.
  *
@@ -343,5 +345,5 @@ private:
 
   const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
 };
-
+} // namespace tug
 #endif // SIMULATION_H_

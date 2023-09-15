@@ -6,6 +6,8 @@
 #include <typeinfo>
 
 using namespace std;
+using namespace tug;
+
 TEST_CASE("BoundaryElement") {
 
   SUBCASE("Closed case") {

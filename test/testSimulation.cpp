@@ -10,6 +10,7 @@
 
 using namespace Eigen;
 using namespace std;
+using namespace tug;
 
 static Grid64 setupSimulation(APPROACH approach, double timestep,
                             int iterations) {

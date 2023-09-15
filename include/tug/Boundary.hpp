@@ -12,6 +12,8 @@
 #include <cstdint>
 #include <exception>
 
+namespace tug {
+
 /**
  * @brief Enum defining the two implemented boundary conditions.
  *
@@ -191,7 +193,8 @@ public:
   void setBoundaryElemenClosed(BC_SIDE side, int index) {
     // tests whether the index really points to an element of the boundary side.
     if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument("Index is selected either too large or too small.");
+      throw std::invalid_argument(
+          "Index is selected either too large or too small.");
     }
     this->boundaries[side][index].setType(BC_TYPE_CLOSED);
   }
@@ -211,7 +214,8 @@ public:
   void setBoundaryElementConstant(BC_SIDE side, int index, double value) {
     // tests whether the index really points to an element of the boundary side.
     if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument("Index is selected either too large or too small.");
+      throw std::invalid_argument(
+          "Index is selected either too large or too small.");
     }
     this->boundaries[side][index].setType(BC_TYPE_CONSTANT);
     this->boundaries[side][index].setValue(value);
@@ -272,7 +276,8 @@ public:
    */
   BoundaryElement<T> getBoundaryElement(BC_SIDE side, int index) const {
     if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument("Index is selected either too large or too small.");
+      throw std::invalid_argument(
+          "Index is selected either too large or too small.");
     }
     return this->boundaries[side][index];
   }
@@ -289,7 +294,8 @@ public:
    */
   BC_TYPE getBoundaryElementType(BC_SIDE side, int index) const {
     if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument("Index is selected either too large or too small.");
+      throw std::invalid_argument(
+          "Index is selected either too large or too small.");
     }
     return this->boundaries[side][index].getType();
   }
@@ -308,7 +314,8 @@ public:
    */
   T getBoundaryElementValue(BC_SIDE side, int index) const {
     if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument("Index is selected either too large or too small.");
+      throw std::invalid_argument(
+          "Index is selected either too large or too small.");
     }
     if (boundaries[side][index].getType() != BC_TYPE_CONSTANT) {
       throw std::invalid_argument(
@@ -325,5 +332,5 @@ private:
   std::vector<std::vector<BoundaryElement<T>>>
       boundaries; // Vector with Boundary Element information
 };
-
+} // namespace tug
 #endif // BOUNDARY_H_

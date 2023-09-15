@@ -18,6 +18,8 @@
 #define omp_get_thread_num() 0
 #endif
 
+namespace tug {
+
 // calculates horizontal change on one cell independent of boundary type
 template <class T>
 static inline T calcHorizontalChange(Grid<T> &grid, int &row, int &col) {
@@ -400,3 +402,4 @@ template void FTCS(Grid<double> &grid, Boundary<double> &bc, double timestep,
                    int &numThreads);
 template void FTCS(Grid<float> &grid, Boundary<float> &bc, float timestep,
                    int &numThreads);
+} // namespace tug

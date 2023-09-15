@@ -12,6 +12,8 @@
 #include "Schemes.hpp"
 #include "TugUtils.hpp"
 
+namespace tug {
+
 template <class T> void Simulation<T>::setTimestep(T timestep) {
   if (timestep <= 0) {
     throw_invalid_argument("Timestep has to be greater than zero.");
@@ -200,3 +202,4 @@ template void Simulation<float>::setTimestep(float timestep);
 
 template void Simulation<double>::run();
 template void Simulation<float>::run();
+} // namespace tug

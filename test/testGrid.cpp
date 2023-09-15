@@ -4,7 +4,7 @@
 
 using namespace Eigen;
 using namespace std;
-
+using namespace tug;
 
 TEST_CASE("1D Grid, too small length") {
   int l = 2;

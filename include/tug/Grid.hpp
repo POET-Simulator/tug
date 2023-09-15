@@ -12,6 +12,8 @@
 #include <Eigen/Sparse>
 #include <stdexcept>
 
+namespace tug {
+
 template <class T> class Grid {
 public:
   /**
@@ -321,5 +323,5 @@ private:
 
 using Grid64 = Grid<double>;
 using Grid32 = Grid<float>;
-
+} // namespace tug
 #endif // GRID_H_

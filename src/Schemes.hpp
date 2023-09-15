@@ -15,17 +15,22 @@
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
 
+namespace tug {
+
 // entry point; differentiate between 1D and 2D grid
 template <class T>
-extern void FTCS(Grid<T> &grid, Boundary<T> &bc, T timestep, int &numThreads);
+extern void FTCS(tug::Grid<T> &grid, tug::Boundary<T> &bc, T timestep,
+                 int &numThreads);
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
 template <class T>
-extern void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads);
+extern void BTCS_LU(tug::Grid<T> &grid, tug::Boundary<T> &bc, T timestep,
+                    int numThreads);
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
 template <class T>
-extern void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep,
+extern void BTCS_Thomas(tug::Grid<T> &grid, tug::Boundary<T> &bc, T timestep,
                         int numThreads);
+} // namespace tug
 
 #endif // SCHEMES_H_
