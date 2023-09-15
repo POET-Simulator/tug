@@ -4,6 +4,7 @@ stages:
     - build
     - test
     - static_analyze
+    - doc
 
 build_release:
   stage: build
@@ -15,18 +16,36 @@ build_release:
       - mkdir build && cd build
       - cmake -DCMAKE_BUILD_TYPE=Release -DTUG_ENABLE_TESTING=ON ..
       - make -j$(nproc)
+      - cp ../test/FTCS_11_11_7000.csv test/
 
 test:
     stage: test
     script:
         - ./build/test/testTug
 
+pages:
+  stage: doc
+  image: python:slim
+  before_script:
+    - apt-get update && apt-get install --no-install-recommends -y graphviz imagemagick doxygen make
+    - pip install --upgrade pip && pip install Sphinx Pillow breathe sphinx-rtd-theme
+    - mkdir public
+  script:
+    - pushd docs_sphinx
+    - make html
+    - popd && mv docs_sphinx/_build/html/* public/
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
 lint:
   stage: static_analyze
   before_script:
-    - apk add clang-extra-tools
+    - apk add clang-extra-tools openmp-dev
   script:
     - mkdir lint && cd lint
-    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*, modernize-*" -DTUG_ENABLE_TESTING=OFF ..
+    - cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_CXX_CLANG_TIDY="clang-tidy;-checks=cppcoreguidelines-*,clang-analyzer-*,performance-*" -DTUG_ENABLE_TESTING=OFF ..
     - make tug
   when: manual

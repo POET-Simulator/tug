@@ -1,5 +1,5 @@
-#ifndef BTCSUTILS_H_
-#define BTCSUTILS_H_
+#ifndef TUGUTILS_H_
+#define TUGUTILS_H_
 
 #include <chrono>
 #include <stdexcept>
@@ -23,4 +23,15 @@
                                                                   start);      \
     duration.count();                                                          \
   })
-#endif // BTCSUTILS_H_
+
+// calculates arithmetic or harmonic mean of alpha between two cells
+template <typename T>
+constexpr T calcAlphaIntercell(T alpha1, T alpha2,
+                                    bool useHarmonic = true) {
+  if (useHarmonic) {
+    return double(2) / ((double(1) / alpha1) + (double(1) / alpha2));
+  } else {
+    return 0.5 * (alpha1 + alpha2);
+  }
+}
+#endif // TUGUTILS_H_

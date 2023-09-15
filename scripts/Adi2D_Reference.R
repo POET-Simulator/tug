@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2023-07-20 15:37:25 delucia"
+## Time-stamp: "Last modified 2023-07-31 14:26:49 delucia"
 
 ## Brutal implementation of 2D ADI scheme
 ## Square NxN grid with dx=dy=1

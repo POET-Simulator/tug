@@ -1,16 +1,20 @@
-#include <array>
-#include <iostream>
-#include <tug/BoundaryCondition.hpp>
-#include <tug/Diffusion.hpp>
-#include <tug/Solver.hpp>
+/**
+ * @file BTCSv2.cpp
+ * @brief Implementation of heterogenous BTCS (backward time-centered space)
+ * solution of diffusion equation in 1D and 2D space. Internally the
+ * alternating-direction implicit (ADI) method is used. Version 2, because
+ * Version 1 was an implementation for the homogeneous BTCS solution.
+ *
+ */
 
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <Eigen/src/Core/Matrix.h>
-#include <chrono>
-#include <vector>
-
+#include "Schemes.hpp"
 #include "TugUtils.hpp"
+
+#include <Eigen/src/Core/util/Meta.h>
+#include <cstddef>
+#include <tug/Boundary.hpp>
+#include <tug/Grid.hpp>
+#include <utility>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -18,310 +22,397 @@
 #define omp_get_thread_num() 0
 #endif
 
-inline auto
-init_delta(const std::array<double, tug::diffusion::MAX_ARR_SIZE> &domain_size,
-           const std::array<uint32_t, tug::diffusion::MAX_ARR_SIZE> &grid_cells,
-           const uint8_t dim) -> std::vector<double> {
-  std::vector<double> out(dim);
-  for (uint8_t i = 0; i < dim; i++) {
-    out[i] = (double)(domain_size.at(i) / grid_cells.at(i));
-  }
-  return out;
+// calculates coefficient for boundary in constant case
+template <class T>
+constexpr std::pair<T, T> calcBoundaryCoeffConstant(T alpha_center,
+                                                    T alpha_side, T sx) {
+  const T centerCoeff = 1 + sx * (calcAlphaIntercell(alpha_center, alpha_side) +
+                                  2 * alpha_center);
+  const T sideCoeff = -sx * calcAlphaIntercell(alpha_center, alpha_side);
+
+  return {centerCoeff, sideCoeff};
 }
 
-namespace {
-enum { GRID_1D = 1, GRID_2D, GRID_3D };
+// calculates coefficient for boundary in closed case
+template <class T>
+constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
+                                                  T sx) {
+  const T centerCoeff = 1 + sx * calcAlphaIntercell(alpha_center, alpha_side);
 
-constexpr int BTCS_MAX_DEP_PER_CELL = 3;
-constexpr int BTCS_2D_DT_SIZE = 2;
+  const T sideCoeff = -sx * calcAlphaIntercell(alpha_center, alpha_side);
 
-using DMatrixRowMajor =
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using DVectorRowMajor =
-    Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>;
-
-inline auto getBCFromFlux(tug::bc::boundary_condition bc, double neighbor_c,
-                          double neighbor_alpha) -> double {
-  double val = 0;
-
-  if (bc.type == tug::bc::BC_TYPE_CLOSED) {
-    val = neighbor_c;
-  } else if (bc.type == tug::bc::BC_TYPE_FLUX) {
-    // TODO
-    //  val = bc[index].value;
-  } else {
-    // TODO: implement error handling here. Type was set to wrong value.
-  }
-
-  return val;
+  return {centerCoeff, sideCoeff};
 }
 
-auto calc_d_ortho(const DMatrixRowMajor &c, const DMatrixRowMajor &alpha,
-                  const tug::bc::BoundaryCondition &bc, bool transposed,
-                  double time_step, double dx) -> DMatrixRowMajor {
+// creates coefficient matrix for next time step from alphas in x-direction
+static Eigen::SparseMatrix<double>
+createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
+                  std::vector<BoundaryElement> &bcRight, int numCols,
+                  int rowIndex, double sx) {
 
-  uint8_t upper = (transposed ? tug::bc::BC_SIDE_LEFT : tug::bc::BC_SIDE_TOP);
-  uint8_t lower =
-      (transposed ? tug::bc::BC_SIDE_RIGHT : tug::bc::BC_SIDE_BOTTOM);
+  // square matrix of column^2 dimension for the coefficients
+  Eigen::SparseMatrix<double> cm(numCols, numCols);
+  cm.reserve(Eigen::VectorXi::Constant(numCols, 3));
 
-  int n_rows = c.rows();
-  int n_cols = c.cols();
+  // left column
 
-  DMatrixRowMajor d_ortho(n_rows, n_cols);
-
-  std::array<double, 3> y_values{};
-
-  // first, iterate over first row
-  for (int j = 0; j < n_cols; j++) {
-    tug::bc::boundary_condition tmp_bc = bc(upper, j);
-    double sy = (time_step * alpha(0, j)) / (dx * dx);
-
-    y_values[0] = (tmp_bc.type == tug::bc::BC_TYPE_CONSTANT
-                       ? tmp_bc.value
-                       : getBCFromFlux(tmp_bc, c(0, j), alpha(0, j)));
-    y_values[1] = c(0, j);
-    y_values[2] = c(1, j);
-
-    d_ortho(0, j) = -sy * (2 * y_values[0] - 3 * y_values[1] + y_values[2]);
+  switch (bcLeft[rowIndex].getType()) {
+  case BC_TYPE_CONSTANT: {
+    auto [centerCoeffTop, rightCoeffTop] =
+        calcBoundaryCoeffConstant(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
+    cm.insert(0, 0) = centerCoeffTop;
+    cm.insert(0, 1) = rightCoeffTop;
+    break;
+  }
+  case BC_TYPE_CLOSED: {
+    auto [centerCoeffTop, rightCoeffTop] =
+        calcBoundaryCoeffClosed(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
+    cm.insert(0, 0) = centerCoeffTop;
+    cm.insert(0, 1) = rightCoeffTop;
+    break;
+  }
+  default: {
+    throw_invalid_argument(
+        "Undefined Boundary Condition Type somewhere on Left or Top!");
+  }
   }
 
-  // then iterate over inlet
-  for (int i = 1; i < n_rows - 1; i++) {
-    for (int j = 0; j < n_cols; j++) {
-      double sy = (time_step * alpha(i, j)) / (dx * dx);
+  // inner columns
+  int n = numCols - 1;
+  for (int i = 1; i < n; i++) {
+    cm.insert(i, i - 1) =
+        -sx * calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i));
+    cm.insert(i, i) =
+        1 +
+        sx * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex, i + 1)) +
+              calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i)));
+    cm.insert(i, i + 1) =
+        -sx * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex, i + 1));
+  }
 
-      y_values[0] = c(i - 1, j);
-      y_values[1] = c(i, j);
-      y_values[2] = c(i + 1, j);
+  // right column
 
-      d_ortho(i, j) = -sy * (y_values[0] - 2 * y_values[1] + y_values[2]);
+  switch (bcRight[rowIndex].getType()) {
+  case BC_TYPE_CONSTANT: {
+    auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffConstant(
+        alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
+    cm.insert(n, n - 1) = leftCoeffBottom;
+    cm.insert(n, n) = centerCoeffBottom;
+    break;
+  }
+  case BC_TYPE_CLOSED: {
+    auto [centerCoeffBottom, leftCoeffBottom] =
+        calcBoundaryCoeffClosed(alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
+    cm.insert(n, n - 1) = leftCoeffBottom;
+    cm.insert(n, n) = centerCoeffBottom;
+    break;
+  }
+  default: {
+    throw_invalid_argument(
+        "Undefined Boundary Condition Type somewhere on Right or Bottom!");
+  }
+  }
+
+  cm.makeCompressed(); // important for Eigen solver
+
+  return cm;
+}
+
+// calculates explicit concentration at boundary in closed case
+template <typename T>
+constexpr T calcExplicitConcentrationsBoundaryClosed(T conc_center,
+                                                     T alpha_center,
+                                                     T alpha_neigbor, T sy) {
+  return sy * calcAlphaIntercell(alpha_center, alpha_neigbor) * conc_center +
+         (1 - sy * (calcAlphaIntercell(alpha_center, alpha_neigbor))) *
+             conc_center;
+}
+
+// calculates explicity concentration at boundary in constant case
+template <typename T>
+constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
+                                                       T alpha_center,
+                                                       T alpha_neighbor, T sy) {
+  return sy * calcAlphaIntercell(alpha_center, alpha_neighbor) * conc_center +
+         (1 - sy * (calcAlphaIntercell(alpha_center, alpha_center) +
+                    2 * alpha_center)) *
+             conc_center +
+         sy * alpha_center * conc_bc;
+}
+
+// creates a solution vector for next time step from the current state of
+// concentrations
+static Eigen::VectorXd createSolutionVector(
+    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alphaX,
+    Eigen::MatrixXd &alphaY, std::vector<BoundaryElement> &bcLeft,
+    std::vector<BoundaryElement> &bcRight, std::vector<BoundaryElement> &bcTop,
+    std::vector<BoundaryElement> &bcBottom, int length, int rowIndex, double sx,
+    double sy) {
+
+  Eigen::VectorXd sv(length);
+  const std::size_t numRows = concentrations.rows();
+
+  // inner rows
+  if (rowIndex > 0 && rowIndex < numRows - 1) {
+    for (int i = 0; i < length; i++) {
+      sv(i) =
+          sy *
+              calcAlphaIntercell(alphaY(rowIndex, i), alphaY(rowIndex + 1, i)) *
+              concentrations(rowIndex + 1, i) +
+          (1 - sy * (calcAlphaIntercell(alphaY(rowIndex, i),
+                                        alphaY(rowIndex + 1, i)) +
+                     calcAlphaIntercell(alphaY(rowIndex - 1, i),
+                                        alphaY(rowIndex, i)))) *
+              concentrations(rowIndex, i) +
+          sy *
+              calcAlphaIntercell(alphaY(rowIndex - 1, i), alphaY(rowIndex, i)) *
+              concentrations(rowIndex - 1, i);
     }
   }
 
-  int end = n_rows - 1;
-
-  // and finally over last row
-  for (int j = 0; j < n_cols; j++) {
-    tug::bc::boundary_condition tmp_bc = bc(lower, j);
-    double sy = (time_step * alpha(end, j)) / (dx * dx);
-
-    y_values[0] = c(end - 1, j);
-    y_values[1] = c(end, j);
-    y_values[2] = (tmp_bc.type == tug::bc::BC_TYPE_CONSTANT
-                       ? tmp_bc.value
-                       : getBCFromFlux(tmp_bc, c(end, j), alpha(end, j)));
-
-    d_ortho(end, j) = -sy * (y_values[0] - 3 * y_values[1] + 2 * y_values[2]);
-  }
-
-  return d_ortho;
-}
-
-auto fillMatrixFromRow(const DVectorRowMajor &alpha,
-                       const tug::bc::bc_vec &bc_inner, int size, double dx,
-                       double time_step) -> Eigen::SparseMatrix<double> {
-
-  Eigen::SparseMatrix<double> A_matrix(size + 2, size + 2);
-
-  A_matrix.reserve(Eigen::VectorXi::Constant(size + 2, BTCS_MAX_DEP_PER_CELL));
-
-  double sx = 0;
-
-  int A_size = A_matrix.cols();
-
-  A_matrix.insert(0, 0) = 1;
-
-  if (bc_inner[0].type != tug::bc::BC_UNSET) {
-    if (bc_inner[0].type != tug::bc::BC_TYPE_CONSTANT) {
-      throw_invalid_argument("Inner boundary conditions with other type than "
-                             "BC_TYPE_CONSTANT are currently not supported.");
-    }
-    A_matrix.insert(1, 1) = 1;
-  } else {
-    sx = (alpha[0] * time_step) / (dx * dx);
-    A_matrix.insert(1, 1) = -1. - 3. * sx;
-    A_matrix.insert(1, 0) = 2. * sx;
-    A_matrix.insert(1, 2) = sx;
-  }
-
-  for (int j = 2, k = j - 1; k < size - 1; j++, k++) {
-    if (bc_inner[k].type != tug::bc::BC_UNSET) {
-      if (bc_inner[k].type != tug::bc::BC_TYPE_CONSTANT) {
-        throw_invalid_argument("Inner boundary conditions with other type than "
-                               "BC_TYPE_CONSTANT are currently not supported.");
+  // first row
+  else if (rowIndex == 0) {
+    for (int i = 0; i < length; i++) {
+      switch (bcTop[i].getType()) {
+      case BC_TYPE_CONSTANT: {
+        sv(i) = calcExplicitConcentrationsBoundaryConstant(
+            concentrations(rowIndex, i), bcTop[i].getValue(),
+            alphaY(rowIndex, i), alphaY(rowIndex + 1, i), sy);
+        break;
       }
-      A_matrix.insert(j, j) = 1;
-      continue;
-    }
-    sx = (alpha[k] * time_step) / (dx * dx);
-
-    A_matrix.insert(j, j) = -1. - 2. * sx;
-    A_matrix.insert(j, (j - 1)) = sx;
-    A_matrix.insert(j, (j + 1)) = sx;
-  }
-
-  if (bc_inner[size - 1].type != tug::bc::BC_UNSET) {
-    if (bc_inner[size - 1].type != tug::bc::BC_TYPE_CONSTANT) {
-      throw_invalid_argument("Inner boundary conditions with other type than "
-                             "BC_TYPE_CONSTANT are currently not supported.");
-    }
-    A_matrix.insert(A_size - 2, A_size - 2) = 1;
-  } else {
-    sx = (alpha[size - 1] * time_step) / (dx * dx);
-    A_matrix.insert(A_size - 2, A_size - 2) = -1. - 3. * sx;
-    A_matrix.insert(A_size - 2, A_size - 3) = sx;
-    A_matrix.insert(A_size - 2, A_size - 1) = 2. * sx;
-  }
-
-  A_matrix.insert(A_size - 1, A_size - 1) = 1;
-
-  return A_matrix;
-}
-
-auto fillVectorFromRow(const DVectorRowMajor &c, const DVectorRowMajor &alpha,
-                       const tug::bc::bc_tuple &bc,
-                       const tug::bc::bc_vec &bc_inner,
-                       const DVectorRowMajor &d_ortho, int size, double dx,
-                       double time_step) -> Eigen::VectorXd {
-
-  Eigen::VectorXd b_vector(size + 2);
-
-  tug::bc::boundary_condition left = bc[0];
-  tug::bc::boundary_condition right = bc[1];
-
-  bool left_constant = (left.type == tug::bc::BC_TYPE_CONSTANT);
-  bool right_constant = (right.type == tug::bc::BC_TYPE_CONSTANT);
-
-  int b_size = b_vector.size();
-
-  for (int j = 0; j < size; j++) {
-    if (bc_inner[j].type != tug::bc::BC_UNSET) {
-      if (bc_inner[j].type != tug::bc::BC_TYPE_CONSTANT) {
-        throw_invalid_argument("Inner boundary conditions with other type than "
-                               "BC_TYPE_CONSTANT are currently not supported.");
+      case BC_TYPE_CLOSED: {
+        sv(i) = calcExplicitConcentrationsBoundaryClosed(
+            concentrations(rowIndex, i), alphaY(rowIndex, i),
+            alphaY(rowIndex + 1, i), sy);
+        break;
       }
-      b_vector[j + 1] = bc_inner[j].value;
-      continue;
+      default:
+        throw_invalid_argument(
+            "Undefined Boundary Condition Type somewhere on Left or Top!");
+      }
     }
-    b_vector[j + 1] = -c[j] + d_ortho[j];
   }
 
-  // this is not correct currently.We will fix this when we are able to define
-  // FLUX boundary conditions
-  b_vector[0] =
-      (left_constant ? left.value : getBCFromFlux(left, c[0], alpha[0]));
-
-  b_vector[b_size - 1] =
-      (right_constant ? right.value
-                      : getBCFromFlux(right, c[size - 1], alpha[size - 1]));
-
-  return b_vector;
-}
-
-auto setupBTCSAndSolve(
-    DVectorRowMajor &c, const tug::bc::bc_tuple bc_ghost,
-    const tug::bc::bc_vec &bc_inner, const DVectorRowMajor &alpha, double dx,
-    double time_step, int size, const DVectorRowMajor &d_ortho,
-    Eigen::VectorXd (*solver)(const Eigen::SparseMatrix<double> &,
-                              const Eigen::VectorXd &)) -> DVectorRowMajor {
-
-  const Eigen::SparseMatrix<double> A_matrix =
-      fillMatrixFromRow(alpha, bc_inner, size, dx, time_step);
-
-  const Eigen::VectorXd b_vector = fillVectorFromRow(
-      c, alpha, bc_ghost, bc_inner, d_ortho, size, dx, time_step);
-
-  // solving of the LEQ
-  Eigen::VectorXd x_vector = solver(A_matrix, b_vector);
-
-  DVectorRowMajor out_vector = x_vector.segment(1, size);
-
-  return out_vector;
-}
-
-} // namespace
-  //
-auto tug::diffusion::BTCS_1D(const tug::diffusion::TugInput &input_param,
-                             double *field, const double *alpha) -> double {
-
-  auto start = time_marker();
-
-  uint32_t size = input_param.grid.grid_cells[0];
-
-  auto deltas = init_delta(input_param.grid.domain_size,
-                           input_param.grid.grid_cells, GRID_1D);
-  double dx = deltas[0];
-
-  double time_step = input_param.time_step;
-
-  const tug::bc::BoundaryCondition bc =
-      (input_param.grid.bc != nullptr ? *input_param.grid.bc
-                                      : tug::bc::BoundaryCondition(size));
-
-  Eigen::Map<DVectorRowMajor> c_in(field, size);
-  Eigen::Map<const DVectorRowMajor> alpha_in(alpha, size);
-
-  DVectorRowMajor input_field = c_in.row(0);
-
-  DVectorRowMajor output = setupBTCSAndSolve(
-      input_field, bc.row_boundary(0), bc.getInnerRow(0), alpha_in, dx,
-      time_step, size, Eigen::VectorXd::Constant(size, 0), input_param.solver);
-
-  c_in.row(0) << output;
-
-  auto end = time_marker();
-
-  return diff_time(start, end);
-}
-
-auto tug::diffusion::ADI_2D(const tug::diffusion::TugInput &input_param,
-                            double *field, const double *alpha) -> double {
-
-  auto start = time_marker();
-
-  uint32_t n_cols = input_param.grid.grid_cells[0];
-  uint32_t n_rows = input_param.grid.grid_cells[1];
-
-  auto deltas = init_delta(input_param.grid.domain_size,
-                           input_param.grid.grid_cells, GRID_2D);
-  double dx = deltas[0];
-  double dy = deltas[1];
-
-  double local_dt = input_param.time_step / BTCS_2D_DT_SIZE;
-
-  tug::bc::BoundaryCondition bc =
-      (input_param.grid.bc != nullptr
-           ? *input_param.grid.bc
-           : tug::bc::BoundaryCondition(n_cols, n_rows));
-
-  Eigen::Map<DMatrixRowMajor> c_in(field, n_rows, n_cols);
-  Eigen::Map<const DMatrixRowMajor> alpha_in(alpha, n_rows, n_cols);
-
-  DMatrixRowMajor d_ortho =
-      calc_d_ortho(c_in, alpha_in, bc, false, local_dt, dx);
-
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < n_rows; i++) {
-    DVectorRowMajor input_field = c_in.row(i);
-    DVectorRowMajor output = setupBTCSAndSolve(
-        input_field, bc.row_boundary(i), bc.getInnerRow(i), alpha_in.row(i), dx,
-        local_dt, n_cols, d_ortho.row(i), input_param.solver);
-    c_in.row(i) << output;
+  // last row
+  else if (rowIndex == numRows - 1) {
+    for (int i = 0; i < length; i++) {
+      switch (bcBottom[i].getType()) {
+      case BC_TYPE_CONSTANT: {
+        sv(i) = calcExplicitConcentrationsBoundaryConstant(
+            concentrations(rowIndex, i), bcBottom[i].getValue(),
+            alphaY(rowIndex, i), alphaY(rowIndex - 1, i), sy);
+        break;
+      }
+      case BC_TYPE_CLOSED: {
+        sv(i) = calcExplicitConcentrationsBoundaryClosed(
+            concentrations(rowIndex, i), alphaY(rowIndex, i),
+            alphaY(rowIndex - 1, i), sy);
+        break;
+      }
+      default:
+        throw_invalid_argument(
+            "Undefined Boundary Condition Type somewhere on Right or Bottom!");
+      }
+    }
   }
 
-  d_ortho = calc_d_ortho(c_in.transpose(), alpha_in.transpose(), bc, true,
-                         local_dt, dy);
-
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < n_cols; i++) {
-    DVectorRowMajor input_field = c_in.col(i);
-    DVectorRowMajor output = setupBTCSAndSolve(
-        input_field, bc.col_boundary(i), bc.getInnerCol(i), alpha_in.col(i), dy,
-        local_dt, n_rows, d_ortho.row(i), input_param.solver);
-    c_in.col(i) << output.transpose();
+  // first column -> additional fixed concentration change from perpendicular
+  // dimension in constant bc case
+  if (bcLeft[rowIndex].getType() == BC_TYPE_CONSTANT) {
+    sv(0) += 2 * sx * alphaX(rowIndex, 0) * bcLeft[rowIndex].getValue();
   }
 
-  auto end = time_marker();
+  // last column -> additional fixed concentration change from perpendicular
+  // dimension in constant bc case
+  if (bcRight[rowIndex].getType() == BC_TYPE_CONSTANT) {
+    sv(length - 1) +=
+        2 * sx * alphaX(rowIndex, length - 1) * bcRight[rowIndex].getValue();
+  }
 
-  return diff_time(start, end);
+  return sv;
+}
+
+// solver for linear equation system; A corresponds to coefficient matrix,
+// b to the solution vector
+// use of EigenLU solver
+static Eigen::VectorXd EigenLUAlgorithm(Eigen::SparseMatrix<double> &A,
+                                        Eigen::VectorXd &b) {
+
+  Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+  solver.analyzePattern(A);
+  solver.factorize(A);
+
+  return solver.solve(b);
+}
+
+// solver for linear equation system; A corresponds to coefficient matrix,
+// b to the solution vector
+// implementation of Thomas Algorithm
+static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
+                                       Eigen::VectorXd &b) {
+  Eigen::Index n = b.size();
+
+  Eigen::VectorXd a_diag(n);
+  Eigen::VectorXd b_diag(n);
+  Eigen::VectorXd c_diag(n);
+  Eigen::VectorXd x_vec = b;
+
+  // Fill diagonals vectors
+  b_diag[0] = A.coeff(0, 0);
+  c_diag[0] = A.coeff(0, 1);
+
+  for (Eigen::Index i = 1; i < n - 1; i++) {
+    a_diag[i] = A.coeff(i, i - 1);
+    b_diag[i] = A.coeff(i, i);
+    c_diag[i] = A.coeff(i, i + 1);
+  }
+  a_diag[n - 1] = A.coeff(n - 1, n - 2);
+  b_diag[n - 1] = A.coeff(n - 1, n - 1);
+
+  // start solving - c_diag and x_vec are overwritten
+  n--;
+  c_diag[0] /= b_diag[0];
+  x_vec[0] /= b_diag[0];
+
+  for (Eigen::Index i = 1; i < n; i++) {
+    c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
+    x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
+               (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+  }
+
+  x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
+             (b_diag[n] - a_diag[n] * c_diag[n - 1]);
+
+  for (Eigen::Index i = n; i-- > 0;) {
+    x_vec[i] -= c_diag[i] * x_vec[i + 1];
+  }
+
+  return x_vec;
+}
+
+// BTCS solution for 1D grid
+static void
+BTCS_1D(Grid &grid, Boundary &bc, double timestep,
+        Eigen::VectorXd (*solverFunc)(Eigen::SparseMatrix<double> &A,
+                                      Eigen::VectorXd &b)) {
+  int length = grid.getLength();
+  double sx = timestep / (grid.getDelta() * grid.getDelta());
+
+  Eigen::VectorXd concentrations_t1(length);
+
+  Eigen::SparseMatrix<double> A;
+  Eigen::VectorXd b(length);
+
+  Eigen::MatrixXd alpha = grid.getAlpha();
+  std::vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  std::vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+
+  Eigen::MatrixXd concentrations = grid.getConcentrations();
+  int rowIndex = 0;
+  A = createCoeffMatrix(alpha, bcLeft, bcRight, length, rowIndex,
+                        sx); // this is exactly same as in 2D
+  for (int i = 0; i < length; i++) {
+    b(i) = concentrations(0, i);
+  }
+  if (bc.getBoundaryElementType(BC_SIDE_LEFT, 0) == BC_TYPE_CONSTANT) {
+    b(0) += 2 * sx * alpha(0, 0) * bcLeft[0].getValue();
+  }
+  if (bc.getBoundaryElementType(BC_SIDE_RIGHT, 0) == BC_TYPE_CONSTANT) {
+    b(length - 1) += 2 * sx * alpha(0, length - 1) * bcRight[0].getValue();
+  }
+
+  concentrations_t1 = solverFunc(A, b);
+
+  for (int j = 0; j < length; j++) {
+    concentrations(0, j) = concentrations_t1(j);
+  }
+
+  grid.setConcentrations(concentrations);
+}
+
+// BTCS solution for 2D grid
+static void
+BTCS_2D(Grid &grid, Boundary &bc, double timestep,
+        Eigen::VectorXd (*solverFunc)(Eigen::SparseMatrix<double> &A,
+                                      Eigen::VectorXd &b),
+        int numThreads) {
+  int rowMax = grid.getRow();
+  int colMax = grid.getCol();
+  double sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
+  double sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
+
+  Eigen::MatrixXd concentrations_t1 =
+      Eigen::MatrixXd::Constant(rowMax, colMax, 0);
+  Eigen::VectorXd row_t1(colMax);
+
+  Eigen::SparseMatrix<double> A;
+  Eigen::VectorXd b;
+
+  Eigen::MatrixXd alphaX = grid.getAlphaX();
+  Eigen::MatrixXd alphaY = grid.getAlphaY();
+  std::vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  std::vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+  std::vector<BoundaryElement> bcTop = bc.getBoundarySide(BC_SIDE_TOP);
+  std::vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
+
+  Eigen::MatrixXd concentrations = grid.getConcentrations();
+
+#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
+  for (int i = 0; i < rowMax; i++) {
+
+    A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
+    b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
+                             bcTop, bcBottom, colMax, i, sx, sy);
+
+    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+
+    row_t1 = solverFunc(A, b);
+
+    concentrations_t1.row(i) = row_t1;
+  }
+
+  concentrations_t1.transposeInPlace();
+  concentrations.transposeInPlace();
+  alphaX.transposeInPlace();
+  alphaY.transposeInPlace();
+
+#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
+  for (int i = 0; i < colMax; i++) {
+    // swap alphas, boundary conditions and sx/sy for column-wise calculation
+    A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
+    b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
+                             bcLeft, bcRight, rowMax, i, sy, sx);
+
+    row_t1 = solverFunc(A, b);
+
+    concentrations.row(i) = row_t1;
+  }
+
+  concentrations.transposeInPlace();
+
+  grid.setConcentrations(concentrations);
+}
+
+// entry point for EigenLU solver; differentiate between 1D and 2D grid
+void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
+  if (grid.getDim() == 1) {
+    BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
+  } else if (grid.getDim() == 2) {
+    BTCS_2D(grid, bc, timestep, EigenLUAlgorithm, numThreads);
+  } else {
+    throw_invalid_argument(
+        "Error: Only 1- and 2-dimensional grids are defined!");
+  }
+}
+
+// entry point for Thomas algorithm solver; differentiate 1D and 2D grid
+void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep, int numThreads) {
+  if (grid.getDim() == 1) {
+    BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
+  } else if (grid.getDim() == 2) {
+    BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
+  } else {
+    throw_invalid_argument(
+        "Error: Only 1- and 2-dimensional grids are defined!");
+  }
 }

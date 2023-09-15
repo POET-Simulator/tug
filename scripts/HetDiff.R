@@ -1,4 +1,4 @@
-## Time-stamp: "Last modified 2023-07-21 11:23:08 delucia"
+## Time-stamp: "Last modified 2023-07-31 16:28:48 delucia"
 
 library(ReacTran)
 library(deSolve)
@@ -99,15 +99,25 @@ times <- 0:10
 outc <- ode.2D(y = y, func = Diff2Dc, t = times, parms = NULL,
                 dim = c(N, N), lrw = 1860000)
 
-outtimes <- c(1, 4, 7, 10)
+outtimes <- c(0, 4, 7, 10)
 
-cairo_pdf("deSolve_AlphaHet1.pdf", family="serif", width=12, height=12)
+## NB: assuming current working dir is "tug"
+cairo_pdf("doc/images/deSolve_AlphaHet1.pdf", family="serif", width=12, height=12)
 image(outc, ask = FALSE, mfrow = c(2, 2), main = paste("time", outtimes),
-      legend = TRUE, add.contour = FALSE, subset = time %in% outtimes, xlab="",ylab="", axes=FALSE)
+      legend = TRUE, add.contour = FALSE, subset = time %in% outtimes,
+      xlab="",ylab="", axes=FALSE, asp=1)
 dev.off()
 
-outc
+## outc is a matrix with 11 rows and 122 columns (first column is
+## simulation time);
+str(outc)
 
+## extract only the results and transpose the matrix for storage
+ret <- data.matrix(t(outc[ , -1]))
+rownames(ret) <- NULL
+
+## NB: assuming current working dir is "tug"
+data.table::fwrite(ret, file="scripts/gold/HetDiff1.csv", col.names=FALSE)
 
 
 
