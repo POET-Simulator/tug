@@ -1,8 +1,12 @@
+#include <Eigen/Eigen>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <tug/Simulation.hpp>
+
+using namespace Eigen;
+using namespace std;
 
 int main(int argc, char *argv[]) {
 

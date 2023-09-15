@@ -6,7 +6,10 @@
  *
  */
 
+#include <Eigen/Eigen>
 #include <tug/Simulation.hpp>
+
+using namespace Eigen;
 // #include <easy/profiler.h>
 // #define EASY_PROFILER_ENABLE ::profiler::setEnabled(true);
 

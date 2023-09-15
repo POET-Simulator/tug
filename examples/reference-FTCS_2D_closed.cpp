@@ -3,6 +3,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace std;
+using namespace Eigen;
 
 int main(int argc, char *argv[]) {
   int row = 50;

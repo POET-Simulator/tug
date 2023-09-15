@@ -6,7 +6,10 @@
  *
  */
 
+#include <Eigen/Eigen>
 #include <tug/Simulation.hpp>
+
+using namespace Eigen;
 
 int main(int argc, char *argv[]) {
 
