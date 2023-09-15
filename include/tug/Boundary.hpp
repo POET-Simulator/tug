@@ -9,6 +9,8 @@
 
 #include "Grid.hpp"
 #include <cstddef>
+#include <cstdint>
+#include <exception>
 
 /**
  * @brief Enum defining the two implemented boundary conditions.
@@ -27,7 +29,7 @@ enum BC_SIDE { BC_SIDE_LEFT, BC_SIDE_RIGHT, BC_SIDE_TOP, BC_SIDE_BOTTOM };
  * These can be flexibly used and combined later in other classes.
  * The class serves as an auxiliary class for structuring the Boundary class.
  */
-class BoundaryElement {
+template <class T> class BoundaryElement {
 public:
   /**
    * @brief Construct a new Boundary Element object for the closed case.
@@ -35,7 +37,7 @@ public:
    *        BC_TYPE_CLOSED, where the value takes -1 and does not hold any
    *        physical meaning.
    */
-  BoundaryElement();
+  BoundaryElement(){};
 
   /**
    * @brief Construct a new Boundary Element object for the constant case.
@@ -45,7 +47,7 @@ public:
    * @param value Value of the constant concentration to be assumed at the
    *              corresponding boundary element.
    */
-  BoundaryElement(double value);
+  BoundaryElement(T _value) : value(_value), type(BC_TYPE_CONSTANT) {}
 
   /**
    * @brief Allows changing the boundary type of a corresponding
@@ -54,7 +56,7 @@ public:
    * @param type Type of boundary condition. Either BC_TYPE_CONSTANT or
                  BC_TYPE_CLOSED.
    */
-  void setType(BC_TYPE type);
+  void setType(BC_TYPE type) { this->type = type; };
 
   /**
    * @brief Sets the value of a boundary condition for the constant case.
@@ -62,7 +64,17 @@ public:
    * @param value Concentration to be considered constant for the
    *              corresponding boundary element.
    */
-  void setValue(double value);
+  void setValue(double value) {
+    if (value < 0) {
+      throw std::invalid_argument("No negative concentration allowed.");
+    }
+    if (type == BC_TYPE_CLOSED) {
+      throw std::invalid_argument(
+          "No constant boundary concentrations can be set for closed "
+          "boundaries. Please change type first.");
+    }
+    this->value = value;
+  }
 
   /**
    * @brief Return the type of the boundary condition, i.e. whether the
@@ -71,25 +83,25 @@ public:
    * @return BC_TYPE Type of boundary condition, either BC_TYPE_CLOSED or
              BC_TYPE_CONSTANT.
    */
-  BC_TYPE getType();
+  BC_TYPE getType() const { return this->type; }
 
   /**
    * @brief Return the concentration value for the constant boundary condition.
    *
    * @return double Value of the concentration.
    */
-  double getValue();
+  T getValue() const { return this->value; }
 
 private:
   BC_TYPE type{BC_TYPE_CLOSED};
-  double value{-1};
+  T value{-1};
 };
 
 /**
  * This class implements the functionality and management of the boundary
  * conditions in the grid to be simulated.
  */
-class Boundary {
+template <class T> class Boundary {
 public:
   /**
    * @brief Creates a boundary object based on the passed grid object and
@@ -98,7 +110,27 @@ public:
    * @param grid Grid object on the basis of which the simulation takes place
    *             and from which the dimensions (in 2D case) are taken.
    */
-  Boundary(Grid grid);
+  Boundary(const Grid<T> &grid)
+      : dim(grid.getDim()), cols(grid.getCol()), rows(grid.getRow()) {
+    if (this->dim == 1) {
+      this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(
+          2); // in 1D only left and right boundary
+
+      this->boundaries[BC_SIDE_LEFT].push_back(BoundaryElement<T>());
+      this->boundaries[BC_SIDE_RIGHT].push_back(BoundaryElement<T>());
+    } else if (this->dim == 2) {
+      this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(4);
+
+      this->boundaries[BC_SIDE_LEFT] =
+          std::vector<BoundaryElement<T>>(this->rows, BoundaryElement<T>());
+      this->boundaries[BC_SIDE_RIGHT] =
+          std::vector<BoundaryElement<T>>(this->rows, BoundaryElement<T>());
+      this->boundaries[BC_SIDE_TOP] =
+          std::vector<BoundaryElement<T>>(this->cols, BoundaryElement<T>());
+      this->boundaries[BC_SIDE_BOTTOM] =
+          std::vector<BoundaryElement<T>>(this->cols, BoundaryElement<T>());
+    }
+  }
 
   /**
    * @brief Sets all elements of the specified boundary side to the boundary
@@ -106,7 +138,21 @@ public:
    *
    * @param side Side to be set to closed, e.g. BC_SIDE_LEFT.
    */
-  void setBoundarySideClosed(BC_SIDE side);
+  void setBoundarySideClosed(BC_SIDE side) {
+    if (this->dim == 1) {
+      if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
+        throw std::invalid_argument(
+            "For the one-dimensional case, only the BC_SIDE_LEFT and "
+            "BC_SIDE_RIGHT borders exist.");
+      }
+    }
+
+    const bool is_vertical = side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT;
+    const int n = is_vertical ? this->rows : this->cols;
+
+    this->boundaries[side] =
+        std::vector<BoundaryElement<T>>(n, BoundaryElement<T>());
+  }
 
   /**
    * @brief Sets all elements of the specified boundary side to the boundary
@@ -117,7 +163,21 @@ public:
    * @param value Concentration to be set for all elements of the specified
    * page.
    */
-  void setBoundarySideConstant(BC_SIDE side, double value);
+  void setBoundarySideConstant(BC_SIDE side, double value) {
+    if (this->dim == 1) {
+      if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
+        throw std::invalid_argument(
+            "For the one-dimensional case, only the BC_SIDE_LEFT and "
+            "BC_SIDE_RIGHT borders exist.");
+      }
+    }
+
+    const bool is_vertical = side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT;
+    const int n = is_vertical ? this->rows : this->cols;
+
+    this->boundaries[side] =
+        std::vector<BoundaryElement<T>>(n, BoundaryElement<T>(value));
+  }
 
   /**
    * @brief Specifically sets the boundary element of the specified side
@@ -128,7 +188,13 @@ public:
    *              boundary side. Must index an element of the corresponding
    * side.
    */
-  void setBoundaryElementClosed(BC_SIDE side, int index);
+  void setBoundaryElemenClosed(BC_SIDE side, int index) {
+    // tests whether the index really points to an element of the boundary side.
+    if ((boundaries[side].size() < index) || index < 0) {
+      throw std::invalid_argument("Index is selected either too large or too small.");
+    }
+    this->boundaries[side][index].setType(BC_TYPE_CLOSED);
+  }
 
   /**
    * @brief Specifically sets the boundary element of the specified side
@@ -142,7 +208,14 @@ public:
    * @param value Concentration value to which the boundary element should be
    set.
    */
-  void setBoundaryElementConstant(BC_SIDE side, int index, double value);
+  void setBoundaryElementConstant(BC_SIDE side, int index, double value) {
+    // tests whether the index really points to an element of the boundary side.
+    if ((boundaries[side].size() < index) || index < 0) {
+      throw std::invalid_argument("Index is selected either too large or too small.");
+    }
+    this->boundaries[side][index].setType(BC_TYPE_CONSTANT);
+    this->boundaries[side][index].setValue(value);
+  }
 
   /**
    * @brief Returns the boundary condition of a specified side as a vector
@@ -150,19 +223,41 @@ public:
    *
    * @param side Boundary side from which the boundary conditions are to be
    * returned.
-   * @return vector<BoundaryElement> Contains the boundary conditions as
-   * BoundaryElement objects.
+   * @return vector<BoundaryElement<T>> Contains the boundary conditions as
+   * BoundaryElement<T> objects.
    */
-  const std::vector<BoundaryElement> getBoundarySide(BC_SIDE side);
+  const std::vector<BoundaryElement<T>> &getBoundarySide(BC_SIDE side) const {
+    if (this->dim == 1) {
+      if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
+        throw std::invalid_argument(
+            "For the one-dimensional trap, only the BC_SIDE_LEFT and "
+            "BC_SIDE_RIGHT borders exist.");
+      }
+    }
+    return this->boundaries[side];
+  }
 
   /**
    * @brief Get thes Boundary Side Values as a vector. Value is -1 in case some
    specific boundary is closed.
    *
    * @param side Boundary side for which the values are to be returned.
-   * @return VectorXd Vector with values as doubles.
+   * @return VectorX<T> Vector with values as T.
    */
-  Eigen::VectorXd getBoundarySideValues(BC_SIDE side);
+  Eigen::VectorX<T> getBoundarySideValues(BC_SIDE side) const {
+    const std::size_t length = boundaries[side].size();
+    Eigen::VectorX<T> values(length);
+
+    for (int i = 0; i < length; i++) {
+      if (getBoundaryElementType(side, i) == BC_TYPE_CLOSED) {
+        values(i) = -1;
+        continue;
+      }
+      values(i) = getBoundaryElementValue(side, i);
+    }
+
+    return values;
+  }
 
   /**
    * @brief Returns the boundary condition of a specified element on a given
@@ -172,9 +267,15 @@ public:
    * @param index Index of the boundary element on the corresponding
    *              boundary side. Must index an element of the corresponding
    * side.
-   * @return BoundaryElement Boundary condition as a BoundaryElement object.
+   * @return BoundaryElement<T> Boundary condition as a BoundaryElement<T>
+   * object.
    */
-  BoundaryElement getBoundaryElement(BC_SIDE side, int index);
+  BoundaryElement<T> getBoundaryElement(BC_SIDE side, int index) const {
+    if ((boundaries[side].size() < index) || index < 0) {
+      throw std::invalid_argument("Index is selected either too large or too small.");
+    }
+    return this->boundaries[side][index];
+  }
 
   /**
    * @brief Returns the type of a boundary condition, i.e. either BC_TYPE_CLOSED
@@ -186,25 +287,42 @@ public:
    side.
    * @return BC_TYPE Boundary Type of the corresponding boundary condition.
    */
-  BC_TYPE getBoundaryElementType(BC_SIDE side, int index);
+  BC_TYPE getBoundaryElementType(BC_SIDE side, int index) const {
+    if ((boundaries[side].size() < index) || index < 0) {
+      throw std::invalid_argument("Index is selected either too large or too small.");
+    }
+    return this->boundaries[side][index].getType();
+  }
 
   /**
    * @brief Returns the concentration value of a corresponding
-   *        BoundaryElement object if it is a constant boundary condition.
+   *        BoundaryElement<T> object if it is a constant boundary condition.
    *
    * @param side Boundary side in which the boundary condition value is
    *             located.
    * @param index Index of the boundary element on the corresponding
    *              boundary side. Must index an element of the corresponding
    *              side.
-   * @return double Concentration of the corresponding BoundaryElement object.
+   * @return double Concentration of the corresponding BoundaryElement<T>
+   * object.
    */
-  double getBoundaryElementValue(BC_SIDE side, int index);
+  T getBoundaryElementValue(BC_SIDE side, int index) const {
+    if ((boundaries[side].size() < index) || index < 0) {
+      throw std::invalid_argument("Index is selected either too large or too small.");
+    }
+    if (boundaries[side][index].getType() != BC_TYPE_CONSTANT) {
+      throw std::invalid_argument(
+          "A value can only be output if it is a constant boundary condition.");
+    }
+    return this->boundaries[side][index].getValue();
+  }
 
 private:
-  Grid grid; // Boundary is directly dependent on the dimensions of a predefined
+  const std::uint8_t dim;
+  const std::uint32_t cols;
+  const std::uint32_t rows;
 
-  std::vector<std::vector<BoundaryElement>>
+  std::vector<std::vector<BoundaryElement<T>>>
       boundaries; // Vector with Boundary Element information
 };
 

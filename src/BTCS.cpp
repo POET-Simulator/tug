@@ -45,13 +45,15 @@ constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
 }
 
 // creates coefficient matrix for next time step from alphas in x-direction
-static Eigen::SparseMatrix<double>
-createCoeffMatrix(Eigen::MatrixXd &alpha, std::vector<BoundaryElement> &bcLeft,
-                  std::vector<BoundaryElement> &bcRight, int numCols,
-                  int rowIndex, double sx) {
+template <class T>
+static Eigen::SparseMatrix<T>
+createCoeffMatrix(const Eigen::MatrixX<T> &alpha,
+                  const std::vector<BoundaryElement<T>> &bcLeft,
+                  const std::vector<BoundaryElement<T>> &bcRight, int numCols,
+                  int rowIndex, T sx) {
 
   // square matrix of column^2 dimension for the coefficients
-  Eigen::SparseMatrix<double> cm(numCols, numCols);
+  Eigen::SparseMatrix<T> cm(numCols, numCols);
   cm.reserve(Eigen::VectorXi::Constant(numCols, 3));
 
   // left column
@@ -142,14 +144,18 @@ constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
 
 // creates a solution vector for next time step from the current state of
 // concentrations
-static Eigen::VectorXd createSolutionVector(
-    Eigen::MatrixXd &concentrations, Eigen::MatrixXd &alphaX,
-    Eigen::MatrixXd &alphaY, std::vector<BoundaryElement> &bcLeft,
-    std::vector<BoundaryElement> &bcRight, std::vector<BoundaryElement> &bcTop,
-    std::vector<BoundaryElement> &bcBottom, int length, int rowIndex, double sx,
-    double sy) {
+template <class T>
+static Eigen::VectorX<T>
+createSolutionVector(const Eigen::MatrixX<T> &concentrations,
+                     const Eigen::MatrixX<T> &alphaX,
+                     const Eigen::MatrixX<T> &alphaY,
+                     const std::vector<BoundaryElement<T>> &bcLeft,
+                     const std::vector<BoundaryElement<T>> &bcRight,
+                     const std::vector<BoundaryElement<T>> &bcTop,
+                     const std::vector<BoundaryElement<T>> &bcBottom,
+                     int length, int rowIndex, T sx, T sy) {
 
-  Eigen::VectorXd sv(length);
+  Eigen::VectorX<T> sv(length);
   const std::size_t numRows = concentrations.rows();
 
   // inner rows
@@ -235,10 +241,11 @@ static Eigen::VectorXd createSolutionVector(
 // solver for linear equation system; A corresponds to coefficient matrix,
 // b to the solution vector
 // use of EigenLU solver
-static Eigen::VectorXd EigenLUAlgorithm(Eigen::SparseMatrix<double> &A,
-                                        Eigen::VectorXd &b) {
+template <class T>
+static Eigen::VectorX<T> EigenLUAlgorithm(Eigen::SparseMatrix<T> &A,
+                                          Eigen::VectorX<T> &b) {
 
-  Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
+  Eigen::SparseLU<Eigen::SparseMatrix<T>> solver;
   solver.analyzePattern(A);
   solver.factorize(A);
 
@@ -248,14 +255,15 @@ static Eigen::VectorXd EigenLUAlgorithm(Eigen::SparseMatrix<double> &A,
 // solver for linear equation system; A corresponds to coefficient matrix,
 // b to the solution vector
 // implementation of Thomas Algorithm
-static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
-                                       Eigen::VectorXd &b) {
+template <class T>
+static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
+                                         Eigen::VectorX<T> &b) {
   Eigen::Index n = b.size();
 
-  Eigen::VectorXd a_diag(n);
-  Eigen::VectorXd b_diag(n);
-  Eigen::VectorXd c_diag(n);
-  Eigen::VectorXd x_vec = b;
+  Eigen::VectorX<T> a_diag(n);
+  Eigen::VectorX<T> b_diag(n);
+  Eigen::VectorX<T> c_diag(n);
+  Eigen::VectorX<T> x_vec = b;
 
   // Fill diagonals vectors
   b_diag[0] = A.coeff(0, 0);
@@ -291,23 +299,24 @@ static Eigen::VectorXd ThomasAlgorithm(Eigen::SparseMatrix<double> &A,
 }
 
 // BTCS solution for 1D grid
-static void
-BTCS_1D(Grid &grid, Boundary &bc, double timestep,
-        Eigen::VectorXd (*solverFunc)(Eigen::SparseMatrix<double> &A,
-                                      Eigen::VectorXd &b)) {
+template <class T>
+static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+                    Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
+                                                    Eigen::VectorX<T> &b)) {
   int length = grid.getLength();
-  double sx = timestep / (grid.getDelta() * grid.getDelta());
+  T sx = timestep / (grid.getDelta() * grid.getDelta());
 
-  Eigen::VectorXd concentrations_t1(length);
+  Eigen::VectorX<T> concentrations_t1(length);
 
-  Eigen::SparseMatrix<double> A;
-  Eigen::VectorXd b(length);
+  Eigen::SparseMatrix<T> A;
+  Eigen::VectorX<T> b(length);
 
-  Eigen::MatrixXd alpha = grid.getAlpha();
-  std::vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
-  std::vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+  const auto &alpha = grid.getAlpha();
 
-  Eigen::MatrixXd concentrations = grid.getConcentrations();
+  const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+
+  Eigen::MatrixX<T> concentrations = grid.getConcentrations();
   int rowIndex = 0;
   A = createCoeffMatrix(alpha, bcLeft, bcRight, length, rowIndex,
                         sx); // this is exactly same as in 2D
@@ -331,31 +340,32 @@ BTCS_1D(Grid &grid, Boundary &bc, double timestep,
 }
 
 // BTCS solution for 2D grid
-static void
-BTCS_2D(Grid &grid, Boundary &bc, double timestep,
-        Eigen::VectorXd (*solverFunc)(Eigen::SparseMatrix<double> &A,
-                                      Eigen::VectorXd &b),
-        int numThreads) {
+template <class T>
+static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+                    Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
+                                                    Eigen::VectorX<T> &b),
+                    int numThreads) {
   int rowMax = grid.getRow();
   int colMax = grid.getCol();
-  double sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
-  double sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
+  T sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
+  T sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
 
-  Eigen::MatrixXd concentrations_t1 =
-      Eigen::MatrixXd::Constant(rowMax, colMax, 0);
-  Eigen::VectorXd row_t1(colMax);
+  Eigen::MatrixX<T> concentrations_t1 =
+      Eigen::MatrixX<T>::Constant(rowMax, colMax, 0);
+  Eigen::VectorX<T> row_t1(colMax);
 
-  Eigen::SparseMatrix<double> A;
-  Eigen::VectorXd b;
+  Eigen::SparseMatrix<T> A;
+  Eigen::VectorX<T> b;
 
-  Eigen::MatrixXd alphaX = grid.getAlphaX();
-  Eigen::MatrixXd alphaY = grid.getAlphaY();
-  std::vector<BoundaryElement> bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
-  std::vector<BoundaryElement> bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
-  std::vector<BoundaryElement> bcTop = bc.getBoundarySide(BC_SIDE_TOP);
-  std::vector<BoundaryElement> bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
+  auto alphaX = grid.getAlphaX();
+  auto alphaY = grid.getAlphaY();
 
-  Eigen::MatrixXd concentrations = grid.getConcentrations();
+  const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+  const auto &bcTop = bc.getBoundarySide(BC_SIDE_TOP);
+  const auto &bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
+
+  Eigen::MatrixX<T> concentrations = grid.getConcentrations();
 
 #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < rowMax; i++) {
@@ -363,8 +373,6 @@ BTCS_2D(Grid &grid, Boundary &bc, double timestep,
     A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
     b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
                              bcTop, bcBottom, colMax, i, sx, sy);
-
-    Eigen::SparseLU<Eigen::SparseMatrix<double>> solver;
 
     row_t1 = solverFunc(A, b);
 
@@ -394,7 +402,8 @@ BTCS_2D(Grid &grid, Boundary &bc, double timestep,
 }
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
-void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
+template <class T>
+void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
   } else if (grid.getDim() == 2) {
@@ -406,7 +415,8 @@ void BTCS_LU(Grid &grid, Boundary &bc, double timestep, int numThreads) {
 }
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
-void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep, int numThreads) {
+template <class T>
+void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
   } else if (grid.getDim() == 2) {
@@ -416,3 +426,13 @@ void BTCS_Thomas(Grid &grid, Boundary &bc, double timestep, int numThreads) {
         "Error: Only 1- and 2-dimensional grids are defined!");
   }
 }
+
+template void BTCS_Thomas(Grid<double> &grid, Boundary<double> &bc,
+                          double timestep, int numThreads);
+template void BTCS_Thomas(Grid<float> &grid, Boundary<float> &bc,
+                          float timestep, int numThreads);
+
+template void BTCS_LU(Grid<double> &grid, Boundary<double> &bc, double timestep,
+                      int numThreads);
+template void BTCS_LU(Grid<float> &grid, Boundary<float> &bc, float timestep,
+                      int numThreads);

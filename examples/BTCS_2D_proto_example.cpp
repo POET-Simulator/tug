@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   // create a grid with a 20 x 20 field
   int row = 40;
   int col = 50;
-  Grid grid = Grid(row, col);
+  Grid64 grid(row, col);
 
   // (optional) set the domain, e.g.:
   // grid.setDomain(20, 20);

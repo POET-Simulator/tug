@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
   int domain_col = 10;
 
   // Grid
-  Grid grid = Grid(row, col);
+  Grid64 grid(row, col);
   grid.setDomain(domain_row, domain_col);
 
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);

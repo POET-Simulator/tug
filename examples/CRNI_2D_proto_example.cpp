@@ -6,7 +6,7 @@ using namespace Eigen;
 int main(int argc, char *argv[]) {
   int row = 20;
   int col = 20;
-  Grid grid(row, col);
+  Grid64 grid(row, col);
 
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
   concentrations(10, 10) = 2000;

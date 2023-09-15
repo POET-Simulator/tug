@@ -6,12 +6,11 @@
 #include <typeinfo>
 
 using namespace std;
-
 TEST_CASE("BoundaryElement") {
 
   SUBCASE("Closed case") {
-    BoundaryElement boundaryElementClosed = BoundaryElement();
-    CHECK_NOTHROW(BoundaryElement());
+    BoundaryElement boundaryElementClosed = BoundaryElement<double>();
+    CHECK_NOTHROW(BoundaryElement<double>());
     CHECK_EQ(boundaryElementClosed.getType(), BC_TYPE_CLOSED);
     CHECK_EQ(boundaryElementClosed.getValue(), -1);
     CHECK_THROWS(boundaryElementClosed.setValue(0.2));
@@ -28,11 +27,11 @@ TEST_CASE("BoundaryElement") {
 }
 
 TEST_CASE("Boundary Class") {
-  Grid grid1D = Grid(10);
-  Grid grid2D = Grid(10, 12);
+  Grid grid1D = Grid64(10);
+  Grid grid2D = Grid64(10, 12);
   Boundary boundary1D = Boundary(grid1D);
   Boundary boundary2D = Boundary(grid2D);
-  vector<BoundaryElement> boundary1DVector(1, BoundaryElement(1.0));
+  vector<BoundaryElement<double>> boundary1DVector(1, BoundaryElement(1.0));
 
   SUBCASE("Boundaries 1D case") {
     CHECK_NOTHROW(Boundary boundary(grid1D));

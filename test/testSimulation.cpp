@@ -11,7 +11,7 @@
 using namespace Eigen;
 using namespace std;
 
-static Grid setupSimulation(APPROACH approach, double timestep,
+static Grid64 setupSimulation(APPROACH approach, double timestep,
                             int iterations) {
   int row = 11;
   int col = 11;
@@ -19,7 +19,7 @@ static Grid setupSimulation(APPROACH approach, double timestep,
   int domain_col = 10;
 
   // Grid
-  Grid grid = Grid(row, col);
+  Grid grid = Grid64(row, col);
   grid.setDomain(domain_row, domain_col);
 
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
@@ -80,7 +80,7 @@ TEST_CASE("equality to reference matrix with BTCS") {
 
 TEST_CASE("Initialize environment") {
   int rc = 12;
-  Grid grid(rc, rc);
+  Grid64 grid(rc, rc);
   Boundary boundary(grid);
 
   CHECK_NOTHROW(Simulation sim(grid, boundary, BTCS_APPROACH));
@@ -88,7 +88,7 @@ TEST_CASE("Initialize environment") {
 
 TEST_CASE("Simulation environment") {
   int rc = 12;
-  Grid grid(rc, rc);
+  Grid64 grid(rc, rc);
   Boundary boundary(grid);
   Simulation sim(grid, boundary, FTCS_APPROACH);
 

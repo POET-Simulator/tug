@@ -8,22 +8,22 @@ using namespace std;
 
 TEST_CASE("1D Grid, too small length") {
   int l = 2;
-  CHECK_THROWS(Grid(l));
+  CHECK_THROWS(Grid64(l));
 }
 
-TEST_CASE("2D Grid, too small side") {
+TEST_CASE("2D Grid64, too small side") {
   int r = 2;
   int c = 4;
-  CHECK_THROWS(Grid(r, c));
+  CHECK_THROWS(Grid64(r, c));
 
   r = 4;
   c = 2;
-  CHECK_THROWS(Grid(r, c));
+  CHECK_THROWS(Grid64(r, c));
 }
 
-TEST_CASE("1D Grid") {
+TEST_CASE("1D Grid64") {
   int l = 12;
-  Grid grid(l);
+  Grid64 grid(l);
 
   SUBCASE("correct construction") {
     CHECK_EQ(grid.getDim(), 1);
@@ -89,9 +89,9 @@ TEST_CASE("1D Grid") {
   }
 }
 
-TEST_CASE("2D Grid quadratic") {
+TEST_CASE("2D Grid64 quadratic") {
   int rc = 12;
-  Grid grid(rc, rc);
+  Grid64 grid(rc, rc);
 
   SUBCASE("correct construction") {
     CHECK_EQ(grid.getDim(), 2);
@@ -170,10 +170,10 @@ TEST_CASE("2D Grid quadratic") {
   }
 }
 
-TEST_CASE("2D Grid non-quadratic") {
+TEST_CASE("2D Grid64 non-quadratic") {
   int r = 12;
   int c = 15;
-  Grid grid(r, c);
+  Grid64 grid(r, c);
 
   SUBCASE("correct construction") {
     CHECK_EQ(grid.getDim(), 2);

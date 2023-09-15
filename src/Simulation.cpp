@@ -12,56 +12,28 @@
 #include "Schemes.hpp"
 #include "TugUtils.hpp"
 
-Simulation::Simulation(Grid &_grid, Boundary &_bc, APPROACH _approach)
-    : grid(_grid), bc(_bc), approach(_approach) {}
-
-void Simulation::setOutputCSV(CSV_OUTPUT csv_output) {
-  if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-    throw_invalid_argument("Invalid CSV output option given!");
-  }
-
-  this->csv_output = csv_output;
-}
-
-void Simulation::setOutputConsole(CONSOLE_OUTPUT console_output) {
-  if (console_output < CONSOLE_OUTPUT_OFF &&
-      console_output > CONSOLE_OUTPUT_VERBOSE) {
-    throw_invalid_argument("Invalid console output option given!");
-  }
-
-  this->console_output = console_output;
-}
-
-void Simulation::setTimeMeasure(TIME_MEASURE time_measure) {
-  if (time_measure < TIME_MEASURE_OFF && time_measure > TIME_MEASURE_ON) {
-    throw_invalid_argument("Invalid time measure option given!");
-  }
-
-  this->time_measure = time_measure;
-}
-
-void Simulation::setTimestep(double timestep) {
+template <class T> void Simulation<T>::setTimestep(T timestep) {
   if (timestep <= 0) {
     throw_invalid_argument("Timestep has to be greater than zero.");
   }
 
   if (approach == FTCS_APPROACH || approach == CRANK_NICOLSON_APPROACH) {
 
-    const double deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+    const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
     // will be 0 if 1D, else ...
-    const double deltaRowSquare = grid.getDim() != 1
-                                      ? grid.getDeltaRow() * grid.getDeltaRow()
-                                      : deltaColSquare;
-    const double minDeltaSquare =
+    const T deltaRowSquare = grid.getDim() != 1
+                                 ? grid.getDeltaRow() * grid.getDeltaRow()
+                                 : deltaColSquare;
+    const T minDeltaSquare =
         (deltaRowSquare < deltaColSquare) ? deltaRowSquare : deltaColSquare;
 
-    double maxAlpha = std::numeric_limits<double>::quiet_NaN();
+    T maxAlpha = std::numeric_limits<T>::quiet_NaN();
 
     // determine maximum alpha
     if (grid.getDim() == 2) {
 
-      const double maxAlphaX = grid.getAlphaX().maxCoeff();
-      const double maxAlphaY = grid.getAlphaY().maxCoeff();
+      const T maxAlphaX = grid.getAlphaX().maxCoeff();
+      const T maxAlphaY = grid.getAlphaY().maxCoeff();
       maxAlpha = (maxAlphaX > maxAlphaY) ? maxAlphaX : maxAlphaY;
 
     } else if (grid.getDim() == 1) {
@@ -74,7 +46,7 @@ void Simulation::setTimestep(double timestep) {
     const std::string dim = std::to_string(grid.getDim()) + "D";
 
     // Courant-Friedrichs-Lewy condition
-    double cfl = minDeltaSquare / (4 * maxAlpha);
+    T cfl = minDeltaSquare / (4 * maxAlpha);
 
     // stability equation from Wikipedia; might be useful if applied cfl does
     // not work in some cases double CFL_Wiki = 1 / (4 * maxAlpha *
@@ -112,109 +84,7 @@ void Simulation::setTimestep(double timestep) {
   }
 }
 
-double Simulation::getTimestep() { return this->timestep; }
-
-void Simulation::setIterations(int iterations) {
-  if (iterations <= 0) {
-    throw_invalid_argument("Number of iterations must be greater than zero.");
-  }
-  this->iterations = iterations;
-}
-
-void Simulation::setSolver(SOLVER solver) {
-  if (this->approach == FTCS_APPROACH) {
-    std::cerr
-        << "Warning: Solver was set, but FTCS approach initialized. Setting "
-           "the solver "
-           "is thus without effect."
-        << std::endl;
-  }
-
-  this->solver = solver;
-}
-
-void Simulation::setNumberThreads(int numThreads) {
-  if (numThreads > 0 && numThreads <= omp_get_num_procs()) {
-    this->numThreads = numThreads;
-  } else {
-    int maxThreadNumber = omp_get_num_procs();
-    std::string outputMessage =
-        "Number of threads exceeds the number of processor cores (" +
-        std::to_string(maxThreadNumber) + ") or is less than 1.";
-
-    throw_invalid_argument(outputMessage);
-  }
-}
-
-int Simulation::getIterations() { return this->iterations; }
-
-void Simulation::printConcentrationsConsole() {
-  std::cout << grid.getConcentrations() << std::endl;
-  std::cout << std::endl;
-}
-
-std::string Simulation::createCSVfile() {
-  std::ofstream file;
-  int appendIdent = 0;
-  std::string appendIdentString;
-
-  // string approachString = (approach == 0) ? "FTCS" : "BTCS";
-  const std::string &approachString = this->approach_names[approach];
-  std::string row = std::to_string(grid.getRow());
-  std::string col = std::to_string(grid.getCol());
-  std::string numIterations = std::to_string(iterations);
-
-  std::string filename =
-      approachString + "_" + row + "_" + col + "_" + numIterations + ".csv";
-
-  while (std::filesystem::exists(filename)) {
-    appendIdent += 1;
-    appendIdentString = std::to_string(appendIdent);
-    filename = approachString + "_" + row + "_" + col + "_" + numIterations +
-               "-" + appendIdentString + ".csv";
-  }
-
-  file.open(filename);
-  if (!file) {
-    exit(1);
-  }
-
-  // adds lines at the beginning of verbose output csv that represent the
-  // boundary conditions and their values -1 in case of closed boundary
-  if (csv_output == CSV_OUTPUT_XTREME) {
-    Eigen::IOFormat one_row(Eigen::StreamPrecision, Eigen::DontAlignCols, "",
-                            " ");
-    file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row)
-         << std::endl; // boundary left
-    file << bc.getBoundarySideValues(BC_SIDE_RIGHT).format(one_row)
-         << std::endl; // boundary right
-    file << bc.getBoundarySideValues(BC_SIDE_TOP).format(one_row)
-         << std::endl; // boundary top
-    file << bc.getBoundarySideValues(BC_SIDE_BOTTOM).format(one_row)
-         << std::endl; // boundary bottom
-    file << std::endl << std::endl;
-  }
-
-  file.close();
-
-  return filename;
-}
-
-void Simulation::printConcentrationsCSV(const std::string &filename) {
-  std::ofstream file;
-
-  file.open(filename, std::ios_base::app);
-  if (!file) {
-    exit(1);
-  }
-
-  Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
-  file << grid.getConcentrations().format(do_not_align) << std::endl;
-  file << std::endl << std::endl;
-  file.close();
-}
-
-void Simulation::run() {
+template <class T> void Simulation<T>::run() {
   if (this->timestep == -1) {
     throw_invalid_argument("Timestep is not set!");
   }
@@ -280,14 +150,14 @@ void Simulation::run() {
 
   } else if (approach == CRANK_NICOLSON_APPROACH) { // Crank-Nicolson case
 
-    double beta = 0.5;
+    constexpr T beta = 0.5;
 
     // TODO this implementation is very inefficient!
     // a separate implementation that sets up a specific tridiagonal matrix for
     // Crank-Nicolson would be better
-    Eigen::MatrixXd concentrations;
-    Eigen::MatrixXd concentrationsFTCS;
-    Eigen::MatrixXd concentrationsResult;
+    Eigen::MatrixX<T> concentrations;
+    Eigen::MatrixX<T> concentrationsFTCS;
+    Eigen::MatrixX<T> concentrationsResult;
     for (int i = 0; i < iterations * innerIterations; i++) {
       if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
         printConcentrationsConsole();
@@ -324,3 +194,9 @@ void Simulation::run() {
               << milliseconds.count() << "ms" << std::endl;
   }
 }
+
+template void Simulation<double>::setTimestep(double timestep);
+template void Simulation<float>::setTimestep(float timestep);
+
+template void Simulation<double>::run();
+template void Simulation<float>::run();

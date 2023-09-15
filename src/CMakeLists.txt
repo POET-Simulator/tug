@@ -1,4 +1,4 @@
-add_library(tug Boundary.cpp Grid.cpp Simulation.cpp FTCS.cpp BTCS.cpp)
+add_library(tug Simulation.cpp FTCS.cpp BTCS.cpp)
 
 IF(TUG_NAAICE_EXAMPLE)
   target_compile_definitions(tug PRIVATE WRITE_THOMAS_CSV)

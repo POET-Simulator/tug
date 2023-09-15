@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 
   // create a linear grid with 20 cells
   int cells = 20;
-  Grid grid = Grid(cells);
+  Grid64 grid(cells);
 
   MatrixXd concentrations = MatrixXd::Constant(1, 20, 20);
   grid.setConcentrations(concentrations);

@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
         // myfile << "Iterations: " << iterations[j] << endl;
         for (int k = 0; k < repetition; k++) {
           cout << "Wiederholung: " << k << endl;
-          Grid grid = Grid(n[i], n[i]);
+          Grid64 grid(n[i], n[i]);
           grid.setDomain(1, 1);
 
           MatrixXd concentrations = MatrixXd::Constant(n[i], n[i], 0);
