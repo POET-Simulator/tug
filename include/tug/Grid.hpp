@@ -59,9 +59,9 @@ public:
     this->deltaRow = double(this->domainRow) / double(this->row); // -> 1
     this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
 
-    this->concentrations = Eigen::MatrixXd::Constant(row, col, MAT_INIT_VAL);
-    this->alphaX = Eigen::MatrixXd::Constant(row, col, MAT_INIT_VAL);
-    this->alphaY = Eigen::MatrixXd::Constant(row, col, MAT_INIT_VAL);
+    this->concentrations = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
+    this->alphaX = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
+    this->alphaY = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
   }
 
   /**
