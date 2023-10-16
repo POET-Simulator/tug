@@ -11,6 +11,8 @@
 
 #include "files.hpp"
 
+using namespace tug;
+
 /**
  * Try to parse an input string into a given template type.
  */
