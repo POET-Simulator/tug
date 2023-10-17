@@ -10,6 +10,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace Eigen;
+using namespace tug;
 // #include <easy/profiler.h>
 // #define EASY_PROFILER_ENABLE ::profiler::setEnabled(true);
 
@@ -67,7 +68,7 @@ int main(int argc, char *argv[]) {
 
   // set up a simulation environment
   Simulation simulation =
-      Simulation(grid, bc, FTCS_APPROACH); // grid,boundary,simulation-approach
+      Simulation<double, tug::FTCS_APPROACH>(grid, bc); // grid,boundary,simulation-approach
 
   // set the timestep of the simulation
   simulation.setTimestep(0.1); // timestep

@@ -7,6 +7,7 @@
 
 using namespace Eigen;
 using namespace std;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
 
@@ -39,8 +40,7 @@ int main(int argc, char *argv[]) {
 
           Boundary bc = Boundary(grid);
 
-          Simulation sim = Simulation(grid, bc, BTCS_APPROACH);
-          sim.setSolver(THOMAS_ALGORITHM_SOLVER);
+          Simulation sim = Simulation(grid, bc);
 
           if (argc == 2) {
             int numThreads = atoi(argv[1]);

@@ -12,6 +12,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace Eigen;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
 
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]) {
 
   // set up a simulation environment
   Simulation simulation =
-      Simulation(grid, bc, FTCS_APPROACH); // grid,boundary,simulation-approach
+      Simulation<double, FTCS_APPROACH>(grid, bc); // grid,boundary,simulation-approach
 
   // set the timestep of the simulation
   simulation.setTimestep(10000); // timestep

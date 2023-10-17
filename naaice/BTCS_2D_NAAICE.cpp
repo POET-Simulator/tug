@@ -121,7 +121,8 @@ int main(int argc, char *argv[]) {
   Eigen::MatrixXd alphax = rmVecTocmMatrix(alphax_vec, row, col);
 
   constexpr double alphay_val = 5e-10;
-  Eigen::MatrixXd alphay = Eigen::MatrixXd::Constant(row, col, alphay_val); // row,col,value
+  Eigen::MatrixXd alphay =
+      Eigen::MatrixXd::Constant(row, col, alphay_val); // row,col,value
   grid.setAlpha(alphax, alphay);
 
   // // ******************
@@ -140,8 +141,7 @@ int main(int argc, char *argv[]) {
   // // ************************
 
   // set up a simulation environment
-  Simulation simulation =
-      Simulation(grid, bc, BTCS_APPROACH); // grid,boundary,simulation-approach
+  Simulation simulation = Simulation(grid, bc); // grid,boundary
 
   // set the timestep of the simulation
   simulation.setTimestep(360); // timestep

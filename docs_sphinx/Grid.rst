@@ -1,4 +1,4 @@
 Grid
 ====
 
-.. doxygenclass:: Grid
+.. doxygenclass:: tug::Grid

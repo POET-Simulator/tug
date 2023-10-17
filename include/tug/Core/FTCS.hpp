@@ -1,11 +1,13 @@
 /**
- * @file FTCS.cpp
+ * @file FTCS.hpp
  * @brief Implementation of heterogenous FTCS (forward time-centered space)
  * solution of diffusion equation in 1D and 2D space.
  *
  */
 
-#include "Schemes.hpp"
+#ifndef FTCS_H_
+#define FTCS_H_
+
 #include "TugUtils.hpp"
 
 #include <cstddef>
@@ -397,9 +399,6 @@ void FTCS(Grid<T> &grid, Boundary<T> &bc, T timestep, int &numThreads) {
         "Error: Only 1- and 2-dimensional grids are defined!");
   }
 }
-
-template void FTCS(Grid<double> &grid, Boundary<double> &bc, double timestep,
-                   int &numThreads);
-template void FTCS(Grid<float> &grid, Boundary<float> &bc, float timestep,
-                   int &numThreads);
 } // namespace tug
+
+#endif // FTCS_H_

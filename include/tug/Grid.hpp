@@ -14,6 +14,12 @@
 
 namespace tug {
 
+/**
+ * @brief Holds a matrix with concenctration and respective matrix/matrices of
+ * alpha coefficients.
+ *
+ * @tparam T Type to be used for matrices, e.g. double or float
+ */
 template <class T> class Grid {
 public:
   /**
@@ -31,10 +37,11 @@ public:
     }
 
     this->dim = 1;
-    this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
+    this->deltaCol =
+        static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
 
-    this->concentrations = Eigen::MatrixXd::Constant(1, col, MAT_INIT_VAL);
-    this->alphaX = Eigen::MatrixXd::Constant(1, col, MAT_INIT_VAL);
+    this->concentrations = Eigen::MatrixX<T>::Constant(1, col, MAT_INIT_VAL);
+    this->alphaX = Eigen::MatrixX<T>::Constant(1, col, MAT_INIT_VAL);
   }
 
   /**
@@ -56,8 +63,10 @@ public:
     }
 
     this->dim = 2;
-    this->deltaRow = double(this->domainRow) / double(this->row); // -> 1
-    this->deltaCol = double(this->domainCol) / double(this->col); // -> 1
+    this->deltaRow =
+        static_cast<T>(this->domainRow) / static_cast<T>(this->row); // -> 1
+    this->deltaCol =
+        static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
 
     this->concentrations = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
     this->alphaX = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
@@ -84,7 +93,7 @@ public:
   /**
    * @brief Gets the concentrations matrix for a Grid.
    *
-   * @return MatrixX<T> An Eigen3 matrix holding the concentrations and having
+   * @return An Eigen3 matrix holding the concentrations and having
    * the same dimensions as the grid.
    */
   const Eigen::MatrixX<T> &getConcentrations() { return this->concentrations; }
@@ -145,7 +154,7 @@ public:
    * @brief Gets the matrix of alpha coefficients of a 1D-Grid. Grid must be one
    * dimensional.
    *
-   * @return MatrixX<T> A matrix with 1 row holding the alpha coefficients.
+   * @return A matrix with 1 row holding the alpha coefficients.
    */
   const Eigen::MatrixX<T> &getAlpha() const {
     if (dim != 1) {
@@ -161,7 +170,7 @@ public:
    * @brief Gets the matrix of alpha coefficients in x-direction of a 2D-Grid.
    * Grid must be two dimensional.
    *
-   * @return MatrixX<T> A matrix holding the alpha coefficients in x-direction.
+   * @return A matrix holding the alpha coefficients in x-direction.
    */
   const Eigen::MatrixX<T> &getAlphaX() const {
 
@@ -177,7 +186,7 @@ public:
    * @brief Gets the matrix of alpha coefficients in y-direction of a 2D-Grid.
    * Grid must be two dimensional.
    *
-   * @return MatrixX<T> A matrix holding the alpha coefficients in y-direction.
+   * @return A matrix holding the alpha coefficients in y-direction.
    */
   const Eigen::MatrixX<T> &getAlphaY() const {
 
@@ -192,14 +201,14 @@ public:
   /**
    * @brief Gets the dimensions of the grid.
    *
-   * @return int Dimensions, either 1 or 2.
+   * @return Dimensions, either 1 or 2.
    */
   int getDim() const { return this->dim; }
 
   /**
    * @brief Gets length of 1D grid. Must be one dimensional grid.
    *
-   * @return int Length of 1D grid.
+   * @return Length of 1D grid.
    */
   int getLength() const {
     if (dim != 1) {
@@ -214,14 +223,14 @@ public:
   /**
    * @brief Gets the number of rows of the grid.
    *
-   * @return int Number of rows.
+   * @return Number of rows.
    */
   int getRow() const { return this->row; }
 
   /**
    * @brief Gets the number of columns of the grid.
    *
-   * @return int Number of columns.
+   * @return Number of columns.
    */
   int getCol() const { return this->col; }
 
@@ -271,7 +280,7 @@ public:
   /**
    * @brief Gets the delta value for 1D-Grid. Grid must be one dimensional.
    *
-   * @return double Delta value.
+   * @return Delta value.
    */
   T getDelta() const {
 
@@ -287,14 +296,14 @@ public:
   /**
    * @brief Gets the delta value in x-direction.
    *
-   * @return double Delta value in x-direction.
+   * @return Delta value in x-direction.
    */
   T getDeltaCol() const { return this->deltaCol; }
 
   /**
    * @brief Gets the delta value in y-direction. Must be two dimensional grid.
    *
-   * @return double Delta value in y-direction.
+   * @return Delta value in y-direction.
    */
   T getDeltaRow() const {
     if (dim != 2) {
@@ -318,7 +327,7 @@ private:
   Eigen::MatrixX<T> alphaX; // Matrix holding alpha coefficients in x-direction
   Eigen::MatrixX<T> alphaY; // Matrix holding alpha coefficients in y-direction
 
-  static constexpr double MAT_INIT_VAL = 0;
+  static constexpr T MAT_INIT_VAL = 0;
 };
 
 using Grid64 = Grid<double>;

@@ -1,5 +1,5 @@
 /**
- * @file BTCSv2.cpp
+ * @file BTCS.hpp
  * @brief Implementation of heterogenous BTCS (backward time-centered space)
  * solution of diffusion equation in 1D and 2D space. Internally the
  * alternating-direction implicit (ADI) method is used. Version 2, because
@@ -7,10 +7,11 @@
  *
  */
 
-#include "Schemes.hpp"
+#ifndef BTCS_H_
+#define BTCS_H_
+
 #include "TugUtils.hpp"
 
-#include <Eigen/src/Core/util/Meta.h>
 #include <cstddef>
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
@@ -428,14 +429,6 @@ void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
         "Error: Only 1- and 2-dimensional grids are defined!");
   }
 }
-
-template void BTCS_Thomas(Grid<double> &grid, Boundary<double> &bc,
-                          double timestep, int numThreads);
-template void BTCS_Thomas(Grid<float> &grid, Boundary<float> &bc,
-                          float timestep, int numThreads);
-
-template void BTCS_LU(Grid<double> &grid, Boundary<double> &bc, double timestep,
-                      int numThreads);
-template void BTCS_LU(Grid<float> &grid, Boundary<float> &bc, float timestep,
-                      int numThreads);
 } // namespace tug
+
+#endif // BTCS_H_

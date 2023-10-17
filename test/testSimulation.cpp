@@ -12,8 +12,7 @@ using namespace Eigen;
 using namespace std;
 using namespace tug;
 
-static Grid64 setupSimulation(APPROACH approach, double timestep,
-                            int iterations) {
+Grid64 setupSimulation(double timestep, int iterations) {
   int row = 11;
   int col = 11;
   int domain_row = 10;
@@ -45,26 +44,29 @@ static Grid64 setupSimulation(APPROACH approach, double timestep,
   }
   grid.setAlpha(alpha, alpha);
 
-  // Boundary
-  Boundary bc = Boundary(grid);
-
-  // Simulation
-  Simulation sim = Simulation(grid, bc, approach);
-  // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
-  sim.setTimestep(timestep);
-  sim.setIterations(iterations);
-  sim.run();
-
-  // RUN
   return grid;
 }
+
+constexpr double timestep = 0.001;
+constexpr double iterations = 7000;
 
 TEST_CASE("equality to reference matrix with FTCS") {
   // set string from the header file
   string test_path = testSimulationCSVDir;
   MatrixXd reference = CSV2Eigen(test_path);
   cout << "FTCS Test: " << endl;
-  Grid grid = setupSimulation(FTCS_APPROACH, 0.001, 7000);
+
+  Grid grid = setupSimulation(timestep, iterations); // Boundary
+  Boundary bc = Boundary(grid);
+
+  // Simulation
+
+  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
+  // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+  sim.setTimestep(timestep);
+  sim.setIterations(iterations);
+  sim.run();
+
   cout << endl;
   CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
 }
@@ -74,7 +76,17 @@ TEST_CASE("equality to reference matrix with BTCS") {
   string test_path = testSimulationCSVDir;
   MatrixXd reference = CSV2Eigen(test_path);
   cout << "BTCS Test: " << endl;
-  Grid grid = setupSimulation(BTCS_APPROACH, 1, 7);
+
+  Grid grid = setupSimulation(timestep, iterations); // Boundary
+  Boundary bc = Boundary(grid);
+
+  // Simulation
+  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
+  // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+  sim.setTimestep(timestep);
+  sim.setIterations(iterations);
+  sim.run();
+
   cout << endl;
   CHECK(checkSimilarityV2(reference, grid.getConcentrations(), 0.01) == true);
 }
@@ -84,14 +96,14 @@ TEST_CASE("Initialize environment") {
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
 
-  CHECK_NOTHROW(Simulation sim(grid, boundary, BTCS_APPROACH));
+  CHECK_NOTHROW(Simulation sim(grid, boundary));
 }
 
 TEST_CASE("Simulation environment") {
   int rc = 12;
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
-  Simulation sim(grid, boundary, FTCS_APPROACH);
+  Simulation<double, tug::FTCS_APPROACH> sim(grid, boundary);
 
   SUBCASE("default paremeters") { CHECK_EQ(sim.getIterations(), -1); }
 

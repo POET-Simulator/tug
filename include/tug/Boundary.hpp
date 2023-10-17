@@ -30,6 +30,8 @@ enum BC_SIDE { BC_SIDE_LEFT, BC_SIDE_RIGHT, BC_SIDE_TOP, BC_SIDE_BOTTOM };
  * This class defines the boundary conditions of individual boundary elements.
  * These can be flexibly used and combined later in other classes.
  * The class serves as an auxiliary class for structuring the Boundary class.
+ *
+ * @tparam T Data type of the boundary condition element
  */
 template <class T> class BoundaryElement {
 public:
@@ -82,7 +84,7 @@ public:
    * @brief Return the type of the boundary condition, i.e. whether the
    *        boundary is considered closed or constant.
    *
-   * @return BC_TYPE Type of boundary condition, either BC_TYPE_CLOSED or
+   * @return Type of boundary condition, either BC_TYPE_CLOSED or
              BC_TYPE_CONSTANT.
    */
   BC_TYPE getType() const { return this->type; }
@@ -90,7 +92,7 @@ public:
   /**
    * @brief Return the concentration value for the constant boundary condition.
    *
-   * @return double Value of the concentration.
+   * @return Value of the concentration.
    */
   T getValue() const { return this->value; }
 
@@ -102,6 +104,8 @@ private:
 /**
  * This class implements the functionality and management of the boundary
  * conditions in the grid to be simulated.
+ *
+ * @tparam Data type of the boundary condition value
  */
 template <class T> class Boundary {
 public:
@@ -227,7 +231,7 @@ public:
    *
    * @param side Boundary side from which the boundary conditions are to be
    * returned.
-   * @return vector<BoundaryElement<T>> Contains the boundary conditions as
+   * @return Contains the boundary conditions as
    * BoundaryElement<T> objects.
    */
   const std::vector<BoundaryElement<T>> &getBoundarySide(BC_SIDE side) const {
@@ -246,7 +250,7 @@ public:
    specific boundary is closed.
    *
    * @param side Boundary side for which the values are to be returned.
-   * @return VectorX<T> Vector with values as T.
+   * @return Vector with values as T.
    */
   Eigen::VectorX<T> getBoundarySideValues(BC_SIDE side) const {
     const std::size_t length = boundaries[side].size();
@@ -271,7 +275,7 @@ public:
    * @param index Index of the boundary element on the corresponding
    *              boundary side. Must index an element of the corresponding
    * side.
-   * @return BoundaryElement<T> Boundary condition as a BoundaryElement<T>
+   * @return Boundary condition as a BoundaryElement<T>
    * object.
    */
   BoundaryElement<T> getBoundaryElement(BC_SIDE side, int index) const {
@@ -290,7 +294,7 @@ public:
    * @param index Index of the boundary element on the corresponding
    *              boundary side. Must index an element of the corresponding
    side.
-   * @return BC_TYPE Boundary Type of the corresponding boundary condition.
+   * @return Boundary Type of the corresponding boundary condition.
    */
   BC_TYPE getBoundaryElementType(BC_SIDE side, int index) const {
     if ((boundaries[side].size() < index) || index < 0) {
@@ -309,7 +313,7 @@ public:
    * @param index Index of the boundary element on the corresponding
    *              boundary side. Must index an element of the corresponding
    *              side.
-   * @return double Concentration of the corresponding BoundaryElement<T>
+   * @return Concentration of the corresponding BoundaryElement<T>
    * object.
    */
   T getBoundaryElementValue(BC_SIDE side, int index) const {
