@@ -8,5 +8,7 @@ configure_file(files.hpp.in files.hpp)
 target_include_directories(naaice PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(NAAICE_dble_vs_float PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+target_compile_definitions(naaice PRIVATE WRITE_THOMAS_CSV)
+
 target_link_libraries(naaice PUBLIC tug)
 target_link_libraries(NAAICE_dble_vs_float PUBLIC tug)

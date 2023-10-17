@@ -1,4 +1,5 @@
 #include <Eigen/Eigen>
+#include <chrono>
 #include <cstdint>
 #include <fstream>
 #include <iostream>
@@ -7,8 +8,8 @@
 #include <string>
 #include <string_view>
 #include <tug/Simulation.hpp>
+#include <type_traits>
 #include <vector>
-#include <chrono>
 
 #include "files.hpp"
 
@@ -96,151 +97,96 @@ Eigen::MatrixXd rmVecTocmMatrix(const std::vector<std::vector<T>> &vec,
   return out_mat;
 }
 
+template <class T, tug::APPROACH app> int doWork(int ngrid) {
 
-int DoDble(int ngrid, APPROACH approach) {
-  
-  constexpr double dt = 10;
-  
+  constexpr T dt = 10;
+
   // create a grid
-  std::cout << "DOUBLE grid: " << ngrid << std::endl;
+  std::string name;
 
-  Grid64 grid64(ngrid, ngrid);
+  if constexpr (std::is_same_v<T, double>) {
+    name = "DOUBLE";
+  } else if constexpr (std::is_same_v<T, float>) {
+    name = "FLOAT";
+  } else {
+    name = "unknown";
+  }
+
+  std::cout << name << " grid: " << ngrid << std::endl;
+
+  Grid<T> grid(ngrid, ngrid);
+  // Grid64 grid(ngrid, ngrid);
 
   // (optional) set the domain, e.g.:
-  grid64.setDomain(0.1, 0.1);
+  grid.setDomain(0.1, 0.1);
 
-  Eigen::MatrixXd initConc64 = Eigen::MatrixXd::Constant(ngrid, ngrid, 0);
+  Eigen::MatrixX<T> initConc64 = Eigen::MatrixX<T>::Constant(ngrid, ngrid, 0);
   initConc64(50, 50) = 1E-6;
-  grid64.setConcentrations(initConc64);
-  
-  const double sum_init64 = initConc64.sum();
+  grid.setConcentrations(initConc64);
 
-  constexpr double alphax_val = 5e-10;
-  Eigen::MatrixXd alphax = Eigen::MatrixXd::Constant(ngrid, ngrid, alphax_val); // row,col,value
-  constexpr double alphay_val = 1e-10;
-  Eigen::MatrixXd alphay = Eigen::MatrixXd::Constant(ngrid, ngrid, alphay_val); // row,col,value
-  grid64.setAlpha(alphax, alphay);
+  const T sum_init64 = initConc64.sum();
+
+  constexpr T alphax_val = 5e-10;
+  Eigen::MatrixX<T> alphax =
+      Eigen::MatrixX<T>::Constant(ngrid, ngrid, alphax_val); // row,col,value
+  constexpr T alphay_val = 1e-10;
+  Eigen::MatrixX<T> alphay =
+      Eigen::MatrixX<T>::Constant(ngrid, ngrid, alphay_val); // row,col,value
+  grid.setAlpha(alphax, alphay);
 
   // create a boundary with constant values
-  Boundary bc64 = Boundary(grid64);
-  bc64.setBoundarySideClosed(BC_SIDE_LEFT);
-  bc64.setBoundarySideClosed(BC_SIDE_RIGHT);
-  bc64.setBoundarySideClosed(BC_SIDE_TOP);
-  bc64.setBoundarySideClosed(BC_SIDE_BOTTOM);
+  Boundary bc = Boundary(grid);
+  bc.setBoundarySideClosed(BC_SIDE_LEFT);
+  bc.setBoundarySideClosed(BC_SIDE_RIGHT);
+  bc.setBoundarySideClosed(BC_SIDE_TOP);
+  bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
 
   // set up a simulation environment
-  Simulation Sim64 =
-      Simulation(grid64, bc64, approach); // grid_64,boundary,simulation-approach
+  Simulation Sim =
+      Simulation<T, app>(grid, bc); // grid_64,boundary,simulation-approach
 
-  //Sim64.setSolver(THOMAS_ALGORITHM_SOLVER);
- 
+  // Sim64.setSolver(THOMAS_ALGORITHM_SOLVER);
+
   // set the timestep of the simulation
-  Sim64.setTimestep(dt); // timestep
+  Sim.setTimestep(dt); // timestep
 
   // set the number of iterations
-  Sim64.setIterations(2);
+  Sim.setIterations(2);
 
   // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
   // CSV_OUTPUT_VERBOSE]
-  Sim64.setOutputCSV(CSV_OUTPUT_ON);
+  Sim.setOutputCSV(CSV_OUTPUT_ON);
 
   // set output to the console to 'ON'
-  Sim64.setOutputConsole(CONSOLE_OUTPUT_OFF);
+  Sim.setOutputConsole(CONSOLE_OUTPUT_OFF);
 
   // // **** RUN SIM64 ****
-  auto begin64 = std::chrono::high_resolution_clock::now();
+  auto begin_t = std::chrono::high_resolution_clock::now();
 
-  Sim64.run();
+  Sim.run();
 
-  auto end64 = std::chrono::high_resolution_clock::now();
-  auto ms64 = std::chrono::duration_cast<std::chrono::milliseconds>(end64 - begin64);
+  auto end_t = std::chrono::high_resolution_clock::now();
+  auto ms_t =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end_t - begin_t);
 
-  const double sum_after64 = grid64.getConcentrations().sum();
+  const double sum_after64 = grid.getConcentrations().sum();
 
-  std::cout << "Sum of init field:      " << std::setprecision(15) << sum_init64 
-            << "\nSum after 2 iterations: " << sum_after64 
-            << "\nMilliseconds: " << ms64.count() << std::endl << std::endl;
+  std::cout << "Sum of init field:      " << std::setprecision(15) << sum_init64
+            << "\nSum after 2 iterations: " << sum_after64
+            << "\nMilliseconds: " << ms_t.count() << std::endl
+            << std::endl;
   return 0;
-  
 }
-
-int DoFloat(int ngrid, APPROACH approach) {
-  
-  constexpr double dt = 10;
-  
-  // create a grid
-  std::cout << "FLOAT grid: " << ngrid << std::endl;
-
-  Grid32 grid32(ngrid, ngrid);
-
-  // (optional) set the domain, e.g.:
-  grid32.setDomain(0.1, 0.1);
-
-  Eigen::MatrixXf initConc32 = Eigen::MatrixXf::Constant(ngrid, ngrid, 0);
-  initConc32(50, 50) = 1E-6;
-  grid32.setConcentrations(initConc32);
-  
-  const float sum_init32 = initConc32.sum();
-
-  constexpr float alphax_val = 5e-10;
-  Eigen::MatrixXf alphax = Eigen::MatrixXf::Constant(ngrid, ngrid, alphax_val); // row,col,value
-  constexpr float alphay_val = 1e-10;
-  Eigen::MatrixXf alphay = Eigen::MatrixXf::Constant(ngrid, ngrid, alphay_val); // row,col,value
-  grid32.setAlpha(alphax, alphay);
-
-  // create a boundary with constant values
-  Boundary bc32 = Boundary(grid32);
-  bc32.setBoundarySideClosed(BC_SIDE_LEFT);
-  bc32.setBoundarySideClosed(BC_SIDE_RIGHT);
-  bc32.setBoundarySideClosed(BC_SIDE_TOP);
-  bc32.setBoundarySideClosed(BC_SIDE_BOTTOM);
-
-  // set up a simulation environment
-  Simulation Sim32 =
-      Simulation(grid32, bc32, approach); // grid_32,boundary,simulation-approach
-
-  // Sim32.setSolver(THOMAS_ALGORITHM_SOLVER);
- 
-  // set the timestep of the simulation
-  Sim32.setTimestep(dt); // timestep
-
-  // set the number of iterations
-  Sim32.setIterations(2);
-
-  // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
-  // CSV_OUTPUT_VERBOSE]
-  Sim32.setOutputCSV(CSV_OUTPUT_ON);
-
-  // set output to the console to 'ON'
-  Sim32.setOutputConsole(CONSOLE_OUTPUT_OFF);
-
-  // // **** RUN SIM32 ****
-  auto begin32 = std::chrono::high_resolution_clock::now();
-
-  Sim32.run();
-
-  auto end32 = std::chrono::high_resolution_clock::now();
-  auto ms32 = std::chrono::duration_cast<std::chrono::milliseconds>(end32 - begin32);
-
-  const float sum_after32 = grid32.getConcentrations().sum();
-
-  std::cout << "Sum of init field:      " << std::setprecision(15) << sum_init32 
-            << "\nSum after 2 iteration: " << sum_after32 
-            << "\nMilliseconds: " << ms32.count() << std::endl << std::endl;
-  return 0;
-  
-}
-
 
 int main(int argc, char *argv[]) {
 
   int n[] = {101, 201, 501, 1001, 2001};
 
   for (int i = 0; i < std::size(n); i++) {
-    DoFloat(n[i], BTCS_APPROACH);
-    DoDble(n[i],  BTCS_APPROACH);
-    DoFloat(n[i], FTCS_APPROACH);
-    DoDble(n[i],  FTCS_APPROACH);
+    doWork<float, tug::BTCS_APPROACH>(n[i]);
+    doWork<double, tug::BTCS_APPROACH>(n[i]);
+    doWork<float, tug::FTCS_APPROACH>(n[i]);
+    doWork<double, tug::FTCS_APPROACH>(n[i]);
   }
 
   return 0;

@@ -280,6 +280,29 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
   a_diag[n - 1] = A.coeff(n - 1, n - 2);
   b_diag[n - 1] = A.coeff(n - 1, n - 1);
 
+  // HACK: write CSV to file
+#ifdef WRITE_THOMAS_CSV
+#include <fstream>
+#include <string>
+  static std::uint32_t file_index = 0;
+  std::string file_name = "Thomas_" + std::to_string(file_index++) + ".csv";
+
+  std::ofstream out_file;
+
+  out_file.open(file_name, std::ofstream::trunc | std::ofstream::out);
+
+  // print header
+  out_file << "Aa, Ab, Ac, b\n";
+
+  // iterate through all elements
+  for (std::size_t i = 0; i < n; i++) {
+    out_file << a_diag[i] << ", " << b_diag[i] << ", " << c_diag[i] << ", "
+             << b[i] << "\n";
+  }
+
+  out_file.close();
+#endif
+
   // start solving - c_diag and x_vec are overwritten
   n--;
   c_diag[0] /= b_diag[0];
