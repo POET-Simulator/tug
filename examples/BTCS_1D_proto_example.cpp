@@ -2,6 +2,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace Eigen;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
   // **************
@@ -10,7 +11,7 @@ int main(int argc, char *argv[]) {
 
   // create a linear grid with 20 cells
   int cells = 20;
-  Grid grid = Grid(cells);
+  Grid64 grid(cells);
 
   MatrixXd concentrations = MatrixXd::Constant(1, 20, 0);
   concentrations(0, 0) = 2000;
@@ -31,8 +32,7 @@ int main(int argc, char *argv[]) {
   // ************************
 
   // set up a simulation environment
-  Simulation simulation =
-      Simulation(grid, bc, BTCS_APPROACH); // grid,boundary,simulation-approach
+  Simulation simulation = Simulation(grid, bc); // grid,boundary
 
   // set the timestep of the simulation
   simulation.setTimestep(0.1); // timestep

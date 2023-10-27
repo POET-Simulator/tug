@@ -4,6 +4,7 @@
 
 using namespace std;
 using namespace Eigen;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
   int row = 50;
@@ -12,7 +13,7 @@ int main(int argc, char *argv[]) {
   int domain_col = 10;
 
   // Grid
-  Grid grid = Grid(row, col);
+  Grid64 grid(row, col);
   grid.setDomain(domain_row, domain_col);
 
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]) {
   Boundary bc = Boundary(grid);
 
   // Simulation
-  Simulation sim = Simulation(grid, bc, FTCS_APPROACH);
+  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
   sim.setTimestep(0.001);
   sim.setIterations(10000);
   sim.setOutputCSV(CSV_OUTPUT_OFF);

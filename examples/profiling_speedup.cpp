@@ -7,6 +7,7 @@
 
 using namespace Eigen;
 using namespace std;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
 
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]) {
         // myfile << "Iterations: " << iterations[j] << endl;
         for (int k = 0; k < repetition; k++) {
           cout << "Wiederholung: " << k << endl;
-          Grid grid = Grid(n[i], n[i]);
+          Grid64 grid(n[i], n[i]);
           grid.setDomain(1, 1);
 
           MatrixXd concentrations = MatrixXd::Constant(n[i], n[i], 0);
@@ -39,8 +40,7 @@ int main(int argc, char *argv[]) {
 
           Boundary bc = Boundary(grid);
 
-          Simulation sim = Simulation(grid, bc, BTCS_APPROACH);
-          sim.setSolver(THOMAS_ALGORITHM_SOLVER);
+          Simulation sim = Simulation(grid, bc);
 
           if (argc == 2) {
             int numThreads = atoi(argv[1]);

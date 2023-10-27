@@ -2,6 +2,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace Eigen;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
   // EASY_PROFILER_ENABLE;
@@ -13,7 +14,7 @@ int main(int argc, char *argv[]) {
   // create a grid with a 20 x 20 field
   int row = 40;
   int col = 50;
-  Grid grid = Grid(row, col);
+  Grid64 grid(row, col);
 
   // (optional) set the domain, e.g.:
   // grid.setDomain(20, 20);
@@ -61,7 +62,7 @@ int main(int argc, char *argv[]) {
 
   // set up a simulation environment
   Simulation simulation =
-      Simulation(grid, bc, BTCS_APPROACH); // grid,boundary,simulation-approach
+      Simulation(grid, bc); // grid,boundary
 
   // set the timestep of the simulation
   simulation.setTimestep(0.1); // timestep

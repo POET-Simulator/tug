@@ -12,4 +12,4 @@ Numerical Solver
 **Backward Time-Centered Space (BTCS) Method**
 
 
-**Forward Time-Centered Space (BTCS) Method**
+**Forward Time-Centered Space (FTCS) Method**

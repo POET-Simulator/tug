@@ -3,6 +3,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace Eigen;
+using namespace tug;
 
 int main(int argc, char *argv[]) {
   // **************
@@ -11,7 +12,7 @@ int main(int argc, char *argv[]) {
 
   // create a linear grid with 20 cells
   int cells = 20;
-  Grid grid = Grid(cells);
+  Grid64 grid(cells);
 
   MatrixXd concentrations = MatrixXd::Constant(1, 20, 20);
   grid.setConcentrations(concentrations);
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
 
   // set up a simulation environment
   Simulation simulation =
-      Simulation(grid, bc, FTCS_APPROACH); // grid,boundary,simulation-approach
+      Simulation<double, tug::FTCS_APPROACH>(grid, bc); // grid,boundary,simulation-approach
 
   // (optional) set the timestep of the simulation
   simulation.setTimestep(0.1); // timestep

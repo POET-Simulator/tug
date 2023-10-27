@@ -10,6 +10,7 @@
 #include <tug/Simulation.hpp>
 
 using namespace Eigen;
+using namespace tug;
 // #include <easy/profiler.h>
 // #define EASY_PROFILER_ENABLE ::profiler::setEnabled(true);
 
@@ -23,7 +24,7 @@ int main(int argc, char *argv[]) {
   // create a grid with a 20 x 20 field
   int row = 20;
   int col = 20;
-  Grid grid = Grid(row, col);
+  Grid64 grid(row, col);
 
   // (optional) set the domain, e.g.:
   // grid.setDomain(20, 20);
@@ -67,7 +68,7 @@ int main(int argc, char *argv[]) {
 
   // set up a simulation environment
   Simulation simulation =
-      Simulation(grid, bc, FTCS_APPROACH); // grid,boundary,simulation-approach
+      Simulation<double, tug::FTCS_APPROACH>(grid, bc); // grid,boundary,simulation-approach
 
   // set the timestep of the simulation
   simulation.setTimestep(0.1); // timestep
