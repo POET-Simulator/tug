@@ -41,7 +41,8 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.inheritance_diagram',
-    'breathe'
+    'breathe',
+    'm2r2'
 ]
 
 html_baseurl = "/index.html"
