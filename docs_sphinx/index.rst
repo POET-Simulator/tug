@@ -49,3 +49,4 @@ Table of Contents
     developer
     examples
     visualization
+    contributors
