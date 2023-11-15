@@ -276,66 +276,78 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   // inner cells
   // these are independent of the boundary condition type
   // omp_set_num_threads(10);
-#pragma omp parallel for num_threads(numThreads)
-  for (int row = 1; row < rowMax - 1; row++) {
-    for (int col = 1; col < colMax - 1; col++) {
-      concentrations_t1(row, col) = grid.getConcentrations()(row, col) +
-                                    timestep / (deltaRow * deltaRow) *
-                                        (calcVerticalChange(grid, row, col)) +
-                                    timestep / (deltaCol * deltaCol) *
-                                        (calcHorizontalChange(grid, row, col));
+  int row;
+  int col;
+#pragma omp parallel num_threads(numThreads)
+  {
+#pragma omp parallel for
+    for (int row = 1; row < rowMax - 1; row++) {
+      for (int col = 1; col < colMax - 1; col++) {
+        concentrations_t1(row, col) =
+            grid.getConcentrations()(row, col) +
+            timestep / (deltaRow * deltaRow) *
+                (calcVerticalChange(grid, row, col)) +
+            timestep / (deltaCol * deltaCol) *
+                (calcHorizontalChange(grid, row, col));
+      }
     }
-  }
 
-  // boundary conditions
-  // left without corners / looping over rows
-  // hold column constant at index 0
-  int col = 0;
-#pragma omp parallel for num_threads(numThreads)
-  for (int row = 1; row < rowMax - 1; row++) {
-    concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
-        timestep / (deltaCol * deltaCol) *
-            (calcHorizontalChangeLeftBoundary(grid, bc, row, col)) +
-        timestep / (deltaRow * deltaRow) * (calcVerticalChange(grid, row, col));
-  }
+// boundary conditions
+// left without corners / looping over rows
+// hold column constant at index 0
+#pragma omp single
+    col = 0;
+#pragma omp parallel for
+    for (int row = 1; row < rowMax - 1; row++) {
+      concentrations_t1(row, col) =
+          grid.getConcentrations()(row, col) +
+          timestep / (deltaCol * deltaCol) *
+              (calcHorizontalChangeLeftBoundary(grid, bc, row, col)) +
+          timestep / (deltaRow * deltaRow) *
+              (calcVerticalChange(grid, row, col));
+    }
 
-  // right without corners / looping over rows
-  // hold column constant at max index
-  col = colMax - 1;
-#pragma omp parallel for num_threads(numThreads)
-  for (int row = 1; row < rowMax - 1; row++) {
-    concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
-        timestep / (deltaCol * deltaCol) *
-            (calcHorizontalChangeRightBoundary(grid, bc, row, col)) +
-        timestep / (deltaRow * deltaRow) * (calcVerticalChange(grid, row, col));
-  }
+// right without corners / looping over rows
+// hold column constant at max index
+#pragma omp single
+    col = colMax - 1;
+#pragma omp parallel for
+    for (int row = 1; row < rowMax - 1; row++) {
+      concentrations_t1(row, col) =
+          grid.getConcentrations()(row, col) +
+          timestep / (deltaCol * deltaCol) *
+              (calcHorizontalChangeRightBoundary(grid, bc, row, col)) +
+          timestep / (deltaRow * deltaRow) *
+              (calcVerticalChange(grid, row, col));
+    }
 
-  // top without corners / looping over columns
-  // hold row constant at index 0
-  int row = 0;
-#pragma omp parallel for num_threads(numThreads)
-  for (int col = 1; col < colMax - 1; col++) {
-    concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
-        timestep / (deltaRow * deltaRow) *
-            (calcVerticalChangeTopBoundary(grid, bc, row, col)) +
-        timestep / (deltaCol * deltaCol) *
-            (calcHorizontalChange(grid, row, col));
-  }
+// top without corners / looping over columns
+// hold row constant at index 0
+#pragma omp single
+    row = 0;
+#pragma omp parallel for
+    for (int col = 1; col < colMax - 1; col++) {
+      concentrations_t1(row, col) =
+          grid.getConcentrations()(row, col) +
+          timestep / (deltaRow * deltaRow) *
+              (calcVerticalChangeTopBoundary(grid, bc, row, col)) +
+          timestep / (deltaCol * deltaCol) *
+              (calcHorizontalChange(grid, row, col));
+    }
 
-  // bottom without corners / looping over columns
-  // hold row constant at max index
-  row = rowMax - 1;
-#pragma omp parallel for num_threads(numThreads)
-  for (int col = 1; col < colMax - 1; col++) {
-    concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
-        timestep / (deltaRow * deltaRow) *
-            (calcVerticalChangeBottomBoundary(grid, bc, row, col)) +
-        timestep / (deltaCol * deltaCol) *
-            (calcHorizontalChange(grid, row, col));
+// bottom without corners / looping over columns
+// hold row constant at max index
+#pragma omp single
+    row = rowMax - 1;
+#pragma omp parallel for
+    for (int col = 1; col < colMax - 1; col++) {
+      concentrations_t1(row, col) =
+          grid.getConcentrations()(row, col) +
+          timestep / (deltaRow * deltaRow) *
+              (calcVerticalChangeBottomBoundary(grid, bc, row, col)) +
+          timestep / (deltaCol * deltaCol) *
+              (calcHorizontalChange(grid, row, col));
+    }
   }
 
   // corner top left

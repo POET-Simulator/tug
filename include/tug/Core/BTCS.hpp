@@ -393,37 +393,42 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
   Eigen::MatrixX<T> concentrations = grid.getConcentrations();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
-  for (int i = 0; i < rowMax; i++) {
+#pragma omp parallel num_threads(numThreads)
+  {
+#pragma omp parallel for private(A, b, row_t1)
+    for (int i = 0; i < rowMax; i++) {
 
-    A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
-    b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
-                             bcTop, bcBottom, colMax, i, sx, sy);
+      A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
+      b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
+                               bcTop, bcBottom, colMax, i, sx, sy);
 
-    row_t1 = solverFunc(A, b);
+      row_t1 = solverFunc(A, b);
 
-    concentrations_t1.row(i) = row_t1;
+      concentrations_t1.row(i) = row_t1;
+    }
+
+#pragma omp single
+    {
+      concentrations_t1.transposeInPlace();
+      concentrations.transposeInPlace();
+      alphaX.transposeInPlace();
+      alphaY.transposeInPlace();
+    }
+
+#pragma omp parallel for private(A, b, row_t1)
+    for (int i = 0; i < colMax; i++) {
+      // swap alphas, boundary conditions and sx/sy for column-wise calculation
+      A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
+      b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop,
+                               bcBottom, bcLeft, bcRight, rowMax, i, sy, sx);
+
+      row_t1 = solverFunc(A, b);
+
+      concentrations.row(i) = row_t1;
+    }
+#pragma omp single
+    { concentrations.transposeInPlace(); }
   }
-
-  concentrations_t1.transposeInPlace();
-  concentrations.transposeInPlace();
-  alphaX.transposeInPlace();
-  alphaY.transposeInPlace();
-
-#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
-  for (int i = 0; i < colMax; i++) {
-    // swap alphas, boundary conditions and sx/sy for column-wise calculation
-    A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
-    b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
-                             bcLeft, bcRight, rowMax, i, sy, sx);
-
-    row_t1 = solverFunc(A, b);
-
-    concentrations.row(i) = row_t1;
-  }
-
-  concentrations.transposeInPlace();
-
   grid.setConcentrations(concentrations);
 }
 
