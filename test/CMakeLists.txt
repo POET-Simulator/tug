@@ -25,3 +25,6 @@ add_custom_target(
   check
   COMMAND $<TARGET_FILE:testTug>
   DEPENDS testTug)
+
+add_executable(fixed_point testFixedPoint.cpp)
+target_link_libraries(fixed_point PRIVATE tug)
