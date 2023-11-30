@@ -88,9 +88,9 @@ static inline T calcHorizontalChangeLeftBoundaryClosed(Grid<T> &grid, int &row,
 template <class T>
 static inline T calcHorizontalChangeLeftBoundary(Grid<T> &grid, Boundary<T> &bc,
                                                  int &row, int &col) {
-  if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CONSTANT) {
+  if (bc.getBoundaryElementType(BC_SIDE_LEFT, row) == BC_TYPE_CONSTANT) {
     return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
-  } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, col) == BC_TYPE_CLOSED) {
+  } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, row) == BC_TYPE_CLOSED) {
     return calcHorizontalChangeLeftBoundaryClosed(grid, row, col);
   } else {
     throw_invalid_argument("Undefined Boundary Condition Type!");
@@ -130,9 +130,9 @@ template <class T>
 static inline T calcHorizontalChangeRightBoundary(Grid<T> &grid,
                                                   Boundary<T> &bc, int &row,
                                                   int &col) {
-  if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CONSTANT) {
+  if (bc.getBoundaryElementType(BC_SIDE_RIGHT, row) == BC_TYPE_CONSTANT) {
     return calcHorizontalChangeRightBoundaryConstant(grid, bc, row, col);
-  } else if (bc.getBoundaryElementType(BC_SIDE_RIGHT, col) == BC_TYPE_CLOSED) {
+  } else if (bc.getBoundaryElementType(BC_SIDE_RIGHT, row) == BC_TYPE_CLOSED) {
     return calcHorizontalChangeRightBoundaryClosed(grid, row, col);
   } else {
     throw_invalid_argument("Undefined Boundary Condition Type!");
@@ -162,7 +162,7 @@ static inline T calcVerticalChangeTopBoundaryClosed(Grid<T> &grid, int &row,
                                                     int &col) {
 
   return calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
-                            grid.getConcentrations()(row, col)) *
+                            grid.getAlphaY()(row, col)) *
          (grid.getConcentrations()(row + 1, col) -
           grid.getConcentrations()(row, col));
 }
