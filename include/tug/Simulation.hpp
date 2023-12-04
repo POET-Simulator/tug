@@ -199,7 +199,7 @@ public:
         const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
         const T maxAlpha =
-            std::min(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
+            std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
 
         cfl = minDeltaSquare / (4 * maxAlpha);
       }
