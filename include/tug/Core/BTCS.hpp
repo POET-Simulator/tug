@@ -140,7 +140,7 @@ constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
                                                        T alpha_neighbor, T sy) {
   return sy * calcAlphaIntercell(alpha_center, alpha_neighbor) * conc_center +
          (1 - sy * (calcAlphaIntercell(alpha_center, alpha_center) +
-                    2 * alpha_center)) *
+                    alpha_center)) *
              conc_center +
          sy * alpha_center * conc_bc;
 }
