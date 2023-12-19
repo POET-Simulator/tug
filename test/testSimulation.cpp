@@ -1,5 +1,6 @@
 #include "TestUtils.hpp"
 
+#include <Eigen/src/Core/Matrix.h>
 #include <doctest/doctest.h>
 #include <stdio.h>
 #include <string>
@@ -118,4 +119,35 @@ TEST_CASE("Simulation environment") {
     CHECK_EQ(sim.getTimestep(), 0.1);
     CHECK_THROWS(sim.setTimestep(-0.3));
   }
+}
+
+TEST_CASE("Closed Boundaries - no change expected") {
+
+  constexpr std::uint32_t nrows = 5;
+  constexpr std::uint32_t ncols = 5;
+
+  tug::Grid64 grid(nrows, ncols);
+
+  auto concentrations = Eigen::MatrixXd::Constant(nrows, ncols, 1.0);
+  auto alphax = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
+  auto alphay = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
+
+  grid.setConcentrations(concentrations);
+  grid.setAlpha(alphax, alphay);
+
+  tug::Boundary bc(grid);
+  bc.setBoundarySideConstant(tug::BC_SIDE_LEFT, 1.0);
+  bc.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 1.0);
+  bc.setBoundarySideConstant(tug::BC_SIDE_TOP, 1.0);
+  bc.setBoundarySideConstant(tug::BC_SIDE_BOTTOM, 1.0);
+
+  tug::Simulation<double> sim(grid, bc);
+  sim.setTimestep(1);
+  sim.setIterations(1);
+
+  MatrixXd input_values(concentrations);
+  sim.run();
+
+  CHECK(checkSimilarityV2(input_values, grid.getConcentrations(), 1E-12) ==
+        true);
 }
