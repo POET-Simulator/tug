@@ -69,9 +69,6 @@ public:
    *              corresponding boundary element.
    */
   void setValue(double value) {
-    if (value < 0) {
-      throw std::invalid_argument("No negative concentration allowed.");
-    }
     if (type == BC_TYPE_CLOSED) {
       throw std::invalid_argument(
           "No constant boundary concentrations can be set for closed "
