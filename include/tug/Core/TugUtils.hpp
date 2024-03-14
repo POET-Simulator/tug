@@ -26,10 +26,14 @@
 
 // calculates arithmetic or harmonic mean of alpha between two cells
 template <typename T>
-constexpr T calcAlphaIntercell(T alpha1, T alpha2,
-                                    bool useHarmonic = true) {
+constexpr T calcAlphaIntercell(T alpha1, T alpha2, bool useHarmonic = true) {
   if (useHarmonic) {
-    return double(2) / ((double(1) / alpha1) + (double(1) / alpha2));
+    const T operand1 = alpha1 == 0 ? 0 : 1 / alpha1;
+    const T operand2 = alpha2 == 0 ? 0 : 1 / alpha2;
+
+    const T denom = operand1 + operand2;
+
+    return denom == 0 ? 0 : 2. / denom;
   } else {
     return 0.5 * (alpha1 + alpha2);
   }
