@@ -57,9 +57,9 @@ public:
    */
   Grid(int _row, int _col)
       : row(_row), col(_col), domainRow(_row), domainCol(_col) {
-    if (row <= 3 || col <= 3) {
+    if (row <= 1 || col <= 1) {
       throw std::invalid_argument(
-          "Given grid dimensions too small. Must each be greater than 3.");
+          "At least one dimension is 1. Use 1D grid for better results.");
     }
 
     this->dim = 2;
