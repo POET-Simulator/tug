@@ -16,6 +16,7 @@
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
 #include <utility>
+#include <immintrin.h> // AVX header
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -318,6 +319,65 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
 
   for (Eigen::Index i = n; i-- > 0;) {
     x_vec[i] -= c_diag[i] * x_vec[i + 1];
+  }
+
+  return x_vec;
+}
+
+template <class T>
+static Eigen::VectorX<T> ThomasAlgorithmAVX(Eigen::SparseMatrix<T> &A,
+                                            Eigen::VectorX<T> &b) {
+  Eigen::Index n = b.size();
+
+  Eigen::VectorX<T> a_diag(n);
+  Eigen::VectorX<T> b_diag(n);
+  Eigen::VectorX<T> c_diag(n);
+  Eigen::VectorX<T> x_vec = b;
+
+  // Fill diagonals vectors
+  b_diag[0] = A.coeff(0, 0);
+  c_diag[0] = A.coeff(0, 1);
+
+  for (Eigen::Index i = 1; i < n - 1; i++) {
+    a_diag[i] = A.coeff(i, i - 1);
+    b_diag[i] = A.coeff(i, i);
+    c_diag[i] = A.coeff(i, i + 1);
+  }
+  a_diag[n - 1] = A.coeff(n - 1, n - 2);
+  b_diag[n - 1] = A.coeff(n - 1, n - 1);
+
+  // start solving - c_diag and x_vec are overwritten
+  n--;
+  c_diag[0] /= b_diag[0];
+  x_vec[0] /= b_diag[0];
+
+  // AVX vector size
+  constexpr int avx_size = sizeof(__m256d) / sizeof(double);
+
+  // AVX constants
+  const __m256d zero = _mm256_setzero_pd();
+  const __m256d one = _mm256_set1_pd(1.0);
+
+  for (Eigen::Index i = 1; i < n; i += avx_size) {
+    // Load vectors into AVX registers
+    __m256d a_diag_avx = _mm256_loadu_pd(&a_diag[i]);
+    __m256d b_diag_avx = _mm256_loadu_pd(&b_diag[i]);
+    __m256d c_diag_avx = _mm256_loadu_pd(&c_diag[i]);
+    __m256d x_vec_avx = _mm256_loadu_pd(&x_vec[i]);
+
+    // Compute intermediate results
+    __m256d factor = _mm256_div_pd(a_diag_avx, b_diag_avx);
+    c_diag_avx = _mm256_div_pd(c_diag_avx, _mm256_sub_pd(b_diag_avx, _mm256_mul_pd(a_diag_avx, c_diag_avx)));
+    x_vec_avx = _mm256_div_pd(_mm256_sub_pd(x_vec_avx, _mm256_mul_pd(a_diag_avx, x_vec_avx)), _mm256_sub_pd(b_diag_avx, _mm256_mul_pd(a_diag_avx, c_diag_avx)));
+
+    // Store results back to memory
+    _mm256_storeu_pd(&c_diag[i], c_diag_avx);
+    _mm256_storeu_pd(&x_vec[i], x_vec_avx);
+  }
+
+  // Perform final back substitution
+  for (Eigen::Index i = n; i-- > 0;) {
+      x_vec[i] -= c_diag[i] * x_vec[i + 1];
   }
 
   return x_vec;
