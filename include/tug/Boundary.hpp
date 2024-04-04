@@ -8,10 +8,11 @@
 #define BOUNDARY_H_
 
 #include "Grid.hpp"
-#include <algorithm>
+
 #include <cstddef>
 #include <cstdint>
-#include <exception>
+#include <map>
+#include <utility>
 #include <vector>
 
 namespace tug {
@@ -375,6 +376,90 @@ public:
     }
   }
 
+  /**
+   *
+   * @param index Index of the inner constant boundary condition
+   * @param value Value of the inner constant boundary condition
+   */
+  void setInnerBoundary(std::uint32_t index, T value) {
+    if (this->dim != 1) {
+      throw std::invalid_argument(
+          "This function is only available for 1D grids.");
+    }
+    if (index >= this->cols) {
+      throw std::invalid_argument("Index is out of bounds.");
+    }
+
+    this->inner_boundary[std::make_pair(0, index)] = value;
+  }
+
+  /**
+   * @brief Set inner constant boundary condition in 2D case.
+   *
+   * @param row Row index of the inner constant boundary condition
+   * @param col Column index of the inner constant boundary condition
+   * @param value Value of the inner constant boundary condition
+   */
+  void setInnerBoundary(std::uint32_t row, std::uint32_t col, T value) {
+    if (this->dim != 2) {
+      throw std::invalid_argument(
+          "This function is only available for 2D grids.");
+    }
+    if (row >= this->rows || col >= this->cols) {
+      throw std::invalid_argument("Index is out of bounds.");
+    }
+
+    this->inner_boundary[std::make_pair(row, col)] = value;
+  }
+
+  /**
+   * @brief Get inner constant boundary condition in 1D case.
+   *
+   * @param index Index of the inner constant boundary condition
+   * @return std::pair<bool, T> Pair of boolean (whether constant boundary was
+   * set or not) and value of the inner constant boundary condition
+   */
+  std::pair<bool, T> getInnerBoundary(std::uint32_t index) const {
+    if (this->dim != 1) {
+      throw std::invalid_argument(
+          "This function is only available for 1D grids.");
+    }
+    if (index >= this->cols) {
+      throw std::invalid_argument("Index is out of bounds.");
+    }
+
+    auto it = this->inner_boundary.find(std::make_pair(0, index));
+    if (it == this->inner_boundary.end()) {
+      return std::make_pair(false, -1);
+    }
+    return std::make_pair(true, it->second);
+  }
+
+  /**
+   * @brief Get inner constant boundary condition in 2D case.
+   *
+   * @param row Row index of the inner constant boundary condition
+   * @param col Column index of the inner constant boundary condition
+   * @return std::pair<bool, T> Pair of boolean (whether constant boundary was
+   * set or not) and value of the inner constant boundary condition
+   */
+  std::pair<bool, T> getInnerBoundary(std::uint32_t row,
+                                      std::uint32_t col) const {
+    if (this->dim != 2) {
+      throw std::invalid_argument(
+          "This function is only available for 2D grids.");
+    }
+    if (row >= this->rows || col >= this->cols) {
+      throw std::invalid_argument("Index is out of bounds.");
+    }
+
+    auto it = this->inner_boundary.find(std::make_pair(row, col));
+    if (it == this->inner_boundary.end()) {
+      return std::make_pair(false, -1);
+    }
+    return std::make_pair(true, it->second);
+  }
+
 private:
   const std::uint8_t dim;
   const std::uint32_t cols;
@@ -382,6 +467,9 @@ private:
 
   std::vector<std::vector<BoundaryElement<T>>>
       boundaries; // Vector with Boundary Element information
+
+  // Inner boundary conditions for 1D and 2D grids identified by (row,col)
+  std::map<std::pair<std::uint32_t, std::uint32_t>, T> inner_boundary;
 };
 } // namespace tug
 #endif // BOUNDARY_H_

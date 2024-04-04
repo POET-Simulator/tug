@@ -1,10 +1,10 @@
 #include "TestUtils.hpp"
+#include <tug/Simulation.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
 #include <doctest/doctest.h>
 #include <stdio.h>
 #include <string>
-#include <tug/Simulation.hpp>
 
 // include the configured header file
 #include <testSimulation.hpp>
