@@ -176,6 +176,7 @@ TEST_CASE("Constant inner cell - 'absorbing' concentration") {
   MatrixXd input_values(concentrations);
   sim.run();
 
+  CHECK(grid.getConcentrations()(2, 2) == 0);
   CHECK(grid.getConcentrations().sum() < input_values.sum());
 
   const bool greater_one = (grid.getConcentrations().array() > 1.0).any();
