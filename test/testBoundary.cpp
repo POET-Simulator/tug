@@ -5,6 +5,7 @@
 #include <tug/Boundary.hpp>
 #include <typeinfo>
 #include <utility>
+#include <vector>
 
 using namespace std;
 using namespace tug;
@@ -39,6 +40,12 @@ TEST_CASE("Boundary Class") {
   constexpr double inner_condition_value = -5;
   constexpr std::pair<bool, double> innerBoundary =
       std::make_pair(true, inner_condition_value);
+
+  std::vector<std::pair<bool, double>> row_ibc(12, std::make_pair(false, -1));
+  row_ibc[1] = innerBoundary;
+
+  std::vector<std::pair<bool, double>> col_ibc(10, std::make_pair(false, -1));
+  col_ibc[0] = innerBoundary;
 
   SUBCASE("Boundaries 1D case") {
     CHECK_NOTHROW(Boundary boundary(grid1D));
@@ -88,5 +95,8 @@ TEST_CASE("Boundary Class") {
     CHECK_NOTHROW(boundary2D.setInnerBoundary(0, 1, inner_condition_value));
     CHECK_EQ(boundary2D.getInnerBoundary(0, 1), innerBoundary);
     CHECK_EQ(boundary2D.getInnerBoundary(0, 2).first, false);
+
+    CHECK_EQ(boundary2D.getInnerBoundaryRow(0), row_ibc);
+    CHECK_EQ(boundary2D.getInnerBoundaryCol(1), col_ibc);
   }
 }

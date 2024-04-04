@@ -460,6 +460,67 @@ public:
     return std::make_pair(true, it->second);
   }
 
+  /**
+   * @brief Get inner constant boundary conditions of a row as a vector. Can be
+   * used for 1D grids (row == 0) or 2D grids.
+   *
+   * @param row Index of the row for which the inner boundary conditions are to
+   * be returned.
+   * @return std::vector<std::pair<bool, T>> Vector of pairs of boolean (whether
+   * constant boundary was set or not) and value of the inner constant boundary
+   * condition
+   */
+  std::vector<std::pair<bool, T>> getInnerBoundaryRow(std::uint32_t row) const {
+    if (row >= this->rows) {
+      throw std::invalid_argument("Index is out of bounds.");
+    }
+
+    if (inner_boundary.empty()) {
+      return std::vector<std::pair<bool, T>>(this->cols,
+                                             std::make_pair(false, -1));
+    }
+
+    std::vector<std::pair<bool, T>> row_values;
+    for (std::uint32_t col = 0; col < this->cols; col++) {
+      row_values.push_back(getInnerBoundary(row, col));
+    }
+
+    return row_values;
+  }
+
+  /**
+   * @brief Get inner constant boundary conditions of a column as a vector. Can
+   * only be used for 2D grids.
+   *
+   * @param col Index of the column for which the inner boundary conditions are
+   * to be returned.
+   * @return std::vector<std::pair<bool, T>> Vector of pairs of boolean (whether
+   * constant boundary was set or not) and value of the inner constant boundary
+   * condition
+   */
+  std::vector<std::pair<bool, T>> getInnerBoundaryCol(std::uint32_t col) const {
+    if (this->dim != 2) {
+      throw std::invalid_argument(
+          "This function is only available for 2D grids.");
+    }
+
+    if (col >= this->cols) {
+      throw std::invalid_argument("Index is out of bounds.");
+    }
+
+    if (inner_boundary.empty()) {
+      return std::vector<std::pair<bool, T>>(this->rows,
+                                             std::make_pair(false, -1));
+    }
+
+    std::vector<std::pair<bool, T>> col_values;
+    for (std::uint32_t row = 0; row < this->rows; row++) {
+      col_values.push_back(getInnerBoundary(row, col));
+    }
+
+    return col_values;
+  }
+
 private:
   const std::uint8_t dim;
   const std::uint32_t cols;
