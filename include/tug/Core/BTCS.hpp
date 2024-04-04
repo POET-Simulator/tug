@@ -16,6 +16,7 @@
 #include <tug/Boundary.hpp>
 #include <tug/Grid.hpp>
 #include <utility>
+#include <vector>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -52,7 +53,8 @@ template <class T>
 static Eigen::SparseMatrix<T>
 createCoeffMatrix(const Eigen::MatrixX<T> &alpha,
                   const std::vector<BoundaryElement<T>> &bcLeft,
-                  const std::vector<BoundaryElement<T>> &bcRight, int numCols,
+                  const std::vector<BoundaryElement<T>> &bcRight,
+                  const std::vector<std::pair<bool, T>> &inner_bc, int numCols,
                   int rowIndex, T sx) {
 
   // square matrix of column^2 dimension for the coefficients
@@ -60,31 +62,38 @@ createCoeffMatrix(const Eigen::MatrixX<T> &alpha,
   cm.reserve(Eigen::VectorXi::Constant(numCols, 3));
 
   // left column
-
-  switch (bcLeft[rowIndex].getType()) {
-  case BC_TYPE_CONSTANT: {
-    auto [centerCoeffTop, rightCoeffTop] =
-        calcBoundaryCoeffConstant(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
-    cm.insert(0, 0) = centerCoeffTop;
-    cm.insert(0, 1) = rightCoeffTop;
-    break;
-  }
-  case BC_TYPE_CLOSED: {
-    auto [centerCoeffTop, rightCoeffTop] =
-        calcBoundaryCoeffClosed(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
-    cm.insert(0, 0) = centerCoeffTop;
-    cm.insert(0, 1) = rightCoeffTop;
-    break;
-  }
-  default: {
-    throw_invalid_argument(
-        "Undefined Boundary Condition Type somewhere on Left or Top!");
-  }
+  if (inner_bc[0].first) {
+    cm.insert(0, 0) = 1;
+  } else {
+    switch (bcLeft[rowIndex].getType()) {
+    case BC_TYPE_CONSTANT: {
+      auto [centerCoeffTop, rightCoeffTop] =
+          calcBoundaryCoeffConstant(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
+      cm.insert(0, 0) = centerCoeffTop;
+      cm.insert(0, 1) = rightCoeffTop;
+      break;
+    }
+    case BC_TYPE_CLOSED: {
+      auto [centerCoeffTop, rightCoeffTop] =
+          calcBoundaryCoeffClosed(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
+      cm.insert(0, 0) = centerCoeffTop;
+      cm.insert(0, 1) = rightCoeffTop;
+      break;
+    }
+    default: {
+      throw_invalid_argument(
+          "Undefined Boundary Condition Type somewhere on Left or Top!");
+    }
+    }
   }
 
   // inner columns
   int n = numCols - 1;
   for (int i = 1; i < n; i++) {
+    if (inner_bc[i].first) {
+      cm.insert(i, i) = 1;
+      continue;
+    }
     cm.insert(i, i - 1) =
         -sx * calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i));
     cm.insert(i, i) =
@@ -96,26 +105,29 @@ createCoeffMatrix(const Eigen::MatrixX<T> &alpha,
   }
 
   // right column
-
-  switch (bcRight[rowIndex].getType()) {
-  case BC_TYPE_CONSTANT: {
-    auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffConstant(
-        alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
-    cm.insert(n, n - 1) = leftCoeffBottom;
-    cm.insert(n, n) = centerCoeffBottom;
-    break;
-  }
-  case BC_TYPE_CLOSED: {
-    auto [centerCoeffBottom, leftCoeffBottom] =
-        calcBoundaryCoeffClosed(alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
-    cm.insert(n, n - 1) = leftCoeffBottom;
-    cm.insert(n, n) = centerCoeffBottom;
-    break;
-  }
-  default: {
-    throw_invalid_argument(
-        "Undefined Boundary Condition Type somewhere on Right or Bottom!");
-  }
+  if (inner_bc[n].first) {
+    cm.insert(n, n) = 1;
+  } else {
+    switch (bcRight[rowIndex].getType()) {
+    case BC_TYPE_CONSTANT: {
+      auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffConstant(
+          alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
+      cm.insert(n, n - 1) = leftCoeffBottom;
+      cm.insert(n, n) = centerCoeffBottom;
+      break;
+    }
+    case BC_TYPE_CLOSED: {
+      auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffClosed(
+          alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
+      cm.insert(n, n - 1) = leftCoeffBottom;
+      cm.insert(n, n) = centerCoeffBottom;
+      break;
+    }
+    default: {
+      throw_invalid_argument(
+          "Undefined Boundary Condition Type somewhere on Right or Bottom!");
+    }
+    }
   }
 
   cm.makeCompressed(); // important for Eigen solver
@@ -155,6 +167,7 @@ createSolutionVector(const Eigen::MatrixX<T> &concentrations,
                      const std::vector<BoundaryElement<T>> &bcRight,
                      const std::vector<BoundaryElement<T>> &bcTop,
                      const std::vector<BoundaryElement<T>> &bcBottom,
+                     const std::vector<std::pair<bool, T>> &inner_bc,
                      int length, int rowIndex, T sx, T sy) {
 
   Eigen::VectorX<T> sv(length);
@@ -163,6 +176,10 @@ createSolutionVector(const Eigen::MatrixX<T> &concentrations,
   // inner rows
   if (rowIndex > 0 && rowIndex < numRows - 1) {
     for (int i = 0; i < length; i++) {
+      if (inner_bc[i].first) {
+        sv(i) = inner_bc[i].second;
+        continue;
+      }
       sv(i) =
           sy *
               calcAlphaIntercell(alphaY(rowIndex, i), alphaY(rowIndex + 1, i)) *
@@ -181,6 +198,10 @@ createSolutionVector(const Eigen::MatrixX<T> &concentrations,
   // first row
   else if (rowIndex == 0) {
     for (int i = 0; i < length; i++) {
+      if (inner_bc[i].first) {
+        sv(i) = inner_bc[i].second;
+        continue;
+      }
       switch (bcTop[i].getType()) {
       case BC_TYPE_CONSTANT: {
         sv(i) = calcExplicitConcentrationsBoundaryConstant(
@@ -204,6 +225,10 @@ createSolutionVector(const Eigen::MatrixX<T> &concentrations,
   // last row
   else if (rowIndex == numRows - 1) {
     for (int i = 0; i < length; i++) {
+      if (inner_bc[i].first) {
+        sv(i) = inner_bc[i].second;
+        continue;
+      }
       switch (bcBottom[i].getType()) {
       case BC_TYPE_CONSTANT: {
         sv(i) = calcExplicitConcentrationsBoundaryConstant(
@@ -226,13 +251,14 @@ createSolutionVector(const Eigen::MatrixX<T> &concentrations,
 
   // first column -> additional fixed concentration change from perpendicular
   // dimension in constant bc case
-  if (bcLeft[rowIndex].getType() == BC_TYPE_CONSTANT) {
+  if (bcLeft[rowIndex].getType() == BC_TYPE_CONSTANT && !inner_bc[0].first) {
     sv(0) += 2 * sx * alphaX(rowIndex, 0) * bcLeft[rowIndex].getValue();
   }
 
   // last column -> additional fixed concentration change from perpendicular
   // dimension in constant bc case
-  if (bcRight[rowIndex].getType() == BC_TYPE_CONSTANT) {
+  if (bcRight[rowIndex].getType() == BC_TYPE_CONSTANT &&
+      !inner_bc[length - 1].first) {
     sv(length - 1) +=
         2 * sx * alphaX(rowIndex, length - 1) * bcRight[rowIndex].getValue();
   }
@@ -341,17 +367,21 @@ static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
   const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
 
+  const auto inner_bc = bc.getInnerBoundaryRow(0);
+
   Eigen::MatrixX<T> concentrations = grid.getConcentrations();
   int rowIndex = 0;
-  A = createCoeffMatrix(alpha, bcLeft, bcRight, length, rowIndex,
+  A = createCoeffMatrix(alpha, bcLeft, bcRight, inner_bc, length, rowIndex,
                         sx); // this is exactly same as in 2D
   for (int i = 0; i < length; i++) {
     b(i) = concentrations(0, i);
   }
-  if (bc.getBoundaryElementType(BC_SIDE_LEFT, 0) == BC_TYPE_CONSTANT) {
+  if (bc.getBoundaryElementType(BC_SIDE_LEFT, 0) == BC_TYPE_CONSTANT &&
+      !inner_bc[0].first) {
     b(0) += 2 * sx * alpha(0, 0) * bcLeft[0].getValue();
   }
-  if (bc.getBoundaryElementType(BC_SIDE_RIGHT, 0) == BC_TYPE_CONSTANT) {
+  if (bc.getBoundaryElementType(BC_SIDE_RIGHT, 0) == BC_TYPE_CONSTANT &&
+      !inner_bc[length - 1].first) {
     b(length - 1) += 2 * sx * alpha(0, length - 1) * bcRight[0].getValue();
   }
 
@@ -394,10 +424,11 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < rowMax; i++) {
+    auto inner_bc = bc.getInnerBoundaryRow(i);
 
-    A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
+    A = createCoeffMatrix(alphaX, bcLeft, bcRight, inner_bc, colMax, i, sx);
     b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
-                             bcTop, bcBottom, colMax, i, sx, sy);
+                             bcTop, bcBottom, inner_bc, colMax, i, sx, sy);
 
     row_t1 = solverFunc(A, b);
 
@@ -411,10 +442,11 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < colMax; i++) {
+    auto inner_bc = bc.getInnerBoundaryCol(i);
     // swap alphas, boundary conditions and sx/sy for column-wise calculation
-    A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
+    A = createCoeffMatrix(alphaY, bcTop, bcBottom, inner_bc, rowMax, i, sy);
     b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
-                             bcLeft, bcRight, rowMax, i, sy, sx);
+                             bcLeft, bcRight, inner_bc, rowMax, i, sy, sx);
 
     row_t1 = solverFunc(A, b);
 

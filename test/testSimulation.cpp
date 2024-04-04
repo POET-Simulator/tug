@@ -1,10 +1,10 @@
 #include "TestUtils.hpp"
+#include <tug/Simulation.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
 #include <doctest/doctest.h>
 #include <stdio.h>
 #include <string>
-#include <tug/Simulation.hpp>
 
 // include the configured header file
 #include <testSimulation.hpp>
@@ -150,4 +150,37 @@ TEST_CASE("Closed Boundaries - no change expected") {
 
   CHECK(checkSimilarityV2(input_values, grid.getConcentrations(), 1E-12) ==
         true);
+}
+
+TEST_CASE("Constant inner cell - 'absorbing' concentration") {
+  constexpr std::uint32_t nrows = 5;
+  constexpr std::uint32_t ncols = 5;
+
+  tug::Grid64 grid(nrows, ncols);
+
+  auto concentrations = Eigen::MatrixXd::Constant(nrows, ncols, 1.0);
+  auto alphax = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
+  auto alphay = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
+
+  grid.setConcentrations(concentrations);
+  grid.setAlpha(alphax, alphay);
+
+  tug::Boundary bc(grid);
+  // inner
+  bc.setInnerBoundary(2, 2, 0);
+
+  tug::Simulation<double> sim(grid, bc);
+  sim.setTimestep(1);
+  sim.setIterations(1);
+
+  MatrixXd input_values(concentrations);
+  sim.run();
+
+  CHECK(grid.getConcentrations().sum() < input_values.sum());
+
+  const bool greater_one = (grid.getConcentrations().array() > 1.0).any();
+  CHECK(greater_one == false);
+
+  const bool less_zero = (grid.getConcentrations().array() < 0.0).any();
+  CHECK(less_zero == false);
 }

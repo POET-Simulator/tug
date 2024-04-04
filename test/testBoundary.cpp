@@ -4,6 +4,8 @@
 #include <string>
 #include <tug/Boundary.hpp>
 #include <typeinfo>
+#include <utility>
+#include <vector>
 
 using namespace std;
 using namespace tug;
@@ -35,6 +37,16 @@ TEST_CASE("Boundary Class") {
   Boundary boundary2D = Boundary(grid2D);
   vector<BoundaryElement<double>> boundary1DVector(1, BoundaryElement(1.0));
 
+  constexpr double inner_condition_value = -5;
+  constexpr std::pair<bool, double> innerBoundary =
+      std::make_pair(true, inner_condition_value);
+
+  std::vector<std::pair<bool, double>> row_ibc(12, std::make_pair(false, -1));
+  row_ibc[1] = innerBoundary;
+
+  std::vector<std::pair<bool, double>> col_ibc(10, std::make_pair(false, -1));
+  col_ibc[0] = innerBoundary;
+
   SUBCASE("Boundaries 1D case") {
     CHECK_NOTHROW(Boundary boundary(grid1D));
     CHECK_EQ(boundary1D.getBoundarySide(BC_SIDE_LEFT).size(), 1);
@@ -52,6 +64,11 @@ TEST_CASE("Boundary Class") {
              BC_TYPE_CONSTANT);
     CHECK_EQ(boundary1D.getBoundaryElement(BC_SIDE_LEFT, 0).getType(),
              boundary1DVector[0].getType());
+
+    CHECK_NOTHROW(boundary1D.setInnerBoundary(0, inner_condition_value));
+    CHECK_THROWS(boundary1D.setInnerBoundary(0, 0, inner_condition_value));
+    CHECK_EQ(boundary1D.getInnerBoundary(0), innerBoundary);
+    CHECK_EQ(boundary1D.getInnerBoundary(1).first, false);
   }
 
   SUBCASE("Boundaries 2D case") {
@@ -73,5 +90,13 @@ TEST_CASE("Boundary Class") {
              BC_TYPE_CONSTANT);
     CHECK_EQ(boundary2D.getBoundaryElement(BC_SIDE_LEFT, 0).getType(),
              boundary1DVector[0].getType());
+
+    CHECK_THROWS(boundary2D.setInnerBoundary(0, inner_condition_value));
+    CHECK_NOTHROW(boundary2D.setInnerBoundary(0, 1, inner_condition_value));
+    CHECK_EQ(boundary2D.getInnerBoundary(0, 1), innerBoundary);
+    CHECK_EQ(boundary2D.getInnerBoundary(0, 2).first, false);
+
+    CHECK_EQ(boundary2D.getInnerBoundaryRow(0), row_ibc);
+    CHECK_EQ(boundary2D.getInnerBoundaryCol(1), col_ibc);
   }
 }
