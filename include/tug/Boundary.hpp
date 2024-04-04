@@ -521,6 +521,29 @@ public:
     return col_values;
   }
 
+  /**
+   * @brief Get inner constant boundary conditions as a map. Can be read by
+   * setInnerBoundaries.
+   *
+   * @return Map of inner constant boundary conditions
+   */
+  std::map<std::pair<std::uint32_t, std::uint32_t>, T>
+  getInnerBoundaries() const {
+    return this->inner_boundary;
+  }
+
+  /**
+   * @brief Set inner constant boundary conditions as a map. Can be obtained by
+   * getInnerBoundaries.
+   *
+   * @param inner_boundary Map of inner constant boundary conditions
+   */
+  void
+  setInnerBoundaries(const std::map<std::pair<std::uint32_t, std::uint32_t>, T>
+                         &inner_boundary) {
+    this->inner_boundary = inner_boundary;
+  }
+
 private:
   const std::uint8_t dim;
   const std::uint32_t cols;
