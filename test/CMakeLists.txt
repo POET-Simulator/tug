@@ -1,18 +1,7 @@
-find_library(DOCTEST_LIB doctest)
-
-if(NOT DOCTEST_LIB)
-  include(FetchContent)
-
-  FetchContent_Declare(
-    DocTest
-    GIT_REPOSITORY https://github.com/doctest/doctest.git
-    GIT_TAG v2.4.9)
-
-  FetchContent_MakeAvailable(DocTest)
-endif()
+find_package(doctest REQUIRED)
 
 add_executable(testTug setup.cpp testSimulation.cpp testGrid.cpp testFTCS.cpp testBoundary.cpp)
-target_link_libraries(testTug doctest tug)
+target_link_libraries(testTug doctest::doctest tug)
 
 # get relative path of the CSV file
 get_filename_component(testSimulationCSV "FTCS_11_11_7000.csv" REALPATH)

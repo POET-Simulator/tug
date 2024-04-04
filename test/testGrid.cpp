@@ -12,12 +12,12 @@ TEST_CASE("1D Grid, too small length") {
 }
 
 TEST_CASE("2D Grid64, too small side") {
-  int r = 2;
+  int r = 1;
   int c = 4;
   CHECK_THROWS(Grid64(r, c));
 
   r = 4;
-  c = 2;
+  c = 1;
   CHECK_THROWS(Grid64(r, c));
 }
 

@@ -8,9 +8,11 @@
 #define BOUNDARY_H_
 
 #include "Grid.hpp"
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <vector>
 
 namespace tug {
 
@@ -106,6 +108,22 @@ private:
  */
 template <class T> class Boundary {
 public:
+  /**
+   * @brief Creates a boundary object for a 1D grid
+   *
+   * @param length Length of the grid
+   */
+  Boundary(std::uint32_t length) : Boundary(Grid<T>(length)){};
+
+  /**
+   * @brief Creates a boundary object for a 2D grid
+   *
+   * @param rows Number of rows of the grid
+   * @param cols Number of columns of the grid
+   */
+  Boundary(std::uint32_t rows, std::uint32_t cols)
+      : Boundary(Grid<T>(rows, cols)){};
+
   /**
    * @brief Creates a boundary object based on the passed grid object and
    *        initializes the boundaries as closed.
@@ -323,6 +341,38 @@ public:
           "A value can only be output if it is a constant boundary condition.");
     }
     return this->boundaries[side][index].getValue();
+  }
+
+  /**
+   * @brief Serializes the boundary conditions into a vector of BoundaryElement
+   * objects.
+   *
+   * @return Vector with BoundaryElement objects.
+   */
+  std::vector<BoundaryElement<T>> serialize() const {
+    std::vector<BoundaryElement<T>> serialized;
+    for (std::size_t side = 0; side < boundaries.size(); side++) {
+      for (std::size_t index = 0; index < boundaries[side].size(); index++) {
+        serialized.push_back(boundaries[side][index]);
+      }
+    }
+    return serialized;
+  }
+
+  /**
+   * @brief Deserializes the boundary conditions from a vector of
+   * BoundaryElement objects.
+   *
+   * @param serialized Vector with BoundaryElement objects.
+   */
+  void deserialize(const std::vector<BoundaryElement<T>> &serialized) {
+    std::size_t index = 0;
+    for (std::size_t side = 0; side < boundaries.size(); side++) {
+      for (std::size_t i = 0; i < boundaries[side].size(); i++) {
+        boundaries[side][i] = serialized[index];
+        index++;
+      }
+    }
   }
 
 private:
