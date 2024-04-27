@@ -358,22 +358,37 @@ static Eigen::VectorX<T> ThomasAlgorithmAVX(Eigen::SparseMatrix<T> &A,
   const __m256d zero = _mm256_setzero_pd();
   const __m256d one = _mm256_set1_pd(1.0);
 
-  for (Eigen::Index i = 1; i < n; i += avx_size) {
-    // Load vectors into AVX registers
-    __m256d a_diag_avx = _mm256_loadu_pd(&a_diag[i]);
-    __m256d b_diag_avx = _mm256_loadu_pd(&b_diag[i]);
-    __m256d c_diag_avx = _mm256_loadu_pd(&c_diag[i]);
-    __m256d x_vec_avx = _mm256_loadu_pd(&x_vec[i]);
+  /*
+  c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
+  x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) / (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+               */
 
-    // Compute intermediate results
-    __m256d factor = _mm256_div_pd(a_diag_avx, b_diag_avx);
-    c_diag_avx = _mm256_div_pd(c_diag_avx, _mm256_sub_pd(b_diag_avx, _mm256_mul_pd(a_diag_avx, c_diag_avx)));
-    x_vec_avx = _mm256_div_pd(_mm256_sub_pd(x_vec_avx, _mm256_mul_pd(a_diag_avx, x_vec_avx)), _mm256_sub_pd(b_diag_avx, _mm256_mul_pd(a_diag_avx, c_diag_avx)));
+  for (Eigen::Index i = 1; i < n; i+=4) { // Hier verwenden wir 4 Elemente gleichzeitig
+      __m256d a = _mm256_loadu_pd(&a_diag[i]);
+      __m256d b = _mm256_loadu_pd(&b_diag[i]);
+      __m256d c = _mm256_loadu_pd(&c_diag[i]);
+      __m256d x = _mm256_loadu_pd(&x_vec[i]);
 
-    // Store results back to memory
-    _mm256_storeu_pd(&c_diag[i], c_diag_avx);
-    _mm256_storeu_pd(&x_vec[i], x_vec_avx);
+      __m256d prev_c = _mm256_loadu_pd(&c_diag[i - 1]);
+      __m256d prev_x = _mm256_loadu_pd(&x_vec[i - 1]);
+
+      __m256d tmp = _mm256_sub_pd(b, _mm256_mul_pd(a, prev_c));
+
+      c = _mm256_div_pd(c, tmp);
+      x = _mm256_div_pd(_mm256_sub_pd(x, _mm256_mul_pd(a, prev_x)), tmp);
+
+      _mm256_storeu_pd(&c_diag[i], c);
+      _mm256_storeu_pd(&x_vec[i], x);
   }
+
+  // Remainder: Handle elements that are not multiples of 4
+  for (Eigen::Index i = n - (n%4); i < n; i++) {
+      c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
+      x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) / (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+  }
+  //std::cout << x_vec[0] << std::endl;
+  x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
+             (b_diag[n] - a_diag[n] * c_diag[n - 1]);
 
   // Perform final back substitution
   for (Eigen::Index i = n; i-- > 0;) {
@@ -501,11 +516,22 @@ void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
 template <class T>
-void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
+void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads, bool enableAVX) {
   if (grid.getDim() == 1) {
-    BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
+    if(enableAVX) {
+      BTCS_1D(grid, bc, timestep, ThomasAlgorithmAVX);
+    }
+    else {
+      BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
+    }
   } else if (grid.getDim() == 2) {
-    BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
+    if(enableAVX) {
+      BTCS_2D(grid, bc, timestep, ThomasAlgorithmAVX, numThreads);
+    }
+    else {
+      BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
+    }
+    
   } else {
     throw_invalid_argument(
         "Error: Only 1- and 2-dimensional grids are defined!");

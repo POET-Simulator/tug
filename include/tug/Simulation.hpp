@@ -46,9 +46,9 @@ enum APPROACH {
  *
  */
 enum SOLVER {
-  EIGEN_LU_SOLVER,        /*!<  EigenLU solver */
-  THOMAS_ALGORITHM_SOLVER /*!< Thomas Algorithm solver; more efficient for
-                             tridiagonal matrices */
+  EIGEN_LU_SOLVER,            /*!<  EigenLU solver */
+  THOMAS_ALGORITHM_SOLVER     /*!< Thomas Algorithm solver; more efficient for
+                                tridiagonal matrices */
 };
 
 /**
@@ -82,6 +82,11 @@ enum TIME_MEASURE {
   TIME_MEASURE_ON   /*!< print time measure after last iteration */
 };
 
+enum AVX {
+  AVX_ENABLED,
+  AVX_DISABLED
+};
+
 /**
  * @brief The class forms the interface for performing the diffusion simulations
  * and contains all the methods for controlling the desired parameters, such as
@@ -93,7 +98,8 @@ enum TIME_MEASURE {
  * @tparam solver Set the solver to be used
  */
 template <class T, APPROACH approach = BTCS_APPROACH,
-          SOLVER solver = THOMAS_ALGORITHM_SOLVER>
+          SOLVER solver = THOMAS_ALGORITHM_SOLVER,
+          AVX enableAVX = AVX_DISABLED>
 class Simulation {
 public:
   /**
@@ -433,8 +439,12 @@ public:
           if (csv_output >= CSV_OUTPUT_VERBOSE) {
             printConcentrationsCSV(filename);
           }
-
-          BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
+          if constexpr (enableAVX == AVX_ENABLED) {
+            BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads, true);
+          }
+          else {
+            BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads, false);
+          }
         }
       }
 
