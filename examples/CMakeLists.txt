@@ -18,3 +18,6 @@ add_executable(FTCS_2D_proto_example_mdl FTCS_2D_proto_example_mdl.cpp)
 add_executable(FTCS_2D_proto_closed_mdl FTCS_2D_proto_closed_mdl.cpp)
 target_link_libraries(FTCS_2D_proto_closed_mdl tug)
 target_link_libraries(FTCS_2D_proto_example_mdl tug)
+
+add_executable(2D_ADI_constant 2D_ADI_constant_Sr.cpp)
+target_link_libraries(2D_ADI_constant tug)
