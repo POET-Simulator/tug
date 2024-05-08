@@ -181,28 +181,10 @@ public:
     if (timestep <= 0) {
       throw_invalid_argument("Timestep has to be greater than zero.");
     }
+    const T cfl = get_cfl_ftcs(timestep);
 
     if constexpr (approach == FTCS_APPROACH ||
                   approach == CRANK_NICOLSON_APPROACH) {
-      T cfl;
-      if (grid.getDim() == 1) {
-
-        const T deltaSquare = grid.getDelta();
-        const T maxAlpha = grid.getAlpha().maxCoeff();
-
-        // Courant-Friedrichs-Lewy condition
-        cfl = deltaSquare / (4 * maxAlpha);
-      } else if (grid.getDim() == 2) {
-        const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-        // will be 0 if 1D, else ...
-        const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-        const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
-
-        const T maxAlpha =
-            std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
-
-        cfl = minDeltaSquare / (4 * maxAlpha);
-      }
       const std::string dim = std::to_string(grid.getDim()) + "D";
 
       const std::string &approachPrefix = this->approach_names[approach];
@@ -233,6 +215,14 @@ public:
                   << std::endl;
       }
     } else {
+      std::cout << "Info :: CFL condition for FTCS would require a maximum "
+                   "timestep of "
+                << cfl << " [s].\n"
+                << "Info :: Used timestep is " << timestep << " [s].\n"
+                << "Info :: This is " << timestep / cfl
+                << " times the CFL condition."
+                << "\n\n";
+
       this->timestep = timestep;
     }
   }
@@ -497,6 +487,30 @@ private:
 
   Grid<T> &grid;
   Boundary<T> &bc;
+
+  T get_cfl_ftcs(T timestep) {
+    if (grid.getDim() == 1) {
+
+      const T deltaSquare = grid.getDelta();
+      const T maxAlpha = grid.getAlpha().maxCoeff();
+
+      // Courant-Friedrichs-Lewy condition
+      return deltaSquare / (4 * maxAlpha);
+    } else if (grid.getDim() == 2) {
+      const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+      // will be 0 if 1D, else ...
+      const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+      const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
+
+      const T maxAlpha =
+          std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
+
+      return minDeltaSquare / (4 * maxAlpha);
+    }
+
+    // should not happen ...
+    return -1;
+  }
 
   const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
 };
