@@ -325,14 +325,14 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
 }
 
 template <class T>
-static Eigen::VectorX<T> ThomasAlgorithmAVX(Eigen::SparseMatrix<T> &A,
-                                            Eigen::VectorX<T> &b) {
+static void ThomasAlgorithmInplace(Eigen::SparseMatrix<T> &A,
+                                         Eigen::VectorX<T> &b, Eigen::MatrixX<T> *concentrations, int c) {
   Eigen::Index n = b.size();
 
   Eigen::VectorX<T> a_diag(n);
   Eigen::VectorX<T> b_diag(n);
   Eigen::VectorX<T> c_diag(n);
-  Eigen::VectorX<T> x_vec = b;
+  concentrations->row(c) = b;
 
   // Fill diagonals vectors
   b_diag[0] = A.coeff(0, 0);
@@ -349,53 +349,29 @@ static Eigen::VectorX<T> ThomasAlgorithmAVX(Eigen::SparseMatrix<T> &A,
   // start solving - c_diag and x_vec are overwritten
   n--;
   c_diag[0] /= b_diag[0];
-  x_vec[0] /= b_diag[0];
+  //x_vec[0] /= b_diag[0];
+  (*concentrations)(c, 0) /= b_diag[0];
 
-  // AVX vector size
-  constexpr int avx_size = sizeof(__m256d) / sizeof(double);
 
-  // AVX constants
-  const __m256d zero = _mm256_setzero_pd();
-  const __m256d one = _mm256_set1_pd(1.0);
-
-  /*
-  c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
-  x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) / (b_diag[i] - a_diag[i] * c_diag[i - 1]);
-               */
-
-  for (Eigen::Index i = 1; i < n; i+=4) { // Hier verwenden wir 4 Elemente gleichzeitig
-      __m256d a = _mm256_loadu_pd(&a_diag[i]);
-      __m256d b = _mm256_loadu_pd(&b_diag[i]);
-      __m256d c = _mm256_loadu_pd(&c_diag[i]);
-      __m256d x = _mm256_loadu_pd(&x_vec[i]);
-
-      __m256d prev_c = _mm256_loadu_pd(&c_diag[i - 1]);
-      __m256d prev_x = _mm256_loadu_pd(&x_vec[i - 1]);
-
-      __m256d tmp = _mm256_sub_pd(b, _mm256_mul_pd(a, prev_c));
-
-      c = _mm256_div_pd(c, tmp);
-      x = _mm256_div_pd(_mm256_sub_pd(x, _mm256_mul_pd(a, prev_x)), tmp);
-
-      _mm256_storeu_pd(&c_diag[i], c);
-      _mm256_storeu_pd(&x_vec[i], x);
+  for (Eigen::Index i = 1; i < n; i++) {
+    c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
+    /*x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
+               (b_diag[i] - a_diag[i] * c_diag[i - 1]);*/
+    (*concentrations)(c, i) = ((*concentrations)(c, i) - a_diag[i] * (*concentrations)(c, i - 1)) /
+               (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+    
   }
 
-  // Remainder: Handle elements that are not multiples of 4
-  for (Eigen::Index i = n - (n%4); i < n; i++) {
-      c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
-      x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) / (b_diag[i] - a_diag[i] * c_diag[i - 1]);
-  }
-  //std::cout << x_vec[0] << std::endl;
-  x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
-             (b_diag[n] - a_diag[n] * c_diag[n - 1]);
+  /*x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
+             (b_diag[n] - a_diag[n] * c_diag[n - 1]);*/
+  (*concentrations)(c, n) = ((*concentrations)(c, n) - a_diag[n] * (*concentrations)(c, n - 1)) / (b_diag[n] - a_diag[n] * c_diag[n - 1]);
 
-  // Perform final back substitution
   for (Eigen::Index i = n; i-- > 0;) {
-      x_vec[i] -= c_diag[i] * x_vec[i + 1];
+    //x_vec[i] -= c_diag[i] * x_vec[i + 1];
+    (*concentrations)(c, i) -= c_diag[i] * (*concentrations)(c, i+1);
   }
 
-  return x_vec;
+  //return x_vec;
 }
 
 // BTCS solution for 1D grid
@@ -467,7 +443,7 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
   Eigen::MatrixX<T> concentrations = grid.getConcentrations();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
+//#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < rowMax; i++) {
 
     A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
@@ -484,7 +460,7 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   alphaX.transposeInPlace();
   alphaY.transposeInPlace();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
+//#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < colMax; i++) {
     // swap alphas, boundary conditions and sx/sy for column-wise calculation
     A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
@@ -494,6 +470,64 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
     row_t1 = solverFunc(A, b);
 
     concentrations.row(i) = row_t1;
+  }
+
+  concentrations.transposeInPlace();
+
+  grid.setConcentrations(concentrations);
+}
+
+// BTCS solution for 2D grid
+template <class T>
+static void BTCS_2DThomasInplace(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
+  int rowMax = grid.getRow();
+  int colMax = grid.getCol();
+  T sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
+  T sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
+
+  Eigen::MatrixX<T> concentrations_t1 =
+      Eigen::MatrixX<T>::Constant(rowMax, colMax, 0);
+  Eigen::VectorX<T> row_t1(colMax);
+
+  Eigen::SparseMatrix<T> A;
+  Eigen::VectorX<T> b;
+
+  auto alphaX = grid.getAlphaX();
+  auto alphaY = grid.getAlphaY();
+
+  const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
+  const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
+  const auto &bcTop = bc.getBoundarySide(BC_SIDE_TOP);
+  const auto &bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
+
+  Eigen::MatrixX<T> concentrations = grid.getConcentrations();
+
+  for (int i = 0; i < rowMax; i++) {
+    A = createCoeffMatrix(alphaX, bcLeft, bcRight, colMax, i, sx);
+    b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
+                             bcTop, bcBottom, colMax, i, sx, sy);
+
+    ThomasAlgorithmInplace(A, b, &concentrations_t1, i);
+
+    //row_t1 = solverFunc(A, b);
+
+    //concentrations_t1.row(i) = row_t1;
+  }
+
+  concentrations_t1.transposeInPlace();
+  concentrations.transposeInPlace();
+  alphaX.transposeInPlace();
+  alphaY.transposeInPlace();
+
+  for (int i = 0; i < colMax; i++) {
+    // swap alphas, boundary conditions and sx/sy for column-wise calculation
+    A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
+    b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
+                             bcLeft, bcRight, rowMax, i, sy, sx);
+    ThomasAlgorithmInplace(A, b, &concentrations, i);
+    //row_t1 = solverFunc(A, b);
+
+    //concentrations.row(i) = row_t1;
   }
 
   concentrations.transposeInPlace();
@@ -516,22 +550,12 @@ void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
 template <class T>
-void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads, bool enableAVX) {
+void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
   if (grid.getDim() == 1) {
-    if(enableAVX) {
-      BTCS_1D(grid, bc, timestep, ThomasAlgorithmAVX);
-    }
-    else {
-      BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
-    }
+    BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
   } else if (grid.getDim() == 2) {
-    if(enableAVX) {
-      BTCS_2D(grid, bc, timestep, ThomasAlgorithmAVX, numThreads);
-    }
-    else {
-      BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
-    }
-    
+    BTCS_2D(grid, bc, timestep, ThomasAlgorithm, 1);
+    //BTCS_2DThomasInplace(grid, bc, timestep, numThreads);
   } else {
     throw_invalid_argument(
         "Error: Only 1- and 2-dimensional grids are defined!");

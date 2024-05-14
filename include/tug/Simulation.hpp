@@ -98,8 +98,7 @@ enum AVX {
  * @tparam solver Set the solver to be used
  */
 template <class T, APPROACH approach = BTCS_APPROACH,
-          SOLVER solver = THOMAS_ALGORITHM_SOLVER,
-          AVX enableAVX = AVX_DISABLED>
+          SOLVER solver = THOMAS_ALGORITHM_SOLVER>
 class Simulation {
 public:
   /**
@@ -439,12 +438,7 @@ public:
           if (csv_output >= CSV_OUTPUT_VERBOSE) {
             printConcentrationsCSV(filename);
           }
-          if constexpr (enableAVX == AVX_ENABLED) {
-            BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads, true);
-          }
-          else {
-            BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads, false);
-          }
+          BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
         }
       }
 
