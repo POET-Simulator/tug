@@ -336,16 +336,47 @@ static void ThomasAlgorithmInplace(Eigen::SparseMatrix<T> &A,
 
 
   for (Eigen::Index i = 1; i < n; i++) {
-    A.coeffRef(i, i+1) /= A.coeffRef(i, i) - A.coeffRef(i, i-1) * A.coeffRef(i-1, i);
-    (*concentrations)(c, i) = ((*concentrations)(c, i) - A.coeffRef(i, i-1) * (*concentrations)(c, i - 1)) /
-                                (A.coeffRef(i, i) - A.coeffRef(i, i-1) * A.coeffRef(i-1, i));
+    A.coeffRef(i, i+1) /= A.coeff(i, i) - A.coeff(i, i-1) * A.coeff(i-1, i);
+    (*concentrations)(c, i) = ((*concentrations)(c, i) - A.coeff(i, i-1) * (*concentrations)(c, i - 1)) /
+                                (A.coeff(i, i) - A.coeff(i, i-1) * A.coeff(i-1, i));
   }
 
-  (*concentrations)(c, n) = ((*concentrations)(c, n) - A.coeffRef(n, n-1) * (*concentrations)(c, n - 1)) / (A.coeffRef(n, n) - A.coeff(n, n-1) * A.coeffRef(n-1, n-2));
+  (*concentrations)(c, n) = ((*concentrations)(c, n) - A.coeff(n, n-1) * (*concentrations)(c, n - 1)) / (A.coeff(n, n) - A.coeff(n, n-1) * A.coeff(n-1, n-2));
   for (Eigen::Index i = n; i-- > 0;) {
-    (*concentrations)(c, i) -= A.coeffRef(i, i+1) * (*concentrations)(c, i+1);
+    (*concentrations)(c, i) -= A.coeff(i, i+1) * (*concentrations)(c, i+1);
   }
 }
+
+    template <class T>
+    static void ThomasAlgorithmInplaceTemp(Eigen::SparseMatrix<T> &A,
+                                       Eigen::VectorX<T> &b, Eigen::MatrixX<T> *concentrations, int c) {
+        Eigen::Index n = b.size();
+        concentrations->row(c) = b;
+
+        n--;
+        T A_00 = A.coeff(0, 0);
+        T A_01 = A.coeff(0, 1);
+        A.coeffRef(0, 1) /= A_00;
+        (*concentrations)(c, 0) /= A_00;
+
+        for (Eigen::Index i = 1; i < n; ++i) {
+            T A_ii = A.coeff(i, i);
+            T A_im1_i = A.coeff(i, i - 1);
+            T A_im1_ip1 = A.coeff(i - 1, i);
+            T denominator = A_ii - A_im1_i * A_im1_ip1;
+            A.coeffRef(i, i + 1) /= denominator;
+            (*concentrations)(c, i) = ((*concentrations)(c, i) - A_im1_i * (*concentrations)(c, i - 1)) / denominator;
+        }
+
+        T A_nn = A.coeff(n, n);
+        T A_nm1_n = A.coeff(n, n - 1);
+        T A_nm1_nm2 = A.coeff(n - 1, n - 2);
+        (*concentrations)(c, n) = ((*concentrations)(c, n) - A_nm1_n * (*concentrations)(c, n - 1)) / (A_nn - A_nm1_n * A_nm1_nm2);
+
+        for (Eigen::Index i = n; i-- > 0;) {
+            (*concentrations)(c, i) -= A.coeff(i, i + 1) * (*concentrations)(c, i + 1);
+        }
+    }
 
 // BTCS solution for 1D grid
 template <class T>
@@ -497,7 +528,7 @@ static void BTCS_2DThomasInplace(Grid<T> &grid, Boundary<T> &bc, T timestep, int
     A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
     b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
                              bcLeft, bcRight, rowMax, i, sy, sx);
-    ThomasAlgorithmInplace(A, b, &concentrations, i);
+    ThomasAlgorithmInplaceNew(A, b, &concentrations, i);
     //row_t1 = solverFunc(A, b);
 
     //concentrations.row(i) = row_t1;
