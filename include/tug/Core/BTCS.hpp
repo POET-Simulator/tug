@@ -511,7 +511,7 @@ static void BTCS_2DThomasInplace(Grid<T> &grid, Boundary<T> &bc, T timestep, int
     b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
                              bcTop, bcBottom, colMax, i, sx, sy);
 
-    ThomasAlgorithmInplace(A, b, &concentrations_t1, i);
+    ThomasAlgorithmInplaceTemp(A, b, &concentrations_t1, i);
 
     //row_t1 = solverFunc(A, b);
 
@@ -528,7 +528,7 @@ static void BTCS_2DThomasInplace(Grid<T> &grid, Boundary<T> &bc, T timestep, int
     A = createCoeffMatrix(alphaY, bcTop, bcBottom, rowMax, i, sy);
     b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
                              bcLeft, bcRight, rowMax, i, sy, sx);
-    ThomasAlgorithmInplaceNew(A, b, &concentrations, i);
+    ThomasAlgorithmInplaceTemp(A, b, &concentrations, i);
     //row_t1 = solverFunc(A, b);
 
     //concentrations.row(i) = row_t1;
