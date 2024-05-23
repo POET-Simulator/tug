@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.27)
 find_library(DOCTEST_LIB doctest)
 
 if(NOT DOCTEST_LIB)

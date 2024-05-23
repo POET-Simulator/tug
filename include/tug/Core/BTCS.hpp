@@ -328,50 +328,23 @@ template <class T>
 static void ThomasAlgorithmInplace(Eigen::SparseMatrix<T> &A,
                                          Eigen::VectorX<T> &b, Eigen::MatrixX<T> *concentrations, int c) {
   Eigen::Index n = b.size();
-
-  Eigen::VectorX<T> a_diag(n);
-  Eigen::VectorX<T> b_diag(n);
-  Eigen::VectorX<T> c_diag(n);
   concentrations->row(c) = b;
 
-  // Fill diagonals vectors
-  b_diag[0] = A.coeff(0, 0);
-  c_diag[0] = A.coeff(0, 1);
-
-  for (Eigen::Index i = 1; i < n - 1; i++) {
-    a_diag[i] = A.coeff(i, i - 1);
-    b_diag[i] = A.coeff(i, i);
-    c_diag[i] = A.coeff(i, i + 1);
-  }
-  a_diag[n - 1] = A.coeff(n - 1, n - 2);
-  b_diag[n - 1] = A.coeff(n - 1, n - 1);
-
-  // start solving - c_diag and x_vec are overwritten
   n--;
-  c_diag[0] /= b_diag[0];
-  //x_vec[0] /= b_diag[0];
-  (*concentrations)(c, 0) /= b_diag[0];
+  A.coeffRef(0, 1) /= A.coeff(0, 0);
+  (*concentrations)(c, 0) /= A.coeff(0, 0);
 
 
   for (Eigen::Index i = 1; i < n; i++) {
-    c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
-    /*x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
-               (b_diag[i] - a_diag[i] * c_diag[i - 1]);*/
-    (*concentrations)(c, i) = ((*concentrations)(c, i) - a_diag[i] * (*concentrations)(c, i - 1)) /
-               (b_diag[i] - a_diag[i] * c_diag[i - 1]);
-    
+    A.coeffRef(i, i+1) /= A.coeffRef(i, i) - A.coeffRef(i, i-1) * A.coeffRef(i-1, i);
+    (*concentrations)(c, i) = ((*concentrations)(c, i) - A.coeffRef(i, i-1) * (*concentrations)(c, i - 1)) /
+                                (A.coeffRef(i, i) - A.coeffRef(i, i-1) * A.coeffRef(i-1, i));
   }
 
-  /*x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
-             (b_diag[n] - a_diag[n] * c_diag[n - 1]);*/
-  (*concentrations)(c, n) = ((*concentrations)(c, n) - a_diag[n] * (*concentrations)(c, n - 1)) / (b_diag[n] - a_diag[n] * c_diag[n - 1]);
-
+  (*concentrations)(c, n) = ((*concentrations)(c, n) - A.coeffRef(n, n-1) * (*concentrations)(c, n - 1)) / (A.coeffRef(n, n) - A.coeff(n, n-1) * A.coeffRef(n-1, n-2));
   for (Eigen::Index i = n; i-- > 0;) {
-    //x_vec[i] -= c_diag[i] * x_vec[i + 1];
-    (*concentrations)(c, i) -= c_diag[i] * (*concentrations)(c, i+1);
+    (*concentrations)(c, i) -= A.coeffRef(i, i+1) * (*concentrations)(c, i+1);
   }
-
-  //return x_vec;
 }
 
 // BTCS solution for 1D grid
@@ -554,8 +527,8 @@ void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
   } else if (grid.getDim() == 2) {
-    BTCS_2D(grid, bc, timestep, ThomasAlgorithm, 1);
-    //BTCS_2DThomasInplace(grid, bc, timestep, numThreads);
+    //BTCS_2D(grid, bc, timestep, ThomasAlgorithm, 1);
+    BTCS_2DThomasInplace(grid, bc, timestep, numThreads);
   } else {
     throw_invalid_argument(
         "Error: Only 1- and 2-dimensional grids are defined!");
