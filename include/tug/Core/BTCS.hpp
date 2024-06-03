@@ -51,7 +51,7 @@ constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
 // creates coefficient matrix for next time step from alphas in x-direction
 template <class T>
 static Eigen::SparseMatrix<T>
-createCoeffMatrix(const Eigen::MatrixX<T> &alpha,
+createCoeffMatrix(const typename Grid<T>::RowMajMat &alpha,
                   const std::vector<BoundaryElement<T>> &bcLeft,
                   const std::vector<BoundaryElement<T>> &bcRight,
                   const std::vector<std::pair<bool, T>> &inner_bc, int numCols,
@@ -160,9 +160,9 @@ constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
 // concentrations
 template <class T>
 static Eigen::VectorX<T>
-createSolutionVector(const Eigen::MatrixX<T> &concentrations,
-                     const Eigen::MatrixX<T> &alphaX,
-                     const Eigen::MatrixX<T> &alphaY,
+createSolutionVector(const typename Grid<T>::RowMajMat &concentrations,
+                     const typename Grid<T>::RowMajMat &alphaX,
+                     const typename Grid<T>::RowMajMat &alphaY,
                      const std::vector<BoundaryElement<T>> &bcLeft,
                      const std::vector<BoundaryElement<T>> &bcRight,
                      const std::vector<BoundaryElement<T>> &bcTop,
