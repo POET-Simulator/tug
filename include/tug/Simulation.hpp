@@ -266,7 +266,7 @@ public:
    * maximum number of processors is set as the default case during Simulation
    * construction.
    */
-  void setNumberThreads(int num_threads) {
+  void setNumberThreads(int numThreads) {
     if (numThreads > 0 && numThreads <= omp_get_num_procs()) {
       this->numThreads = numThreads;
     } else {
