@@ -227,15 +227,7 @@ public:
    *
    * @return A matrix holding the alpha coefficients in x-direction.
    */
-  const auto &getAlphaX() const {
-
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, you should probably use getAlpha()!");
-    }
-
-    return this->alphaX;
-  }
+  const auto &getAlphaX() const { return this->alphaX; }
 
   /**
    * @brief Gets the matrix of alpha coefficients in y-direction of a 2D-Grid.

@@ -23,6 +23,11 @@
 #include "Core/FTCS.hpp"
 #include "Core/TugUtils.hpp"
 
+#ifdef TUG_ENABLE_SYCL
+#include "Core/FTCS_Sycl.hpp"
+#include <sycl/sycl.hpp>
+#endif
+
 #ifdef _OPENMP
 #include <omp.h>
 #else
@@ -39,6 +44,10 @@ enum APPROACH {
   FTCS_APPROACH,          /*!< Forward Time-Centered Space */
   BTCS_APPROACH,          /*!< Backward Time-Centered Space */
   CRANK_NICOLSON_APPROACH /*!< Crank-Nicolson method */
+#ifdef TUG_ENABLE_SYCL
+  ,
+  FTCS_SYCL /*!< Forward Time-Centered Space with SYCL */
+#endif
 };
 
 /**
@@ -108,7 +117,13 @@ public:
    * @param bc Valid boundary condition object
    * @param approach Approach to solving the problem. Either FTCS or BTCS.
    */
-  Simulation(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc){};
+  Simulation(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc) {
+#ifdef TUG_ENABLE_SYCL
+    if constexpr (approach == FTCS_SYCL) {
+      q = std::make_unique<sycl::queue>(sycl::default_selector_v);
+    }
+#endif
+  };
 
   /**
    * @brief Set the option to output the results to a CSV file. Off by default.
@@ -182,8 +197,7 @@ public:
       throw_invalid_argument("Timestep has to be greater than zero.");
     }
 
-    if constexpr (approach == FTCS_APPROACH ||
-                  approach == CRANK_NICOLSON_APPROACH) {
+    if constexpr (approach != BTCS_APPROACH) {
       T cfl;
       if (grid.getDim() == 1) {
 
@@ -412,7 +426,14 @@ public:
         // }
       }
 
-    } else if constexpr (approach == BTCS_APPROACH) { // BTCS case
+    }
+#ifdef TUG_ENABLE_SYCL
+    else if constexpr (approach == FTCS_SYCL) {
+      FTCS_Sycl_impl(*this->q.get(), this->grid, this->bc, this->timestep,
+                     this->iterations * innerIterations);
+    }
+#endif
+    else if constexpr (approach == BTCS_APPROACH) { // BTCS case
 
       if constexpr (solver == EIGEN_LU_SOLVER) {
         for (int i = 0; i < iterations; i++) {
@@ -498,7 +519,16 @@ private:
   Grid<T> &grid;
   Boundary<T> &bc;
 
-  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
+  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"
+#ifdef TUG_ENABLE_SYCL
+                                                   ,
+                                                   "FTCS_SYCL"
+#endif
+  };
+
+#ifdef TUG_ENABLE_SYCL
+  std::unique_ptr<sycl::queue> q;
+#endif
 };
 } // namespace tug
 #endif // SIMULATION_H_
