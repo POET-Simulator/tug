@@ -369,7 +369,7 @@ static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
   const auto inner_bc = bc.getInnerBoundaryRow(0);
 
-  Eigen::MatrixX<T> concentrations = grid.getConcentrations();
+  RowMajMat<T> &concentrations = grid.getConcentrations();
   int rowIndex = 0;
   A = createCoeffMatrix(alpha, bcLeft, bcRight, inner_bc, length, rowIndex,
                         sx); // this is exactly same as in 2D
@@ -385,13 +385,13 @@ static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
     b(length - 1) += 2 * sx * alpha(0, length - 1) * bcRight[0].getValue();
   }
 
-  concentrations_t1 = solverFunc(A, b);
+  concentrations = solverFunc(A, b);
 
-  for (int j = 0; j < length; j++) {
-    concentrations(0, j) = concentrations_t1(j);
-  }
+  // for (int j = 0; j < length; j++) {
+  //   concentrations(0, j) = concentrations_t1(j);
+  // }
 
-  grid.setConcentrations(concentrations);
+  // grid.setConcentrations(concentrations);
 }
 
 // BTCS solution for 2D grid
@@ -405,8 +405,7 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   T sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
   T sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
 
-  RowMajMat<T> concentrations_t1 = RowMajMat<T>::Constant(rowMax, colMax, 0);
-  Eigen::VectorX<T> row_t1(colMax);
+  RowMajMat<T> concentrations_t1(rowMax, colMax);
 
   Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b;
@@ -421,7 +420,7 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
   RowMajMat<T> &concentrations = grid.getConcentrations();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
+#pragma omp parallel for num_threads(numThreads) private(A, b)
   for (int i = 0; i < rowMax; i++) {
     auto inner_bc = bc.getInnerBoundaryRow(i);
 
@@ -429,17 +428,14 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
     b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
                              bcTop, bcBottom, inner_bc, colMax, i, sx, sy);
 
-    row_t1 = solverFunc(A, b);
-
-    concentrations_t1.row(i) = row_t1;
+    concentrations_t1.row(i) = solverFunc(A, b);
   }
 
   concentrations_t1.transposeInPlace();
-  concentrations.transposeInPlace();
   alphaX.transposeInPlace();
   alphaY.transposeInPlace();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
+#pragma omp parallel for num_threads(numThreads) private(A, b)
   for (int i = 0; i < colMax; i++) {
     auto inner_bc = bc.getInnerBoundaryCol(i);
     // swap alphas, boundary conditions and sx/sy for column-wise calculation
@@ -447,14 +443,8 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
     b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
                              bcLeft, bcRight, inner_bc, rowMax, i, sy, sx);
 
-    row_t1 = solverFunc(A, b);
-
-    concentrations.row(i) = row_t1;
+    concentrations.col(i) = solverFunc(A, b);
   }
-
-  concentrations.transposeInPlace();
-
-  grid.setConcentrations(concentrations);
 }
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
