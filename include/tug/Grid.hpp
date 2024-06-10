@@ -8,6 +8,7 @@
  *
  */
 
+#include "Core/Matrix.hpp"
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Matrix.h>
@@ -24,9 +25,6 @@ namespace tug {
  */
 template <class T> class Grid {
 public:
-  using RowMajMat =
-      Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
   /**
    * @brief Constructs a new 1D-Grid object of a given length, which holds a
    * matrix with concentrations and a respective matrix of alpha coefficients.
@@ -45,8 +43,8 @@ public:
     this->deltaCol =
         static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
 
-    this->concentrations = Eigen::MatrixX<T>::Constant(1, col, MAT_INIT_VAL);
-    this->alphaX = Eigen::MatrixX<T>::Constant(1, col, MAT_INIT_VAL);
+    this->concentrations = RowMajMat<T>::Constant(1, col, MAT_INIT_VAL);
+    this->alphaX = RowMajMat<T>::Constant(1, col, MAT_INIT_VAL);
   }
 
   /**
@@ -73,9 +71,9 @@ public:
     this->deltaCol =
         static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
 
-    this->concentrations = RowMajMat::Constant(row, col, MAT_INIT_VAL);
-    this->alphaX = RowMajMat::Constant(row, col, MAT_INIT_VAL);
-    this->alphaY = RowMajMat::Constant(row, col, MAT_INIT_VAL);
+    this->concentrations = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
+    this->alphaX = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
+    this->alphaY = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
   }
 
   /**
@@ -85,7 +83,7 @@ public:
    * Matrix must have correct dimensions as defined in row and col. (Or length,
    * in 1D case).
    */
-  void setConcentrations(const Eigen::MatrixX<T> &concentrations) {
+  void setConcentrations(const RowMajMat<T> &concentrations) {
     if (concentrations.rows() != this->row ||
         concentrations.cols() != this->col) {
       throw std::invalid_argument(
@@ -103,9 +101,7 @@ public:
    * in 1D case). There is no check for correct dimensions, so be careful!
    */
   void setConcentrations(T *concentrations) {
-    Eigen::Map<
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        map(concentrations, this->row, this->col);
+    tug::RowMajMatMap<T> map(concentrations, this->row, this->col);
     this->concentrations = map;
   }
 
@@ -115,7 +111,7 @@ public:
    * @return An Eigen3 matrix holding the concentrations and having
    * the same dimensions as the grid.
    */
-  const auto &getConcentrations() { return this->concentrations; }
+  auto &getConcentrations() { return this->concentrations; }
 
   /**
    * @brief Set the alpha coefficients of a 1D-Grid. Grid must be one
@@ -124,7 +120,7 @@ public:
    * @param alpha An Eigen3 MatrixX<T> with 1 row holding the alpha
    * coefficients. Matrix columns must have same size as length of grid.
    */
-  void setAlpha(const Eigen::MatrixX<T> &alpha) {
+  void setAlpha(const RowMajMat<T> &alpha) {
     if (dim != 1) {
       throw std::invalid_argument(
           "Grid is not one dimensional, you should probably "
@@ -152,9 +148,7 @@ public:
           "Grid is not one dimensional, you should probably "
           "use 2D setter function!");
     }
-    Eigen::Map<
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        map(alpha, 1, this->col);
+    RowMajMatMap<T> map(alpha, 1, this->col);
     this->alphaX = map;
   }
 
@@ -167,8 +161,7 @@ public:
    * @param alphaY An Eigen3 MatrixX<T> holding the alpha coefficients in
    * y-direction. Matrix must be of same size as the grid.
    */
-  void setAlpha(const Eigen::MatrixX<T> &alphaX,
-                const Eigen::MatrixX<T> &alphaY) {
+  void setAlpha(const RowMajMat<T> &alphaX, const RowMajMat<T> &alphaY) {
     if (dim != 2) {
       throw std::invalid_argument(
           "Grid is not two dimensional, you should probably "
@@ -206,12 +199,8 @@ public:
           "Grid is not two dimensional, you should probably "
           "use 1D setter function!");
     }
-    Eigen::Map<
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        mapX(alphaX, this->row, this->col);
-    Eigen::Map<
-        Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>
-        mapY(alphaY, this->row, this->col);
+    RowMajMatMap<T> mapX(alphaX, this->row, this->col);
+    RowMajMatMap<T> mapY(alphaY, this->row, this->col);
     this->alphaX = mapX;
     this->alphaY = mapY;
   }
@@ -390,11 +379,9 @@ private:
   T deltaCol;     // delta in x-direction (between columns)
   T deltaRow{0};  // delta in y-direction (between rows)
 
-  RowMajMat concentrations; // Matrix holding grid concentrations
-  RowMajMat alphaX;         // Matrix holding alpha coefficients in x-direction
-  RowMajMat alphaY;         // Matrix holding alpha coefficients in y-direction
-
-  using RowMajMatMap = Eigen::Map<RowMajMat>;
+  RowMajMat<T> concentrations; // Matrix holding grid concentrations
+  RowMajMat<T> alphaX; // Matrix holding alpha coefficients in x-direction
+  RowMajMat<T> alphaY; // Matrix holding alpha coefficients in y-direction
 
   static constexpr T MAT_INIT_VAL = 0;
 };

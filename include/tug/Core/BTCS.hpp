@@ -10,6 +10,7 @@
 #ifndef BTCS_H_
 #define BTCS_H_
 
+#include "Matrix.hpp"
 #include "TugUtils.hpp"
 
 #include <cstddef>
@@ -51,7 +52,7 @@ constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
 // creates coefficient matrix for next time step from alphas in x-direction
 template <class T>
 static Eigen::SparseMatrix<T>
-createCoeffMatrix(const typename Grid<T>::RowMajMat &alpha,
+createCoeffMatrix(const RowMajMat<T> &alpha,
                   const std::vector<BoundaryElement<T>> &bcLeft,
                   const std::vector<BoundaryElement<T>> &bcRight,
                   const std::vector<std::pair<bool, T>> &inner_bc, int numCols,
@@ -160,9 +161,8 @@ constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
 // concentrations
 template <class T>
 static Eigen::VectorX<T>
-createSolutionVector(const typename Grid<T>::RowMajMat &concentrations,
-                     const typename Grid<T>::RowMajMat &alphaX,
-                     const typename Grid<T>::RowMajMat &alphaY,
+createSolutionVector(const RowMajMat<T> &concentrations,
+                     const RowMajMat<T> &alphaX, const RowMajMat<T> &alphaY,
                      const std::vector<BoundaryElement<T>> &bcLeft,
                      const std::vector<BoundaryElement<T>> &bcRight,
                      const std::vector<BoundaryElement<T>> &bcTop,
@@ -405,22 +405,21 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   T sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
   T sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
 
-  Eigen::MatrixX<T> concentrations_t1 =
-      Eigen::MatrixX<T>::Constant(rowMax, colMax, 0);
+  RowMajMat<T> concentrations_t1 = RowMajMat<T>::Constant(rowMax, colMax, 0);
   Eigen::VectorX<T> row_t1(colMax);
 
   Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b;
 
-  auto alphaX = grid.getAlphaX();
-  auto alphaY = grid.getAlphaY();
+  RowMajMat<T> alphaX = grid.getAlphaX();
+  RowMajMat<T> alphaY = grid.getAlphaY();
 
   const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
   const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
   const auto &bcTop = bc.getBoundarySide(BC_SIDE_TOP);
   const auto &bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
-  Eigen::MatrixX<T> concentrations = grid.getConcentrations();
+  RowMajMat<T> &concentrations = grid.getConcentrations();
 
 #pragma omp parallel for num_threads(numThreads) private(A, b, row_t1)
   for (int i = 0; i < rowMax; i++) {
