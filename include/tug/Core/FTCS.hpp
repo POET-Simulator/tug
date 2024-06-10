@@ -228,8 +228,7 @@ static void FTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep) {
   T deltaCol = grid.getDeltaCol();
 
   // matrix for concentrations at time t+1
-  Eigen::MatrixX<T> concentrations_t1 =
-      Eigen::MatrixX<T>::Constant(1, colMax, 0);
+  RowMajMat<T> concentrations_t1 = RowMajMat<T>::Constant(1, colMax, 0);
 
   // only one row in 1D case -> row constant at index 0
   int row = 0;
@@ -270,8 +269,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   T deltaCol = grid.getDeltaCol();
 
   // matrix for concentrations at time t+1
-  Eigen::MatrixX<T> concentrations_t1 =
-      Eigen::MatrixX<T>::Constant(rowMax, colMax, 0);
+  RowMajMat<T> concentrations_t1 = RowMajMat<T>::Constant(rowMax, colMax, 0);
 
   // inner cells
   // these are independent of the boundary condition type

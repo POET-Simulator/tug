@@ -1,6 +1,7 @@
 #include <Eigen/Core>
 #include <doctest/doctest.h>
 #include <tug/Grid.hpp>
+#include <vector>
 
 using namespace Eigen;
 using namespace std;
@@ -249,5 +250,19 @@ TEST_CASE("2D Grid64 non-quadratic") {
     CHECK_THROWS(grid.setDomain(dr, dc));
     dr = -2;
     CHECK_THROWS(grid.setDomain(dr, dc));
+  }
+
+  SUBCASE("set concentration from pointer") {
+    std::vector<double> concentrations(r * c);
+
+    for (int i = 0; i < r * c; i++) {
+      concentrations[i] = i;
+    }
+
+    grid.setConcentrations(concentrations.data());
+
+    CHECK_EQ(grid.getConcentrations()(0, 0), 0);
+    CHECK_EQ(grid.getConcentrations()(0, 1), 1);
+    CHECK_EQ(grid.getConcentrations()(1, 0), c);
   }
 }

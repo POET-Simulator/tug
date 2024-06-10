@@ -8,8 +8,11 @@
  *
  */
 
+#include "Core/Matrix.hpp"
 #include <Eigen/Core>
 #include <Eigen/Sparse>
+#include <Eigen/src/Core/Matrix.h>
+#include <Eigen/src/Core/util/Constants.h>
 #include <stdexcept>
 
 namespace tug {
@@ -40,8 +43,8 @@ public:
     this->deltaCol =
         static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
 
-    this->concentrations = Eigen::MatrixX<T>::Constant(1, col, MAT_INIT_VAL);
-    this->alphaX = Eigen::MatrixX<T>::Constant(1, col, MAT_INIT_VAL);
+    this->concentrations = RowMajMat<T>::Constant(1, col, MAT_INIT_VAL);
+    this->alphaX = RowMajMat<T>::Constant(1, col, MAT_INIT_VAL);
   }
 
   /**
@@ -68,9 +71,9 @@ public:
     this->deltaCol =
         static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
 
-    this->concentrations = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
-    this->alphaX = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
-    this->alphaY = Eigen::MatrixX<T>::Constant(row, col, MAT_INIT_VAL);
+    this->concentrations = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
+    this->alphaX = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
+    this->alphaY = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
   }
 
   /**
@@ -80,7 +83,7 @@ public:
    * Matrix must have correct dimensions as defined in row and col. (Or length,
    * in 1D case).
    */
-  void setConcentrations(const Eigen::MatrixX<T> &concentrations) {
+  void setConcentrations(const RowMajMat<T> &concentrations) {
     if (concentrations.rows() != this->row ||
         concentrations.cols() != this->col) {
       throw std::invalid_argument(
@@ -91,12 +94,24 @@ public:
   }
 
   /**
+   * @brief Sets the concentrations matrix for a 1D or 2D-Grid.
+   *
+   * @param concentrations A pointer to an array holding the concentrations.
+   * Array must have correct dimensions as defined in row and col. (Or length,
+   * in 1D case). There is no check for correct dimensions, so be careful!
+   */
+  void setConcentrations(T *concentrations) {
+    tug::RowMajMatMap<T> map(concentrations, this->row, this->col);
+    this->concentrations = map;
+  }
+
+  /**
    * @brief Gets the concentrations matrix for a Grid.
    *
    * @return An Eigen3 matrix holding the concentrations and having
    * the same dimensions as the grid.
    */
-  const Eigen::MatrixX<T> &getConcentrations() { return this->concentrations; }
+  auto &getConcentrations() { return this->concentrations; }
 
   /**
    * @brief Set the alpha coefficients of a 1D-Grid. Grid must be one
@@ -105,7 +120,7 @@ public:
    * @param alpha An Eigen3 MatrixX<T> with 1 row holding the alpha
    * coefficients. Matrix columns must have same size as length of grid.
    */
-  void setAlpha(const Eigen::MatrixX<T> &alpha) {
+  void setAlpha(const RowMajMat<T> &alpha) {
     if (dim != 1) {
       throw std::invalid_argument(
           "Grid is not one dimensional, you should probably "
@@ -120,6 +135,24 @@ public:
   }
 
   /**
+   * @brief Set the alpha coefficients of a 1D-Grid. Grid must be one
+   * dimensional.
+   *
+   * @param alpha A pointer to an array holding the alpha coefficients. Array
+   * must have correct dimensions as defined in length. There is no check for
+   * correct dimensions, so be careful!
+   */
+  void setAlpha(T *alpha) {
+    if (dim != 1) {
+      throw std::invalid_argument(
+          "Grid is not one dimensional, you should probably "
+          "use 2D setter function!");
+    }
+    RowMajMatMap<T> map(alpha, 1, this->col);
+    this->alphaX = map;
+  }
+
+  /**
    * @brief Set the alpha coefficients of a 2D-Grid. Grid must be two
    * dimensional.
    *
@@ -128,8 +161,7 @@ public:
    * @param alphaY An Eigen3 MatrixX<T> holding the alpha coefficients in
    * y-direction. Matrix must be of same size as the grid.
    */
-  void setAlpha(const Eigen::MatrixX<T> &alphaX,
-                const Eigen::MatrixX<T> &alphaY) {
+  void setAlpha(const RowMajMat<T> &alphaX, const RowMajMat<T> &alphaY) {
     if (dim != 2) {
       throw std::invalid_argument(
           "Grid is not two dimensional, you should probably "
@@ -151,12 +183,35 @@ public:
   }
 
   /**
+   * @brief Set the alpha coefficients of a 2D-Grid. Grid must be two
+   * dimensional.
+   *
+   * @param alphaX A pointer to an array holding the alpha coefficients in
+   * x-direction. Array must have correct dimensions as defined in row and col.
+   * There is no check for correct dimensions, so be careful!
+   * @param alphaY A pointer to an array holding the alpha coefficients in
+   * y-direction. Array must have correct dimensions as defined in row and col.
+   * There is no check for correct dimensions, so be careful!
+   */
+  void setAlpha(T *alphaX, T *alphaY) {
+    if (dim != 2) {
+      throw std::invalid_argument(
+          "Grid is not two dimensional, you should probably "
+          "use 1D setter function!");
+    }
+    RowMajMatMap<T> mapX(alphaX, this->row, this->col);
+    RowMajMatMap<T> mapY(alphaY, this->row, this->col);
+    this->alphaX = mapX;
+    this->alphaY = mapY;
+  }
+
+  /**
    * @brief Gets the matrix of alpha coefficients of a 1D-Grid. Grid must be one
    * dimensional.
    *
    * @return A matrix with 1 row holding the alpha coefficients.
    */
-  const Eigen::MatrixX<T> &getAlpha() const {
+  const auto &getAlpha() const {
     if (dim != 1) {
       throw std::invalid_argument(
           "Grid is not one dimensional, you should probably "
@@ -172,7 +227,7 @@ public:
    *
    * @return A matrix holding the alpha coefficients in x-direction.
    */
-  const Eigen::MatrixX<T> &getAlphaX() const {
+  const auto &getAlphaX() const {
 
     if (dim != 2) {
       throw std::invalid_argument(
@@ -188,7 +243,7 @@ public:
    *
    * @return A matrix holding the alpha coefficients in y-direction.
    */
-  const Eigen::MatrixX<T> &getAlphaY() const {
+  const auto &getAlphaY() const {
 
     if (dim != 2) {
       throw std::invalid_argument(
@@ -316,16 +371,17 @@ public:
   }
 
 private:
-  int col;                          // number of grid columns
-  int row{1};                       // number of grid rows
-  int dim;                          // 1D or 2D
-  T domainCol;                      // number of domain columns
-  T domainRow{0};                   // number of domain rows
-  T deltaCol;                       // delta in x-direction (between columns)
-  T deltaRow{0};                    // delta in y-direction (between rows)
-  Eigen::MatrixX<T> concentrations; // Matrix holding grid concentrations
-  Eigen::MatrixX<T> alphaX; // Matrix holding alpha coefficients in x-direction
-  Eigen::MatrixX<T> alphaY; // Matrix holding alpha coefficients in y-direction
+  int col;        // number of grid columns
+  int row{1};     // number of grid rows
+  int dim;        // 1D or 2D
+  T domainCol;    // number of domain columns
+  T domainRow{0}; // number of domain rows
+  T deltaCol;     // delta in x-direction (between columns)
+  T deltaRow{0};  // delta in y-direction (between rows)
+
+  RowMajMat<T> concentrations; // Matrix holding grid concentrations
+  RowMajMat<T> alphaX; // Matrix holding alpha coefficients in x-direction
+  RowMajMat<T> alphaY; // Matrix holding alpha coefficients in y-direction
 
   static constexpr T MAT_INIT_VAL = 0;
 };

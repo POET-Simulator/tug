@@ -446,9 +446,9 @@ public:
       // TODO this implementation is very inefficient!
       // a separate implementation that sets up a specific tridiagonal matrix
       // for Crank-Nicolson would be better
-      Eigen::MatrixX<T> concentrations;
-      Eigen::MatrixX<T> concentrationsFTCS;
-      Eigen::MatrixX<T> concentrationsResult;
+      RowMajMat<T> concentrations;
+      RowMajMat<T> concentrationsFTCS;
+      RowMajMat<T> concentrationsResult;
       for (int i = 0; i < iterations * innerIterations; i++) {
         if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
           printConcentrationsConsole();
