@@ -1,6 +1,6 @@
 find_package(doctest REQUIRED)
 
-add_executable(testTug setup.cpp testSimulation.cpp testGrid.cpp testFTCS.cpp testBoundary.cpp)
+add_executable(testTug setup.cpp testDiffusion.cpp testGrid.cpp testFTCS.cpp testBoundary.cpp)
 target_link_libraries(testTug doctest::doctest tug)
 
 # get relative path of the CSV file

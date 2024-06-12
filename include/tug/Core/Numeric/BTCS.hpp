@@ -10,8 +10,8 @@
 #ifndef BTCS_H_
 #define BTCS_H_
 
-#include "Matrix.hpp"
-#include "TugUtils.hpp"
+#include "../Matrix.hpp"
+#include "../TugUtils.hpp"
 
 #include <cstddef>
 #include <tug/Boundary.hpp>

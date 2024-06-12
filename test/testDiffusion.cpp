@@ -1,9 +1,8 @@
 #include "TestUtils.hpp"
-#include <tug/Simulation.hpp>
+#include <tug/Diffusion.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
 #include <doctest/doctest.h>
-#include <stdio.h>
 #include <string>
 
 // include the configured header file
@@ -62,7 +61,7 @@ TEST_CASE("equality to reference matrix with FTCS") {
 
   // Simulation
 
-  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
+  Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
   // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
   sim.setTimestep(timestep);
   sim.setIterations(iterations);
@@ -82,7 +81,7 @@ TEST_CASE("equality to reference matrix with BTCS") {
   Boundary bc = Boundary(grid);
 
   // Simulation
-  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
+  Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
   // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
   sim.setTimestep(timestep);
   sim.setIterations(iterations);
@@ -97,16 +96,16 @@ TEST_CASE("Initialize environment") {
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
 
-  CHECK_NOTHROW(Simulation sim(grid, boundary));
+  CHECK_NOTHROW(Diffusion sim(grid, boundary));
 }
 
 TEST_CASE("Simulation environment") {
   int rc = 12;
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
-  Simulation<double, tug::FTCS_APPROACH> sim(grid, boundary);
+  Diffusion<double, tug::FTCS_APPROACH> sim(grid, boundary);
 
-  SUBCASE("default paremeters") { CHECK_EQ(sim.getIterations(), -1); }
+  SUBCASE("default paremeters") { CHECK_EQ(sim.getIterations(), 1); }
 
   SUBCASE("set iterations") {
     CHECK_NOTHROW(sim.setIterations(2000));
@@ -141,7 +140,7 @@ TEST_CASE("Closed Boundaries - no change expected") {
   bc.setBoundarySideConstant(tug::BC_SIDE_TOP, 1.0);
   bc.setBoundarySideConstant(tug::BC_SIDE_BOTTOM, 1.0);
 
-  tug::Simulation<double> sim(grid, bc);
+  tug::Diffusion<double> sim(grid, bc);
   sim.setTimestep(1);
   sim.setIterations(1);
 
@@ -169,7 +168,7 @@ TEST_CASE("Constant inner cell - 'absorbing' concentration") {
   // inner
   bc.setInnerBoundary(2, 2, 0);
 
-  tug::Simulation<double> sim(grid, bc);
+  tug::Diffusion<double> sim(grid, bc);
   sim.setTimestep(1);
   sim.setIterations(1);
 

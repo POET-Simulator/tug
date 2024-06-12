@@ -8,10 +8,8 @@
 #ifndef FTCS_H_
 #define FTCS_H_
 
-#include "TugUtils.hpp"
+#include "../TugUtils.hpp"
 
-#include <cstddef>
-#include <iostream>
 #include <tug/Boundary.hpp>
 
 #ifdef _OPENMP

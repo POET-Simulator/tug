@@ -1,13 +1,12 @@
 /**
- * @file Simulation.hpp
- * @brief API of Simulation class, that holds all information regarding a
+ * @file Diffusion.hpp
+ * @brief API of Diffusion class, that holds all information regarding a
  * specific simulation run like its timestep, number of iterations and output
- * options. Simulation object also holds a predefined Grid and Boundary object.
+ * options. Diffusion object also holds a predefined Grid and Boundary object.
  *
  */
 
-#ifndef SIMULATION_H_
-#define SIMULATION_H_
+#pragma once
 
 #include "Boundary.hpp"
 #include "Grid.hpp"
@@ -19,9 +18,10 @@
 #include <string>
 #include <vector>
 
-#include "Core/BTCS.hpp"
-#include "Core/FTCS.hpp"
+#include "Core/Numeric/BTCS.hpp"
+#include "Core/Numeric/FTCS.hpp"
 #include "Core/TugUtils.hpp"
+#include "tug/Core/BaseSimulation.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -52,37 +52,6 @@ enum SOLVER {
 };
 
 /**
- * @brief Enum holding different options for .csv output.
- *
- */
-enum CSV_OUTPUT {
-  CSV_OUTPUT_OFF,     /*!< do not produce csv output */
-  CSV_OUTPUT_ON,      /*!< produce csv output with last concentration matrix */
-  CSV_OUTPUT_VERBOSE, /*!< produce csv output with all concentration matrices */
-  CSV_OUTPUT_XTREME   /*!< csv output like VERBOSE but additional boundary
-                         conditions at beginning */
-};
-
-/**
- * @brief Enum holding different options for console output.
- *
- */
-enum CONSOLE_OUTPUT {
-  CONSOLE_OUTPUT_OFF, /*!< do not print any output to console */
-  CONSOLE_OUTPUT_ON,  /*!< print before and after concentrations to console */
-  CONSOLE_OUTPUT_VERBOSE /*!< print all concentration matrices to console */
-};
-
-/**
- * @brief Enum holding different options for time measurement.
- *
- */
-enum TIME_MEASURE {
-  TIME_MEASURE_OFF, /*!< do not print any time measures */
-  TIME_MEASURE_ON   /*!< print time measure after last iteration */
-};
-
-/**
  * @brief The class forms the interface for performing the diffusion simulations
  * and contains all the methods for controlling the desired parameters, such as
  * time step, number of simulations, etc.
@@ -94,7 +63,17 @@ enum TIME_MEASURE {
  */
 template <class T, APPROACH approach = BTCS_APPROACH,
           SOLVER solver = THOMAS_ALGORITHM_SOLVER>
-class Simulation {
+class Diffusion : public BaseSimulation {
+private:
+  T timestep{-1};
+  int innerIterations{1};
+  int numThreads{omp_get_num_procs()};
+
+  Grid<T> &grid;
+  Boundary<T> &bc;
+
+  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
+
 public:
   /**
    * @brief Set up a simulation environment. The timestep and number of
@@ -108,68 +87,7 @@ public:
    * @param bc Valid boundary condition object
    * @param approach Approach to solving the problem. Either FTCS or BTCS.
    */
-  Simulation(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc){};
-
-  /**
-   * @brief Set the option to output the results to a CSV file. Off by default.
-   *
-   *
-   * @param csv_output Valid output option. The following options can be set
-   *                   here:
-   *                     - CSV_OUTPUT_OFF: do not produce csv output
-   *                     - CSV_OUTPUT_ON: produce csv output with last
-   *                       concentration matrix
-   *                     - CSV_OUTPUT_VERBOSE: produce csv output with all
-   *                       concentration matrices
-   *                     - CSV_OUTPUT_XTREME: produce csv output with all
-   *                       concentration matrices and simulation environment
-   */
-  void setOutputCSV(CSV_OUTPUT csv_output) {
-    if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid CSV output option given!");
-    }
-
-    this->csv_output = csv_output;
-  }
-
-  /**
-   * @brief Set the options for outputting information to the console. Off by
-   * default.
-   *
-   * @param console_output Valid output option. The following options can be set
-   *                       here:
-   *                        - CONSOLE_OUTPUT_OFF: do not print any output to
-   * console
-   *                        - CONSOLE_OUTPUT_ON: print before and after
-   * concentrations to console
-   *                        - CONSOLE_OUTPUT_VERBOSE: print all concentration
-   * matrices to console
-   */
-  void setOutputConsole(CONSOLE_OUTPUT console_output) {
-    if (console_output < CONSOLE_OUTPUT_OFF &&
-        console_output > CONSOLE_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid console output option given!");
-    }
-
-    this->console_output = console_output;
-  }
-
-  /**
-   * @brief Set the Time Measure option. Off by default.
-   *
-   * @param time_measure The following options are allowed:
-   *                     - TIME_MEASURE_OFF: Time of simulation is not printed
-   * to console
-   *                     - TIME_MEASURE_ON: Time of simulation run is printed to
-   * console
-   */
-  void setTimeMeasure(TIME_MEASURE time_measure) {
-    if (time_measure < TIME_MEASURE_OFF && time_measure > TIME_MEASURE_ON) {
-      throw std::invalid_argument("Invalid time measure option given!");
-    }
-
-    this->time_measure = time_measure;
-  }
+  Diffusion(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc){};
 
   /**
    * @brief Setting the time step for each iteration step. Time step must be
@@ -245,20 +163,6 @@ public:
   T getTimestep() const { return this->timestep; }
 
   /**
-   * @brief Set the desired iterations to be calculated. A value greater
-   *        than zero must be specified here. Setting iterations is required.
-   *
-   * @param iterations Number of iterations to be simulated.
-   */
-  void setIterations(int iterations) {
-    if (iterations <= 0) {
-      throw std::invalid_argument(
-          "Number of iterations must be greater than zero.");
-    }
-    this->iterations = iterations;
-  }
-
-  /**
    * @brief Set the number of desired openMP Threads.
    *
    * @param num_threads Number of desired threads. Must have a value between
@@ -276,13 +180,6 @@ public:
           std::to_string(maxThreadNumber) + ") or is less than 1.");
     }
   }
-
-  /**
-   * @brief Return the currently set iterations to be calculated.
-   *
-   * @return int Number of iterations.
-   */
-  int getIterations() const { return this->iterations; }
 
   /**
    * @brief Outputs the current concentrations of the grid on the console.
@@ -393,7 +290,6 @@ public:
     auto begin = std::chrono::high_resolution_clock::now();
 
     if constexpr (approach == FTCS_APPROACH) { // FTCS case
-
       for (int i = 0; i < iterations * innerIterations; i++) {
         if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
           printConcentrationsConsole();
@@ -485,20 +381,5 @@ public:
                 << milliseconds.count() << "ms" << std::endl;
     }
   }
-
-private:
-  T timestep{-1};
-  int iterations{-1};
-  int innerIterations{1};
-  int numThreads{omp_get_num_procs()};
-  CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
-  CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT_OFF};
-  TIME_MEASURE time_measure{TIME_MEASURE_OFF};
-
-  Grid<T> &grid;
-  Boundary<T> &bc;
-
-  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
 };
 } // namespace tug
-#endif // SIMULATION_H_
