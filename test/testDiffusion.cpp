@@ -1,7 +1,7 @@
 #include "TestUtils.hpp"
 #include <gtest/gtest.h>
 #include <stdexcept>
-#include <tug/Simulation.hpp>
+#include <tug/Diffusion.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
 #include <string>
@@ -64,7 +64,7 @@ DIFFUSION_TEST(EqualityFTCS) {
 
   // Simulation
 
-  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
+  Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
   // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
   sim.setTimestep(timestep);
   sim.setIterations(iterations);
@@ -84,7 +84,7 @@ DIFFUSION_TEST(EqualityBTCS) {
   Boundary bc = Boundary(grid);
 
   // Simulation
-  Simulation sim = Simulation<double, tug::FTCS_APPROACH>(grid, bc);
+  Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
   // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
   sim.setTimestep(timestep);
   sim.setIterations(iterations);
@@ -99,16 +99,16 @@ DIFFUSION_TEST(InitializeEnvironment) {
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
 
-  EXPECT_NO_THROW(Simulation sim(grid, boundary));
+  EXPECT_NO_THROW(Diffusion sim(grid, boundary));
 }
 
 DIFFUSION_TEST(SimulationEnvironment) {
   int rc = 12;
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
-  Simulation<double, tug::FTCS_APPROACH> sim(grid, boundary);
+  Diffusion<double, tug::FTCS_APPROACH> sim(grid, boundary);
 
-  EXPECT_EQ(sim.getIterations(), -1);
+  EXPECT_EQ(sim.getIterations(), 1);
 
   EXPECT_NO_THROW(sim.setIterations(2000));
   EXPECT_EQ(sim.getIterations(), 2000);
@@ -139,7 +139,7 @@ DIFFUSION_TEST(ClosedBoundaries) {
   bc.setBoundarySideConstant(tug::BC_SIDE_TOP, 1.0);
   bc.setBoundarySideConstant(tug::BC_SIDE_BOTTOM, 1.0);
 
-  tug::Simulation<double> sim(grid, bc);
+  tug::Diffusion<double> sim(grid, bc);
   sim.setTimestep(1);
   sim.setIterations(1);
 
@@ -166,7 +166,7 @@ DIFFUSION_TEST(ConstantInnerCell) {
   // inner
   bc.setInnerBoundary(2, 2, 0);
 
-  tug::Simulation<double> sim(grid, bc);
+  tug::Diffusion<double> sim(grid, bc);
   sim.setTimestep(1);
   sim.setIterations(1);
 

@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <tug/Simulation.hpp>
 #include <type_traits>
 #include <vector>
 
-#include "files.hpp"
+#include <files.hpp>
+#include <tug/Diffusion.hpp>
 
 using namespace tug;
 
@@ -142,8 +142,7 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
   bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
 
   // set up a simulation environment
-  Simulation Sim =
-      Simulation<T, app>(grid, bc); // grid_64,boundary,simulation-approach
+  Diffusion Sim(grid, bc); // grid_64,boundary,simulation-approach
 
   // Sim64.setSolver(THOMAS_ALGORITHM_SOLVER);
 

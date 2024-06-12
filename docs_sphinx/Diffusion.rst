@@ -1,4 +1,4 @@
-Simulation
+Diffusion
 ==========
 
 .. doxygenenum:: tug::APPROACH
@@ -7,4 +7,4 @@ Simulation
 .. doxygenenum:: tug::CONSOLE_OUTPUT
 .. doxygenenum:: tug::TIME_MEASURE
 
-.. doxygenclass:: tug::Simulation
+.. doxygenclass:: tug::Diffusion

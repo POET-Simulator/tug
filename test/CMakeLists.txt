@@ -10,7 +10,7 @@ FetchContent_MakeAvailable(googletest)
 
 
 add_executable(testTug 
-testSimulation.cpp 
+testDiffusion.cpp 
 testGrid.cpp 
 testFTCS.cpp 
 testBoundary.cpp

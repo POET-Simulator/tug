@@ -7,7 +7,7 @@
  */
 
 #include <Eigen/Eigen>
-#include <tug/Simulation.hpp>
+#include <tug/Diffusion.hpp>
 
 using namespace Eigen;
 using namespace tug;
@@ -60,8 +60,8 @@ int main(int argc, char *argv[]) {
   // ************************
 
   // set up a simulation environment
-  Simulation simulation =
-      Simulation<double, tug::FTCS_APPROACH>(grid, bc); // grid,boundary,simulation-approach
+  Diffusion<double, tug::FTCS_APPROACH> simulation(
+      grid, bc); // grid,boundary,simulation-approach
 
   // (optional) set the timestep of the simulation
   simulation.setTimestep(1000); // timestep

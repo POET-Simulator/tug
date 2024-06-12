@@ -5,8 +5,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
-#include <tug/Simulation.hpp>
+#include <tug/Diffusion.hpp>
 #include <vector>
 
 #include "files.hpp"
@@ -141,7 +140,7 @@ int main(int argc, char *argv[]) {
   // // ************************
 
   // set up a simulation environment
-  Simulation simulation = Simulation(grid, bc); // grid,boundary
+  Diffusion simulation(grid, bc); // grid,boundary
 
   // set the timestep of the simulation
   simulation.setTimestep(360); // timestep
