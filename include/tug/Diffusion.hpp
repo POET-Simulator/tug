@@ -96,17 +96,15 @@ public:
    * @param timestep Valid timestep greater than zero.
    */
   void setTimestep(T timestep) {
-    if (timestep <= 0) {
-      throw_invalid_argument("Timestep has to be greater than zero.");
-    }
+      tug_assert(timestep > 0, "Timestep has to be greater than zero.");
 
     if constexpr (approach == FTCS_APPROACH ||
                   approach == CRANK_NICOLSON_APPROACH) {
       T cfl;
       if (grid.getDim() == 1) {
 
-        const T deltaSquare = grid.getDelta();
-        const T maxAlpha = grid.getAlpha().maxCoeff();
+        const T deltaSquare = grid.getDeltaCol();
+        const T maxAlpha = grid.getAlphaX().maxCoeff();
 
         // Courant-Friedrichs-Lewy condition
         cfl = deltaSquare / (4 * maxAlpha);
@@ -272,12 +270,8 @@ public:
    *        parameters.
    */
   void run() {
-    if (this->timestep == -1) {
-      throw_invalid_argument("Timestep is not set!");
-    }
-    if (this->iterations == -1) {
-      throw_invalid_argument("Number of iterations are not set!");
-    }
+    tug_assert(this->timestep > 0, "Timestep is not set!");
+    tug_assert(this->iterations > 0, "Number of iterations are not set!");
 
     std::string filename;
     if (this->console_output > CONSOLE_OUTPUT_OFF) {

@@ -1,5 +1,4 @@
-#ifndef GRID_H_
-#define GRID_H_
+#pragma once
 
 /**
  * @file Grid.hpp
@@ -9,11 +8,12 @@
  */
 
 #include "Core/Matrix.hpp"
+#include "tug/Core/TugUtils.hpp"
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/src/Core/Matrix.h>
 #include <Eigen/src/Core/util/Constants.h>
-#include <stdexcept>
+#include <cstddef>
 
 namespace tug {
 
@@ -26,83 +26,97 @@ namespace tug {
 template <class T> class Grid {
 public:
   /**
-   * @brief Constructs a new 1D-Grid object of a given length, which holds a
-   * matrix with concentrations and a respective matrix of alpha coefficients.
-   *        The domain length is per default the same as the length. The
-   * concentrations are all 20 by default and the alpha coefficients are 1.
+   * @brief Construct a new Grid object.
    *
-   * @param length Length of the 1D-Grid. Must be greater than 3.
+   * Constructs a new Grid object with given concentrations, defined by an
+   * Eigen::Matrix. The domain length is per default the same as the length. The
+   * alpha coefficients are set to 1. The dimensions of the grid are determined
+   * by the given matrix, which can also be an Eigen::Vector for a 1D-Grid.
+   *
+   * @param concentrations An Eigen3 MatrixX<T> holding the concentrations.
    */
-  Grid(int length) : col(length), domainCol(length) {
-    if (length <= 3) {
-      throw std::invalid_argument(
-          "Given grid length too small. Must be greater than 3.");
+  Grid(const RowMajMat<T> &concentrations) {
+    if (concentrations.rows() == 1) {
+      this->dim = 1;
+      this->domainCol = static_cast<T>(concentrations.cols());
+      this->deltaCol = static_cast<T>(this->domainCol) /
+                       static_cast<T>(concentrations.cols()); // -> 1
+
+      this->concentrations = concentrations;
+      return;
     }
 
-    this->dim = 1;
-    this->deltaCol =
-        static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
+    if (concentrations.cols() == 1) {
+      this->dim = 1;
+      this->domainCol = static_cast<T>(concentrations.rows());
+      this->deltaCol = static_cast<T>(this->domainCol) /
+                       static_cast<T>(concentrations.rows()); // -> 1
 
-    this->concentrations = RowMajMat<T>::Constant(1, col, MAT_INIT_VAL);
-    this->alphaX = RowMajMat<T>::Constant(1, col, MAT_INIT_VAL);
-  }
-
-  /**
-   * @brief Constructs a new 2D-Grid object of given dimensions, which holds a
-   * matrix with concentrations and the respective matrices of alpha coefficient
-   * for each direction. The domain in x- and y-direction is per default equal
-   * to the col length and row length, respectively. The concentrations are all
-   * 20 by default across the entire grid and the alpha coefficients 1 in both
-   * directions.
-   *
-   * @param row Length of the 2D-Grid in y-direction. Must be greater than 3.
-   * @param col Length of the 2D-Grid in x-direction. Must be greater than 3.
-   */
-  Grid(int _row, int _col)
-      : row(_row), col(_col), domainRow(_row), domainCol(_col) {
-    if (row <= 1 || col <= 1) {
-      throw std::invalid_argument(
-          "At least one dimension is 1. Use 1D grid for better results.");
+      this->concentrations = concentrations.transpose();
+      return;
     }
 
     this->dim = 2;
-    this->deltaRow =
-        static_cast<T>(this->domainRow) / static_cast<T>(this->row); // -> 1
-    this->deltaCol =
-        static_cast<T>(this->domainCol) / static_cast<T>(this->col); // -> 1
-
-    this->concentrations = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
-    this->alphaX = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
-    this->alphaY = RowMajMat<T>::Constant(row, col, MAT_INIT_VAL);
-  }
-
-  /**
-   * @brief Sets the concentrations matrix for a 1D or 2D-Grid.
-   *
-   * @param concentrations An Eigen3 MatrixX<T> holding the concentrations.
-   * Matrix must have correct dimensions as defined in row and col. (Or length,
-   * in 1D case).
-   */
-  void setConcentrations(const RowMajMat<T> &concentrations) {
-    if (concentrations.rows() != this->row ||
-        concentrations.cols() != this->col) {
-      throw std::invalid_argument(
-          "Given matrix of concentrations mismatch with Grid dimensions!");
-    }
+    this->domainRow = static_cast<T>(concentrations.rows());
+    this->domainCol = static_cast<T>(concentrations.cols());
+    this->deltaRow = static_cast<T>(this->domainRow) /
+                     static_cast<T>(concentrations.rows()); // -> 1
+    this->deltaCol = static_cast<T>(this->domainCol) /
+                     static_cast<T>(concentrations.cols()); // -> 1
 
     this->concentrations = concentrations;
+    // this->alphaX = RowMajMat<T>::Constant(concentrations.rows(),
+    //                                       concentrations.cols(),
+    //                                       MAT_INIT_VAL);
+    // this->alphaY = RowMajMat<T>::Constant(concentrations.rows(),
+    //                                       concentrations.cols(),
+    //                                       MAT_INIT_VAL);
   }
 
   /**
-   * @brief Sets the concentrations matrix for a 1D or 2D-Grid.
+   * @brief Construct a new Grid object.
    *
-   * @param concentrations A pointer to an array holding the concentrations.
-   * Array must have correct dimensions as defined in row and col. (Or length,
-   * in 1D case). There is no check for correct dimensions, so be careful!
+   * Constructs a new 1D Grid object with given concentrations, defined by a
+   * pointer to consecutive memory and the length of the array. The domain
+   * length is per default the same as the count of grid cells (length of
+   * array). The memory region is mapped internally, changes will affect the
+   * original array and the memory shall not be freed. There is no check for
+   * correct memory size!
+   *
+   * @param concentrations Pointer to consecutive memory holding concentrations.
+   * @param length Length of the array/the 1D grid.
    */
-  void setConcentrations(T *concentrations) {
-    tug::RowMajMatMap<T> map(concentrations, this->row, this->col);
-    this->concentrations = map;
+  Grid(T *concentrations, std::size_t length) : dim(1) {
+    this->domainCol = static_cast<T>(length); // -> 1
+    this->deltaCol =
+        static_cast<T>(this->domainCol) / static_cast<T>(length); // -> 1
+
+    this->concentrations = RowMajMatMap<T>(concentrations, 1, length);
+  }
+
+  /**
+   * @brief Construct a new Grid object.
+   *
+   * Constructs a new 2D Grid object with given concentrations, defined by a
+   * pointer to consecutive memory and the number of rows and columns. The
+   * domain size is per default the same as the number of rows and columns. The
+   * memory region is mapped internally, changes will affect the original array
+   * and the memory shall not be freed. There is no check for correct memory
+   * size!
+   *
+   * @param concentrations Pointer to consecutive memory holding concentrations.
+   * @param row Number of rows.
+   * @param col Number of columns.
+   */
+  Grid(T *concentrations, std::size_t row, std::size_t col) : dim(2) {
+    this->domainRow = static_cast<T>(row); // -> 1
+    this->domainCol = static_cast<T>(col); // -> 1
+    this->deltaCol =
+        static_cast<T>(this->domainCol) / static_cast<T>(col); // -> 1
+    this->deltaRow =
+        static_cast<T>(this->domainRow) / static_cast<T>(row); // -> 1
+
+    this->concentrations = RowMajMatMap<T>(concentrations, row, col);
   }
 
   /**
@@ -113,6 +127,17 @@ public:
    */
   auto &getConcentrations() { return this->concentrations; }
 
+  void initAlpha() {
+    this->alphaX = RowMajMat<T>::Constant(
+        this->concentrations.rows(), this->concentrations.cols(), MAT_INIT_VAL);
+    if (dim > 1) {
+
+      this->alphaY =
+          RowMajMat<T>::Constant(this->concentrations.rows(),
+                                 this->concentrations.cols(), MAT_INIT_VAL);
+    }
+  }
+
   /**
    * @brief Set the alpha coefficients of a 1D-Grid. Grid must be one
    * dimensional.
@@ -121,15 +146,12 @@ public:
    * coefficients. Matrix columns must have same size as length of grid.
    */
   void setAlpha(const RowMajMat<T> &alpha) {
-    if (dim != 1) {
-      throw std::invalid_argument(
-          "Grid is not one dimensional, you should probably "
-          "use 2D setter function!");
-    }
-    if (alpha.rows() != 1 || alpha.cols() != this->col) {
-      throw std::invalid_argument(
-          "Given matrix of alpha coefficients mismatch with Grid dimensions!");
-    }
+    tug_assert(dim == 1,
+               "Grid is not one dimensional, use 2D setter function!");
+
+    tug_assert(
+        alpha.rows() == 1 && alpha.cols() == this->concentrations.cols(),
+        "Given matrix of alpha coefficients mismatch with Grid dimensions!");
 
     this->alphaX = alpha;
   }
@@ -143,11 +165,9 @@ public:
    * correct dimensions, so be careful!
    */
   void setAlpha(T *alpha) {
-    if (dim != 1) {
-      throw std::invalid_argument(
-          "Grid is not one dimensional, you should probably "
-          "use 2D setter function!");
-    }
+    tug_assert(dim == 1,
+               "Grid is not one dimensional, use 2D setter function!");
+
     RowMajMatMap<T> map(alpha, 1, this->col);
     this->alphaX = map;
   }
@@ -162,21 +182,21 @@ public:
    * y-direction. Matrix must be of same size as the grid.
    */
   void setAlpha(const RowMajMat<T> &alphaX, const RowMajMat<T> &alphaY) {
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, you should probably "
-          "use 1D setter function!");
-    }
-    if (alphaX.rows() != this->row || alphaX.cols() != this->col) {
-      throw std::invalid_argument(
-          "Given matrix of alpha coefficients in x-direction "
-          "mismatch with GRid dimensions!");
-    }
-    if (alphaY.rows() != this->row || alphaY.cols() != this->col) {
-      throw std::invalid_argument(
-          "Given matrix of alpha coefficients in y-direction "
-          "mismatch with GRid dimensions!");
-    }
+    tug_assert(dim == 2,
+               "Grid is not two dimensional, use 1D setter function!");
+
+    tug_assert(alphaX.rows() == this->concentrations.rows(),
+               "Alpha in x-direction "
+               "has wrong number of rows!");
+    tug_assert(alphaX.cols() == this->concentrations.cols(),
+               "Alpha in x-direction has wrong number of columns!");
+
+    tug_assert(alphaY.rows() == this->concentrations.rows(),
+               "Alpha in y-direction "
+               "has wrong number of rows!");
+
+    tug_assert(alphaY.cols() == this->concentrations.cols(),
+               "Alpha in y-direction has wrong number of columns!");
 
     this->alphaX = alphaX;
     this->alphaY = alphaY;
@@ -194,31 +214,12 @@ public:
    * There is no check for correct dimensions, so be careful!
    */
   void setAlpha(T *alphaX, T *alphaY) {
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, you should probably "
-          "use 1D setter function!");
-    }
+    tug_assert(dim == 2, "Grid is not two dimensional, there is no alphaY!");
+
     RowMajMatMap<T> mapX(alphaX, this->row, this->col);
     RowMajMatMap<T> mapY(alphaY, this->row, this->col);
     this->alphaX = mapX;
     this->alphaY = mapY;
-  }
-
-  /**
-   * @brief Gets the matrix of alpha coefficients of a 1D-Grid. Grid must be one
-   * dimensional.
-   *
-   * @return A matrix with 1 row holding the alpha coefficients.
-   */
-  const auto &getAlpha() const {
-    if (dim != 1) {
-      throw std::invalid_argument(
-          "Grid is not one dimensional, you should probably "
-          "use either getAlphaX() or getAlphaY()!");
-    }
-
-    return this->alphaX;
   }
 
   /**
@@ -228,12 +229,7 @@ public:
    * @return A matrix holding the alpha coefficients in x-direction.
    */
   const auto &getAlphaX() const {
-
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, you should probably use getAlpha()!");
-    }
-
+    tug_assert(this->alphaX.size() > 0, "AlphaX is empty!");
     return this->alphaX;
   }
 
@@ -244,11 +240,8 @@ public:
    * @return A matrix holding the alpha coefficients in y-direction.
    */
   const auto &getAlphaY() const {
-
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, you should probably use getAlpha()!");
-    }
+    tug_assert(dim == 2, "Grid is not two dimensional, there is no alphaY!");
+    tug_assert(this->alphaY.size() > 0, "AlphaY is empty!");
 
     return this->alphaY;
   }
@@ -261,33 +254,18 @@ public:
   int getDim() const { return this->dim; }
 
   /**
-   * @brief Gets length of 1D grid. Must be one dimensional grid.
-   *
-   * @return Length of 1D grid.
-   */
-  int getLength() const {
-    if (dim != 1) {
-      throw std::invalid_argument(
-          "Grid is not one dimensional, you should probably "
-          "use getRow() or getCol()!");
-    }
-
-    return col;
-  }
-
-  /**
    * @brief Gets the number of rows of the grid.
    *
    * @return Number of rows.
    */
-  int getRow() const { return this->row; }
+  int getRow() const { return this->concentrations.rows(); }
 
   /**
    * @brief Gets the number of columns of the grid.
    *
    * @return Number of columns.
    */
-  int getCol() const { return this->col; }
+  int getCol() const { return this->concentrations.cols(); }
 
   /**
    * @brief Sets the domain length of a 1D-Grid. Grid must be one dimensional.
@@ -295,17 +273,12 @@ public:
    * @param domainLength A double value of the domain length. Must be positive.
    */
   void setDomain(double domainLength) {
-    if (dim != 1) {
-      throw std::invalid_argument(
-          "Grid is not one dimensional, you should probaly "
-          "use the 2D domain setter!");
-    }
-    if (domainLength <= 0) {
-      throw std::invalid_argument("Given domain length is not positive!");
-    }
+    tug_assert(dim == 1, "Grid is not one dimensional, use 2D domain setter!");
+    tug_assert(domainLength > 0, "Given domain length is not positive!");
 
     this->domainCol = domainLength;
-    this->deltaCol = double(this->domainCol) / double(this->col);
+    this->deltaCol =
+        double(this->domainCol) / double(this->concentrations.cols());
   }
 
   /**
@@ -317,35 +290,18 @@ public:
    * be positive.
    */
   void setDomain(double domainRow, double domainCol) {
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, you should probably "
-          "use the 1D domain setter!");
-    }
-    if (domainRow <= 0 || domainCol <= 0) {
-      throw std::invalid_argument("Given domain size is not positive!");
-    }
+    tug_assert(dim == 2, "Grid is not two dimensional, use 1D domain setter!");
+    tug_assert(domainCol > 0,
+               "Given domain size in x-direction is not positive!");
+    tug_assert(domainRow > 0,
+               "Given domain size in y-direction is not positive!");
 
     this->domainRow = domainRow;
     this->domainCol = domainCol;
-    this->deltaRow = double(this->domainRow) / double(this->row);
-    this->deltaCol = double(this->domainCol) / double(this->col);
-  }
-
-  /**
-   * @brief Gets the delta value for 1D-Grid. Grid must be one dimensional.
-   *
-   * @return Delta value.
-   */
-  T getDelta() const {
-
-    if (dim != 1) {
-      throw std::invalid_argument(
-          "Grid is not one dimensional, you should probably "
-          "use the 2D delta getters");
-    }
-
-    return this->deltaCol;
+    this->deltaRow =
+        double(this->domainRow) / double(this->concentrations.rows());
+    this->deltaCol =
+        double(this->domainCol) / double(this->concentrations.cols());
   }
 
   /**
@@ -361,23 +317,18 @@ public:
    * @return Delta value in y-direction.
    */
   T getDeltaRow() const {
-    if (dim != 2) {
-      throw std::invalid_argument(
-          "Grid is not two dimensional, meaning there is no "
-          "delta in y-direction!");
-    }
+    tug_assert(dim == 2, "Grid is not two dimensional, there is no delta in "
+                         "y-direction!");
 
     return this->deltaRow;
   }
 
 private:
-  int col;        // number of grid columns
-  int row{1};     // number of grid rows
   int dim;        // 1D or 2D
   T domainCol;    // number of domain columns
   T domainRow{0}; // number of domain rows
   T deltaCol;     // delta in x-direction (between columns)
-  T deltaRow{0};  // delta in y-direction (between rows)
+  T deltaRow;     // delta in y-direction (between rows)
 
   RowMajMat<T> concentrations; // Matrix holding grid concentrations
   RowMajMat<T> alphaX; // Matrix holding alpha coefficients in x-direction
@@ -389,4 +340,3 @@ private:
 using Grid64 = Grid<double>;
 using Grid32 = Grid<float>;
 } // namespace tug
-#endif // GRID_H_

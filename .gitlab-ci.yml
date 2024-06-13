@@ -12,7 +12,7 @@ test:
     stage: test
     script:
       - mkdir build && cd build
-      - cmake -DCMAKE_BUILD_TYPE=Release -DTUG_ENABLE_TESTING=ON -G Ninja ..
+      - cmake -DCMAKE_BUILD_TYPE=Debug -DTUG_ENABLE_TESTING=ON -G Ninja ..
       - ninja 
       - ctest --output-junit test_results.xml
     artifacts:

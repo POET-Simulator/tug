@@ -104,15 +104,14 @@ int main(int argc, char *argv[]) {
   // create a grid with a 5 x 10 field
   constexpr int row = 5;
   constexpr int col = 10;
-  Grid64 grid(row, col);
 
   // (optional) set the domain, e.g.:
-  grid.setDomain(0.005, 0.01);
 
   const auto init_values_vec = CSVToVector<double>(INPUT_CONC_FILE);
   Eigen::MatrixXd concentrations = rmVecTocmMatrix(init_values_vec, row, col);
-  grid.setConcentrations(concentrations);
+  Grid64 grid(concentrations);
 
+  grid.setDomain(0.005, 0.01);
   const double sum_init = concentrations.sum();
 
   // // (optional) set alphas of the grid, e.g.:
