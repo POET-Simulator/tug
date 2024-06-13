@@ -9,7 +9,9 @@
 #define FTCS_H_
 
 #include "../TugUtils.hpp"
+#include "tug/Core/Matrix.hpp"
 
+#include <cstring>
 #include <tug/Boundary.hpp>
 
 #ifdef _OPENMP
@@ -225,6 +227,7 @@ static void FTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep) {
   int colMax = grid.getCol();
   T deltaCol = grid.getDeltaCol();
 
+  RowMajMat<T> &concentrations_grid = grid.getConcentrations();
   // matrix for concentrations at time t+1
   RowMajMat<T> concentrations_t1 = RowMajMat<T>::Constant(1, colMax, 0);
 
@@ -234,7 +237,7 @@ static void FTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep) {
   // inner cells
   // independent of boundary condition type
   for (int col = 1; col < colMax - 1; col++) {
-    concentrations_t1(row, col) = grid.getConcentrations()(row, col) +
+    concentrations_t1(row, col) = concentrations_grid(row, col) +
                                   timestep / (deltaCol * deltaCol) *
                                       (calcHorizontalChange(grid, row, col));
   }
@@ -242,19 +245,20 @@ static void FTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep) {
   // left boundary; hold column constant at index 0
   int col = 0;
   concentrations_t1(row, col) =
-      grid.getConcentrations()(row, col) +
+      concentrations_grid(row, col) +
       timestep / (deltaCol * deltaCol) *
           (calcHorizontalChangeLeftBoundary(grid, bc, row, col));
 
   // right boundary; hold column constant at max index
   col = colMax - 1;
   concentrations_t1(row, col) =
-      grid.getConcentrations()(row, col) +
+      concentrations_grid(row, col) +
       timestep / (deltaCol * deltaCol) *
           (calcHorizontalChangeRightBoundary(grid, bc, row, col));
 
   // overwrite obsolete concentrations
-  grid.setConcentrations(concentrations_t1);
+  std::memcpy(concentrations_grid.data(), concentrations_t1.data(),
+              colMax * sizeof(T));
 }
 
 // FTCS solution for 2D grid
@@ -266,6 +270,8 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   T deltaRow = grid.getDeltaRow();
   T deltaCol = grid.getDeltaCol();
 
+  RowMajMat<T> &concentrations_grid = grid.getConcentrations();
+
   // matrix for concentrations at time t+1
   RowMajMat<T> concentrations_t1 = RowMajMat<T>::Constant(rowMax, colMax, 0);
 
@@ -275,7 +281,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 #pragma omp parallel for num_threads(numThreads)
   for (int row = 1; row < rowMax - 1; row++) {
     for (int col = 1; col < colMax - 1; col++) {
-      concentrations_t1(row, col) = grid.getConcentrations()(row, col) +
+      concentrations_t1(row, col) = concentrations_grid(row, col) +
                                     timestep / (deltaRow * deltaRow) *
                                         (calcVerticalChange(grid, row, col)) +
                                     timestep / (deltaCol * deltaCol) *
@@ -290,7 +296,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 #pragma omp parallel for num_threads(numThreads)
   for (int row = 1; row < rowMax - 1; row++) {
     concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
+        concentrations_grid(row, col) +
         timestep / (deltaCol * deltaCol) *
             (calcHorizontalChangeLeftBoundary(grid, bc, row, col)) +
         timestep / (deltaRow * deltaRow) * (calcVerticalChange(grid, row, col));
@@ -302,7 +308,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 #pragma omp parallel for num_threads(numThreads)
   for (int row = 1; row < rowMax - 1; row++) {
     concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
+        concentrations_grid(row, col) +
         timestep / (deltaCol * deltaCol) *
             (calcHorizontalChangeRightBoundary(grid, bc, row, col)) +
         timestep / (deltaRow * deltaRow) * (calcVerticalChange(grid, row, col));
@@ -314,7 +320,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 #pragma omp parallel for num_threads(numThreads)
   for (int col = 1; col < colMax - 1; col++) {
     concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
+        concentrations_grid(row, col) +
         timestep / (deltaRow * deltaRow) *
             (calcVerticalChangeTopBoundary(grid, bc, row, col)) +
         timestep / (deltaCol * deltaCol) *
@@ -327,7 +333,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 #pragma omp parallel for num_threads(numThreads)
   for (int col = 1; col < colMax - 1; col++) {
     concentrations_t1(row, col) =
-        grid.getConcentrations()(row, col) +
+        concentrations_grid(row, col) +
         timestep / (deltaRow * deltaRow) *
             (calcVerticalChangeBottomBoundary(grid, bc, row, col)) +
         timestep / (deltaCol * deltaCol) *
@@ -339,7 +345,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   row = 0;
   col = 0;
   concentrations_t1(row, col) =
-      grid.getConcentrations()(row, col) +
+      concentrations_grid(row, col) +
       timestep / (deltaCol * deltaCol) *
           (calcHorizontalChangeLeftBoundary(grid, bc, row, col)) +
       timestep / (deltaRow * deltaRow) *
@@ -350,7 +356,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   row = 0;
   col = colMax - 1;
   concentrations_t1(row, col) =
-      grid.getConcentrations()(row, col) +
+      concentrations_grid(row, col) +
       timestep / (deltaCol * deltaCol) *
           (calcHorizontalChangeRightBoundary(grid, bc, row, col)) +
       timestep / (deltaRow * deltaRow) *
@@ -361,7 +367,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   row = rowMax - 1;
   col = 0;
   concentrations_t1(row, col) =
-      grid.getConcentrations()(row, col) +
+      concentrations_grid(row, col) +
       timestep / (deltaCol * deltaCol) *
           (calcHorizontalChangeLeftBoundary(grid, bc, row, col)) +
       timestep / (deltaRow * deltaRow) *
@@ -372,14 +378,15 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   row = rowMax - 1;
   col = colMax - 1;
   concentrations_t1(row, col) =
-      grid.getConcentrations()(row, col) +
+      concentrations_grid(row, col) +
       timestep / (deltaCol * deltaCol) *
           (calcHorizontalChangeRightBoundary(grid, bc, row, col)) +
       timestep / (deltaRow * deltaRow) *
           (calcVerticalChangeBottomBoundary(grid, bc, row, col));
 
   // overwrite obsolete concentrations
-  grid.setConcentrations(concentrations_t1);
+  std::memcpy(concentrations_grid.data(), concentrations_t1.data(),
+              rowMax * colMax * sizeof(T));
   // }
 }
 

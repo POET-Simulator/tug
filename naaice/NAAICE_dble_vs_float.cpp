@@ -114,15 +114,14 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
 
   std::cout << name << " grid: " << ngrid << std::endl;
 
-  Grid<T> grid(ngrid, ngrid);
   // Grid64 grid(ngrid, ngrid);
 
   // (optional) set the domain, e.g.:
-  grid.setDomain(0.1, 0.1);
 
   Eigen::MatrixX<T> initConc64 = Eigen::MatrixX<T>::Constant(ngrid, ngrid, 0);
   initConc64(50, 50) = 1E-6;
-  grid.setConcentrations(initConc64);
+  Grid<T> grid(initConc64);
+  grid.setDomain(0.1, 0.1);
 
   const T sum_init64 = initConc64.sum();
 

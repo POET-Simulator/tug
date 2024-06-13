@@ -354,15 +354,15 @@ template <class T>
 static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
                     Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
                                                     Eigen::VectorX<T> &b)) {
-  int length = grid.getLength();
-  T sx = timestep / (grid.getDelta() * grid.getDelta());
+  int length = grid.getCol();
+  T sx = timestep / (grid.getDeltaCol() * grid.getDeltaCol());
 
   Eigen::VectorX<T> concentrations_t1(length);
 
   Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b(length);
 
-  const auto &alpha = grid.getAlpha();
+  const auto &alpha = grid.getAlphaX();
 
   const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
   const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);

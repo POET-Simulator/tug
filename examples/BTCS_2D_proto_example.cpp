@@ -14,7 +14,6 @@ int main(int argc, char *argv[]) {
   // create a grid with a 20 x 20 field
   int row = 40;
   int col = 50;
-  Grid64 grid(row, col);
 
   // (optional) set the domain, e.g.:
   // grid.setDomain(20, 20);
@@ -24,7 +23,7 @@ int main(int argc, char *argv[]) {
   // #row,#col,value grid.setConcentrations(concentrations);
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
   concentrations(10, 10) = 2000;
-  grid.setConcentrations(concentrations);
+  Grid64 grid(concentrations);
 
   // (optional) set alphas of the grid, e.g.:
   // MatrixXd alphax = MatrixXd::Constant(20,20,1); // row,col,value

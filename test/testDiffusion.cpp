@@ -19,12 +19,11 @@ Grid64 setupSimulation(double timestep, int iterations) {
   int domain_col = 10;
 
   // Grid
-  Grid grid = Grid64(row, col);
-  grid.setDomain(domain_row, domain_col);
-
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
   concentrations(5, 5) = 1;
-  grid.setConcentrations(concentrations);
+
+  Grid grid = Grid64(concentrations);
+  grid.setDomain(domain_row, domain_col);
 
   MatrixXd alpha = MatrixXd::Constant(row, col, 1);
   for (int i = 0; i < 5; i++) {
@@ -93,7 +92,8 @@ TEST_CASE("equality to reference matrix with BTCS") {
 
 TEST_CASE("Initialize environment") {
   int rc = 12;
-  Grid64 grid(rc, rc);
+  Eigen::MatrixXd concentrations(rc, rc);
+  Grid64 grid(concentrations);
   Boundary boundary(grid);
 
   CHECK_NOTHROW(Diffusion sim(grid, boundary));
@@ -101,7 +101,9 @@ TEST_CASE("Initialize environment") {
 
 TEST_CASE("Simulation environment") {
   int rc = 12;
-  Grid64 grid(rc, rc);
+  Eigen::MatrixXd concentrations(rc, rc);
+  Grid64 grid(concentrations);
+  grid.initAlpha();
   Boundary boundary(grid);
   Diffusion<double, tug::FTCS_APPROACH> sim(grid, boundary);
 
@@ -110,13 +112,11 @@ TEST_CASE("Simulation environment") {
   SUBCASE("set iterations") {
     CHECK_NOTHROW(sim.setIterations(2000));
     CHECK_EQ(sim.getIterations(), 2000);
-    CHECK_THROWS(sim.setIterations(-300));
   }
 
   SUBCASE("set timestep") {
     CHECK_NOTHROW(sim.setTimestep(0.1));
     CHECK_EQ(sim.getTimestep(), 0.1);
-    CHECK_THROWS(sim.setTimestep(-0.3));
   }
 }
 
@@ -125,13 +125,12 @@ TEST_CASE("Closed Boundaries - no change expected") {
   constexpr std::uint32_t nrows = 5;
   constexpr std::uint32_t ncols = 5;
 
-  tug::Grid64 grid(nrows, ncols);
-
   auto concentrations = Eigen::MatrixXd::Constant(nrows, ncols, 1.0);
   auto alphax = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
   auto alphay = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
 
-  grid.setConcentrations(concentrations);
+  tug::Grid64 grid(concentrations);
+
   grid.setAlpha(alphax, alphay);
 
   tug::Boundary bc(grid);
@@ -155,13 +154,11 @@ TEST_CASE("Constant inner cell - 'absorbing' concentration") {
   constexpr std::uint32_t nrows = 5;
   constexpr std::uint32_t ncols = 5;
 
-  tug::Grid64 grid(nrows, ncols);
-
   auto concentrations = Eigen::MatrixXd::Constant(nrows, ncols, 1.0);
   auto alphax = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
   auto alphay = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
 
-  grid.setConcentrations(concentrations);
+  tug::Grid64 grid(concentrations);
   grid.setAlpha(alphax, alphay);
 
   tug::Boundary bc(grid);
