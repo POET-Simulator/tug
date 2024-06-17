@@ -34,9 +34,9 @@ TEST_CASE("BoundaryElement") {
 
 TEST_CASE("Boundary Class") {
   Eigen::VectorXd conc(10);
-  Grid grid1D = Grid64(conc);
+  UnfiormGrid grid1D = UniformGrid64(conc);
   Eigen::MatrixXd conc2D(10, 12);
-  Grid grid2D = Grid64(conc2D);
+  UnfiormGrid grid2D = UniformGrid64(conc2D);
   Boundary boundary1D = Boundary(grid1D);
   Boundary boundary2D = Boundary(grid2D);
   vector<BoundaryElement<double>> boundary1DVector(1, BoundaryElement(1.0));

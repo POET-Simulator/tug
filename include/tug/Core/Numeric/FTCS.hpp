@@ -24,7 +24,7 @@ namespace tug {
 
 // calculates horizontal change on one cell independent of boundary type
 template <class T>
-static inline T calcHorizontalChange(Grid<T> &grid, int &row, int &col) {
+static inline T calcHorizontalChange(UnfiormGrid<T> &grid, int &row, int &col) {
 
   return calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
                             grid.getAlphaX()(row, col)) *
@@ -41,7 +41,7 @@ static inline T calcHorizontalChange(Grid<T> &grid, int &row, int &col) {
 
 // calculates vertical change on one cell independent of boundary type
 template <class T>
-static inline T calcVerticalChange(Grid<T> &grid, int &row, int &col) {
+static inline T calcVerticalChange(UnfiormGrid<T> &grid, int &row, int &col) {
 
   return calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
                             grid.getAlphaY()(row, col)) *
@@ -58,7 +58,7 @@ static inline T calcVerticalChange(Grid<T> &grid, int &row, int &col) {
 
 // calculates horizontal change on one cell with a constant left boundary
 template <class T>
-static inline T calcHorizontalChangeLeftBoundaryConstant(Grid<T> &grid,
+static inline T calcHorizontalChangeLeftBoundaryConstant(UnfiormGrid<T> &grid,
                                                          Boundary<T> &bc,
                                                          int &row, int &col) {
 
@@ -75,8 +75,8 @@ static inline T calcHorizontalChangeLeftBoundaryConstant(Grid<T> &grid,
 
 // calculates horizontal change on one cell with a closed left boundary
 template <class T>
-static inline T calcHorizontalChangeLeftBoundaryClosed(Grid<T> &grid, int &row,
-                                                       int &col) {
+static inline T calcHorizontalChangeLeftBoundaryClosed(UnfiormGrid<T> &grid,
+                                                       int &row, int &col) {
 
   return calcAlphaIntercell(grid.getAlphaX()(row, col + 1),
                             grid.getAlphaX()(row, col)) *
@@ -86,8 +86,9 @@ static inline T calcHorizontalChangeLeftBoundaryClosed(Grid<T> &grid, int &row,
 
 // checks boundary condition type for a cell on the left edge of grid
 template <class T>
-static inline T calcHorizontalChangeLeftBoundary(Grid<T> &grid, Boundary<T> &bc,
-                                                 int &row, int &col) {
+static inline T calcHorizontalChangeLeftBoundary(UnfiormGrid<T> &grid,
+                                                 Boundary<T> &bc, int &row,
+                                                 int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_LEFT, row) == BC_TYPE_CONSTANT) {
     return calcHorizontalChangeLeftBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_LEFT, row) == BC_TYPE_CLOSED) {
@@ -99,7 +100,7 @@ static inline T calcHorizontalChangeLeftBoundary(Grid<T> &grid, Boundary<T> &bc,
 
 // calculates horizontal change on one cell with a constant right boundary
 template <class T>
-static inline T calcHorizontalChangeRightBoundaryConstant(Grid<T> &grid,
+static inline T calcHorizontalChangeRightBoundaryConstant(UnfiormGrid<T> &grid,
                                                           Boundary<T> &bc,
                                                           int &row, int &col) {
 
@@ -116,8 +117,8 @@ static inline T calcHorizontalChangeRightBoundaryConstant(Grid<T> &grid,
 
 // calculates horizontal change on one cell with a closed right boundary
 template <class T>
-static inline T calcHorizontalChangeRightBoundaryClosed(Grid<T> &grid, int &row,
-                                                        int &col) {
+static inline T calcHorizontalChangeRightBoundaryClosed(UnfiormGrid<T> &grid,
+                                                        int &row, int &col) {
 
   return -(calcAlphaIntercell(grid.getAlphaX()(row, col - 1),
                               grid.getAlphaX()(row, col)) *
@@ -127,7 +128,7 @@ static inline T calcHorizontalChangeRightBoundaryClosed(Grid<T> &grid, int &row,
 
 // checks boundary condition type for a cell on the right edge of grid
 template <class T>
-static inline T calcHorizontalChangeRightBoundary(Grid<T> &grid,
+static inline T calcHorizontalChangeRightBoundary(UnfiormGrid<T> &grid,
                                                   Boundary<T> &bc, int &row,
                                                   int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_RIGHT, row) == BC_TYPE_CONSTANT) {
@@ -141,7 +142,7 @@ static inline T calcHorizontalChangeRightBoundary(Grid<T> &grid,
 
 // calculates vertical change on one cell with a constant top boundary
 template <class T>
-static inline T calcVerticalChangeTopBoundaryConstant(Grid<T> &grid,
+static inline T calcVerticalChangeTopBoundaryConstant(UnfiormGrid<T> &grid,
                                                       Boundary<T> &bc, int &row,
                                                       int &col) {
 
@@ -158,8 +159,8 @@ static inline T calcVerticalChangeTopBoundaryConstant(Grid<T> &grid,
 
 // calculates vertical change on one cell with a closed top boundary
 template <class T>
-static inline T calcVerticalChangeTopBoundaryClosed(Grid<T> &grid, int &row,
-                                                    int &col) {
+static inline T calcVerticalChangeTopBoundaryClosed(UnfiormGrid<T> &grid,
+                                                    int &row, int &col) {
 
   return calcAlphaIntercell(grid.getAlphaY()(row + 1, col),
                             grid.getAlphaY()(row, col)) *
@@ -169,8 +170,9 @@ static inline T calcVerticalChangeTopBoundaryClosed(Grid<T> &grid, int &row,
 
 // checks boundary condition type for a cell on the top edge of grid
 template <class T>
-static inline T calcVerticalChangeTopBoundary(Grid<T> &grid, Boundary<T> &bc,
-                                              int &row, int &col) {
+static inline T calcVerticalChangeTopBoundary(UnfiormGrid<T> &grid,
+                                              Boundary<T> &bc, int &row,
+                                              int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CONSTANT) {
     return calcVerticalChangeTopBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_TOP, col) == BC_TYPE_CLOSED) {
@@ -182,7 +184,7 @@ static inline T calcVerticalChangeTopBoundary(Grid<T> &grid, Boundary<T> &bc,
 
 // calculates vertical change on one cell with a constant bottom boundary
 template <class T>
-static inline T calcVerticalChangeBottomBoundaryConstant(Grid<T> &grid,
+static inline T calcVerticalChangeBottomBoundaryConstant(UnfiormGrid<T> &grid,
                                                          Boundary<T> &bc,
                                                          int &row, int &col) {
 
@@ -199,8 +201,8 @@ static inline T calcVerticalChangeBottomBoundaryConstant(Grid<T> &grid,
 
 // calculates vertical change on one cell with a closed bottom boundary
 template <class T>
-static inline T calcVerticalChangeBottomBoundaryClosed(Grid<T> &grid, int &row,
-                                                       int &col) {
+static inline T calcVerticalChangeBottomBoundaryClosed(UnfiormGrid<T> &grid,
+                                                       int &row, int &col) {
 
   return -(calcAlphaIntercell(grid.getAlphaY()(row, col),
                               grid.getAlphaY()(row - 1, col)) *
@@ -210,8 +212,9 @@ static inline T calcVerticalChangeBottomBoundaryClosed(Grid<T> &grid, int &row,
 
 // checks boundary condition type for a cell on the bottom edge of grid
 template <class T>
-static inline T calcVerticalChangeBottomBoundary(Grid<T> &grid, Boundary<T> &bc,
-                                                 int &row, int &col) {
+static inline T calcVerticalChangeBottomBoundary(UnfiormGrid<T> &grid,
+                                                 Boundary<T> &bc, int &row,
+                                                 int &col) {
   if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CONSTANT) {
     return calcVerticalChangeBottomBoundaryConstant(grid, bc, row, col);
   } else if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, col) == BC_TYPE_CLOSED) {
@@ -223,7 +226,7 @@ static inline T calcVerticalChangeBottomBoundary(Grid<T> &grid, Boundary<T> &bc,
 
 // FTCS solution for 1D grid
 template <class T>
-static void FTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep) {
+static void FTCS_1D(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep) {
   int colMax = grid.getCol();
   T deltaCol = grid.getDeltaCol();
 
@@ -263,7 +266,7 @@ static void FTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep) {
 
 // FTCS solution for 2D grid
 template <class T>
-static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+static void FTCS_2D(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep,
                     int numThreads) {
   int rowMax = grid.getRow();
   int colMax = grid.getCol();
@@ -392,7 +395,7 @@ static void FTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 // entry point; differentiate between 1D and 2D grid
 template <class T>
-void FTCS(Grid<T> &grid, Boundary<T> &bc, T timestep, int &numThreads) {
+void FTCS(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep, int &numThreads) {
   if (grid.getDim() == 1) {
     FTCS_1D(grid, bc, timestep);
   } else if (grid.getDim() == 2) {

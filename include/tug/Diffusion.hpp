@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Boundary.hpp"
-#include "Grid.hpp"
+#include "UniformGrid.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -69,7 +69,7 @@ private:
   int innerIterations{1};
   int numThreads{omp_get_num_procs()};
 
-  Grid<T> &grid;
+  UnfiormGrid<T> &grid;
   Boundary<T> &bc;
 
   const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
@@ -87,7 +87,7 @@ public:
    * @param bc Valid boundary condition object
    * @param approach Approach to solving the problem. Either FTCS or BTCS.
    */
-  Diffusion(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc){};
+  Diffusion(UnfiormGrid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc){};
 
   /**
    * @brief Setting the time step for each iteration step. Time step must be
@@ -96,7 +96,7 @@ public:
    * @param timestep Valid timestep greater than zero.
    */
   void setTimestep(T timestep) {
-      tug_assert(timestep > 0, "Timestep has to be greater than zero.");
+    tug_assert(timestep > 0, "Timestep has to be greater than zero.");
 
     if constexpr (approach == FTCS_APPROACH ||
                   approach == CRANK_NICOLSON_APPROACH) {

@@ -7,7 +7,7 @@
 #ifndef BOUNDARY_H_
 #define BOUNDARY_H_
 
-#include "Grid.hpp"
+#include "UniformGrid.hpp"
 #include "tug/Core/TugUtils.hpp"
 
 #include <cstddef>
@@ -115,7 +115,7 @@ public:
    *
    * @param length Length of the grid
    */
-  Boundary(std::uint32_t length) : Boundary(Grid<T>(length)){};
+  Boundary(std::uint32_t length) : Boundary(UnfiormGrid<T>(length)){};
 
   /**
    * @brief Creates a boundary object for a 2D grid
@@ -124,7 +124,7 @@ public:
    * @param cols Number of columns of the grid
    */
   Boundary(std::uint32_t rows, std::uint32_t cols)
-      : Boundary(Grid<T>(rows, cols)){};
+      : Boundary(UnfiormGrid<T>(rows, cols)){};
 
   /**
    * @brief Creates a boundary object based on the passed grid object and
@@ -133,7 +133,7 @@ public:
    * @param grid Grid object on the basis of which the simulation takes place
    *             and from which the dimensions (in 2D case) are taken.
    */
-  Boundary(const Grid<T> &grid)
+  Boundary(const UnfiormGrid<T> &grid)
       : dim(grid.getDim()), cols(grid.getCol()), rows(grid.getRow()) {
     if (this->dim == 1) {
       this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(

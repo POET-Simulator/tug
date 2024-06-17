@@ -1,3 +1,4 @@
+#include "tug/UniformGrid.hpp"
 #include <Eigen/Eigen>
 #include <chrono>
 #include <cstdint>
@@ -120,8 +121,8 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
 
   Eigen::MatrixX<T> initConc64 = Eigen::MatrixX<T>::Constant(ngrid, ngrid, 0);
   initConc64(50, 50) = 1E-6;
-  Grid<T> grid(initConc64);
-  grid.setDomain(0.1, 0.1);
+
+  UniformGrid<T> grid(initConc64.data(), ngrid, ngrid);
 
   const T sum_init64 = initConc64.sum();
 

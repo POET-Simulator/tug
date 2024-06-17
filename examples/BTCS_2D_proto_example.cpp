@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   // #row,#col,value grid.setConcentrations(concentrations);
   MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
   concentrations(10, 10) = 2000;
-  Grid64 grid(concentrations);
+  UniformGrid64 grid(concentrations);
 
   // (optional) set alphas of the grid, e.g.:
   // MatrixXd alphax = MatrixXd::Constant(20,20,1); // row,col,value

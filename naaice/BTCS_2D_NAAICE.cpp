@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
 
   const auto init_values_vec = CSVToVector<double>(INPUT_CONC_FILE);
   Eigen::MatrixXd concentrations = rmVecTocmMatrix(init_values_vec, row, col);
-  Grid64 grid(concentrations);
+  UniformGrid64 grid(concentrations);
 
   grid.setDomain(0.005, 0.01);
   const double sum_init = concentrations.sum();
