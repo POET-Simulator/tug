@@ -429,6 +429,13 @@ public:
     }
 #ifdef TUG_ENABLE_SYCL
     else if constexpr (approach == FTCS_SYCL) {
+      sycl::queue &q = *this->q.get();
+
+      std::cout << "Running FTCS_SYCL on device: "
+                << q.get_device().get_info<sycl::info::device::name>() << "\n";
+
+      std::cout << std::flush;
+
       FTCS_Sycl_impl(*this->q.get(), this->grid, this->bc, this->timestep,
                      this->iterations * innerIterations);
     }

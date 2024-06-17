@@ -7,60 +7,61 @@
 using namespace tug;
 using namespace Eigen;
 
-MatrixXd runNormal(MatrixXd concentrations, const MatrixXd &alphas,
-                   Boundary<double> &boundaries, int iterations,
+MatrixXf runNormal(MatrixXf concentrations, const MatrixXf &alphas,
+                   Boundary<float> &boundaries, int iterations,
                    double timestep) {
-  Grid64 grid(concentrations.cols());
+  Grid32 grid(concentrations.rows(), concentrations.cols());
   grid.setConcentrations(concentrations);
 
-  grid.setAlpha(alphas);
+  grid.setAlpha(alphas, alphas);
 
   Simulation simulation =
-      Simulation<double, tug::FTCS_APPROACH>(grid, boundaries);
+      Simulation<float, tug::FTCS_APPROACH>(grid, boundaries);
 
   simulation.setTimestep(timestep);
   simulation.setIterations(iterations);
   simulation.run();
 
-  return MatrixXd(grid.getConcentrations());
+  return MatrixXf(grid.getConcentrations());
 }
 
-MatrixXd runWithSYCL(MatrixXd concentrations, const MatrixXd &alphas,
-                     Boundary<double> &boundaries, int iterations,
+MatrixXf runWithSYCL(MatrixXf concentrations, const MatrixXf &alphas,
+                     Boundary<float> &boundaries, int iterations,
                      double timestep) {
-  Grid64 grid(concentrations.cols());
+  Grid32 grid(concentrations.rows(), concentrations.cols());
   grid.setConcentrations(concentrations);
 
-  grid.setAlpha(alphas);
+  grid.setAlpha(alphas, alphas);
 
-  Simulation simulation = Simulation<double, tug::FTCS_SYCL>(grid, boundaries);
+  Simulation simulation = Simulation<float, tug::FTCS_SYCL>(grid, boundaries);
 
   simulation.setTimestep(timestep);
   simulation.setIterations(iterations);
   simulation.run();
 
-  return MatrixXd(grid.getConcentrations());
+  return MatrixXf(grid.getConcentrations());
 }
 
 int main(int argc, char **argv) {
-  constexpr int cells = 1e7;
-  constexpr double timestep = 0.1;
-  constexpr int iterations = 500;
+  constexpr int cells = 3e3;
+  constexpr double timestep = 500;
+  constexpr int iterations = 1;
 
-  Grid64 grid(cells);
+  MatrixXf concentrations(cells, cells);
+  concentrations.setConstant(20);
+  concentrations(0, 0) = 100;
 
-  MatrixXd concentrations = MatrixXd::Constant(1, cells, 20);
-
-  MatrixXd alphas = MatrixXd::Constant(1, cells, 1);
+  MatrixXf alphas(cells, cells);
+  alphas.setConstant(1);
 
   // ******************
   // **** BOUNDARY ****
   // ******************
 
   // create a boundary with constant values
-  Boundary bc = Boundary(grid);
-  bc.setBoundarySideConstant(BC_SIDE_LEFT, 1);
-  bc.setBoundarySideConstant(BC_SIDE_RIGHT, 1);
+  Boundary bc = Boundary<float>(cells, cells);
+  // bc.setBoundarySideConstant(BC_SIDE_LEFT, 1);
+  // bc.setBoundarySideConstant(BC_SIDE_RIGHT, 1);
 
   auto t_normal_begin = std::chrono::steady_clock::now();
   auto normal = runNormal(concentrations, alphas, bc, iterations, timestep);
@@ -85,9 +86,9 @@ int main(int argc, char **argv) {
   // std::cout << "Normal: " << std::endl << normal << std::endl;
   // std::cout << "SYCL: " << std::endl << sycl << std::endl;
 
-  auto diff = (normal - sycl).cwiseAbs().maxCoeff();
+  auto diff = normal - sycl;
 
-  std::cout << "Max diff: " << diff << std::endl;
+  std::cout << "Max diff: " << diff.cwiseAbs().maxCoeff() << std::endl;
 
   return 0;
 }
