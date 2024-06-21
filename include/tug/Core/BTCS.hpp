@@ -59,7 +59,7 @@ createCoeffMatrixVectorized(const RowMajMat<T> &alpha,
                   int rowIndex, T sx) {
 
   // square matrix of column^2 dimension for the coefficients
-  std::vector<std::vector<T>> cm(numCols, std::vector<T>(numCols, 0));
+  std::vector<std::vector<T>> cm(numCols, std::vector<T>(numCols));
 
 
   //Eigen::SparseMatrix<T> cm(numCols, numCols);
