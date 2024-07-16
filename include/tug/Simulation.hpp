@@ -426,6 +426,11 @@ public:
           BTCS_LU(this->grid, this->bc, this->timestep, this->numThreads);
         }
       } else if constexpr (solver == THOMAS_ALGORITHM_SOLVER) {
+        int colMax = this->grid.getCol();
+        T** A = (T**)calloc(colMax, sizeof(T*));
+        for(int i = 0; i < colMax; i++) {
+          A[i] = (T*)calloc(colMax, sizeof(T));
+        }
         for (int i = 0; i < iterations; i++) {
           if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
             printConcentrationsConsole();
@@ -433,9 +438,12 @@ public:
           if (csv_output >= CSV_OUTPUT_VERBOSE) {
             printConcentrationsCSV(filename);
           }
-
-          BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
+          BTCS_Thomas(A, this->grid, this->bc, this->timestep, this->numThreads);
         }
+        for(int i = 0; i < colMax; i++) {
+          free(A[i]);
+        }
+        free(A);
       }
 
     } else if constexpr (approach ==
@@ -461,7 +469,7 @@ public:
         FTCS(this->grid, this->bc, this->timestep, this->numThreads);
         concentrationsFTCS = grid.getConcentrations();
         grid.setConcentrations(concentrations);
-        BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
+        BTCS_Thomas(NULL, this->grid, this->bc, this->timestep, this->numThreads);
         concentrationsResult =
             beta * concentrationsFTCS + (1 - beta) * grid.getConcentrations();
         grid.setConcentrations(concentrationsResult);

@@ -49,7 +49,6 @@ constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
   return {centerCoeff, sideCoeff};
 }
 
-// creates coefficient matrix for next time step from alphas in x-direction
 template <class T>
 static Eigen::SparseMatrix<T>
 createCoeffMatrix(const RowMajMat<T> &alpha,
@@ -134,6 +133,101 @@ createCoeffMatrix(const RowMajMat<T> &alpha,
   cm.makeCompressed(); // important for Eigen solver
 
   return cm;
+}
+
+
+
+// creates coefficient matrix for next time step from alphas in x-direction
+template <class T>
+static void
+createCoeffMatrixInplace(T** cm, const RowMajMat<T> &alpha,
+                  const std::vector<BoundaryElement<T>> &bcLeft,
+                  const std::vector<BoundaryElement<T>> &bcRight,
+                  const std::vector<std::pair<bool, T>> &inner_bc, int numCols,
+                  int rowIndex, T sx) {
+
+  // left column
+  if (inner_bc[0].first) {
+    //cm.insert(0, 0) = 1;
+    cm[0][0] = 1;
+  } else {
+    switch (bcLeft[rowIndex].getType()) {
+    case BC_TYPE_CONSTANT: {
+      auto [centerCoeffTop, rightCoeffTop] =
+          calcBoundaryCoeffConstant(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
+      //cm.insert(0, 0) = centerCoeffTop;
+      cm[0][0] = centerCoeffTop;
+      //cm.insert(0, 1) = rightCoeffTop;
+      cm[0][1] = rightCoeffTop; 
+      break;
+    }
+    case BC_TYPE_CLOSED: {
+      auto [centerCoeffTop, rightCoeffTop] =
+          calcBoundaryCoeffClosed(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
+      //cm.insert(0, 0) = centerCoeffTop;
+      cm[0][0] = centerCoeffTop;
+      //cm.insert(0, 1) = rightCoeffTop;
+      cm[0][1] = rightCoeffTop;
+      break;
+    }
+    default: {
+      throw_invalid_argument(
+          "Undefined Boundary Condition Type somewhere on Left or Top!");
+    }
+    }
+  }
+
+  // inner columns
+  int n = numCols - 1;
+  for (int i = 1; i < n; i++) {
+    if (inner_bc[i].first) {
+      //cm.insert(i, i) = 1;
+      cm[i][i] = 1; 
+      continue;
+    }
+    //cm.insert(i, i - 1) =
+    cm[i][i - 1] = 
+        -sx * calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i));
+    //cm.insert(i, i) =
+    cm[i][i] = 
+        1 +
+        sx * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex, i + 1)) +
+              calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i)));
+    //cm.insert(i, i + 1) =
+    cm[i][i + 1] = 
+        -sx * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex, i + 1));
+  }
+
+  // right column
+  if (inner_bc[n].first) {
+    //cm.insert(n, n) = 1;
+    cm[n][n] = 1;
+  } else {
+    switch (bcRight[rowIndex].getType()) {
+    case BC_TYPE_CONSTANT: {
+      auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffConstant(
+          alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
+      //cm.insert(n, n - 1) = leftCoeffBottom;
+      cm[n][n - 1] = leftCoeffBottom;
+      //cm.insert(n, n) = centerCoeffBottom;
+      cm[n][n] = centerCoeffBottom;
+      break;
+    }
+    case BC_TYPE_CLOSED: {
+      auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffClosed(
+          alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
+      //cm.insert(n, n - 1) = leftCoeffBottom;
+      cm[n][n - 1] = leftCoeffBottom; 
+      //cm.insert(n, n) = centerCoeffBottom;
+      cm[n][n] = centerCoeffBottom; 
+      break;
+    }
+    default: {
+      throw_invalid_argument(
+          "Undefined Boundary Condition Type somewhere on Right or Bottom!");
+    }
+    }
+  }
 }
 
 // calculates explicit concentration at boundary in closed case
@@ -280,9 +374,6 @@ static Eigen::VectorX<T> EigenLUAlgorithm(Eigen::SparseMatrix<T> &A,
   return solver.solve(b);
 }
 
-// solver for linear equation system; A corresponds to coefficient matrix,
-// b to the solution vector
-// implementation of Thomas Algorithm
 template <class T>
 static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
                                          Eigen::VectorX<T> &b) {
@@ -304,6 +395,79 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
   }
   a_diag[n - 1] = A.coeff(n - 1, n - 2);
   b_diag[n - 1] = A.coeff(n - 1, n - 1);
+
+  // HACK: write CSV to file
+#ifdef WRITE_THOMAS_CSV
+#include <fstream>
+#include <string>
+  static std::uint32_t file_index = 0;
+  std::string file_name = "Thomas_" + std::to_string(file_index++) + ".csv";
+
+  std::ofstream out_file;
+
+  out_file.open(file_name, std::ofstream::trunc | std::ofstream::out);
+
+  // print header
+  out_file << "Aa, Ab, Ac, b\n";
+
+  // iterate through all elements
+  for (std::size_t i = 0; i < n; i++) {
+    out_file << a_diag[i] << ", " << b_diag[i] << ", " << c_diag[i] << ", "
+             << b[i] << "\n";
+  }
+
+  out_file.close();
+#endif
+
+  // start solving - c_diag and x_vec are overwritten
+  n--;
+  c_diag[0] /= b_diag[0];
+  x_vec[0] /= b_diag[0];
+
+  for (Eigen::Index i = 1; i < n; i++) {
+    c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
+    x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
+               (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+  }
+
+  x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
+             (b_diag[n] - a_diag[n] * c_diag[n - 1]);
+
+  for (Eigen::Index i = n; i-- > 0;) {
+    x_vec[i] -= c_diag[i] * x_vec[i + 1];
+  }
+
+  return x_vec;
+}
+
+
+// solver for linear equation system; A corresponds to coefficient matrix,
+// b to the solution vector
+// implementation of Thomas Algorithm
+template <class T>
+static Eigen::VectorX<T> ThomasAlgorithmNew(T** A,
+                                         Eigen::VectorX<T> &b) {
+  Eigen::Index n = b.size();
+
+  Eigen::VectorX<T> a_diag(n);
+  Eigen::VectorX<T> b_diag(n);
+  Eigen::VectorX<T> c_diag(n);
+  Eigen::VectorX<T> x_vec = b;
+
+  // Fill diagonals vectors
+  b_diag[0] = A[0][0];
+  c_diag[0] = A[0][1];
+
+
+  for (Eigen::Index i = 1; i < n - 1; i++) {
+    a_diag[i] = A[i][i - 1];
+    b_diag[i] = A[i][i];
+    c_diag[i] = A[i][i + 1];
+  }
+  
+  a_diag[n - 1] = A[n - 1][n - 2];
+  b_diag[n - 1] = A[n - 1][n - 1];
+
 
   // HACK: write CSV to file
 #ifdef WRITE_THOMAS_CSV
@@ -396,18 +560,24 @@ static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 // BTCS solution for 2D grid
 template <class T>
-static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
-                    Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
+static void BTCS_2D(T** A, Grid<T> &grid, Boundary<T> &bc, T timestep,
+                    Eigen::VectorX<T> (*solverFunc)(T** A,
                                                     Eigen::VectorX<T> &b),
                     int numThreads) {
   int rowMax = grid.getRow();
   int colMax = grid.getCol();
+
   T sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
   T sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
 
   RowMajMat<T> concentrations_t1(rowMax, colMax);
 
-  Eigen::SparseMatrix<T> A;
+  //T** A = (T**)calloc(colMax, sizeof(T*));
+  //for(int i = 0; i < colMax; i++) {
+  //  A[i] = (T*)calloc(colMax, sizeof(T));
+  //}
+
+  //Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b;
 
   RowMajMat<T> alphaX = grid.getAlphaX();
@@ -420,11 +590,11 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
   RowMajMat<T> &concentrations = grid.getConcentrations();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b)
+//#pragma omp parallel for num_threads(numThreads) private(A, b)
   for (int i = 0; i < rowMax; i++) {
     auto inner_bc = bc.getInnerBoundaryRow(i);
 
-    A = createCoeffMatrix(alphaX, bcLeft, bcRight, inner_bc, colMax, i, sx);
+    createCoeffMatrixInplace(A, alphaX, bcLeft, bcRight, inner_bc, colMax, i, sx);
     b = createSolutionVector(concentrations, alphaX, alphaY, bcLeft, bcRight,
                              bcTop, bcBottom, inner_bc, colMax, i, sx, sy);
 
@@ -435,11 +605,11 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   alphaX.transposeInPlace();
   alphaY.transposeInPlace();
 
-#pragma omp parallel for num_threads(numThreads) private(A, b)
+//#pragma omp parallel for num_threads(numThreads) private(A, b)
   for (int i = 0; i < colMax; i++) {
     auto inner_bc = bc.getInnerBoundaryCol(i);
     // swap alphas, boundary conditions and sx/sy for column-wise calculation
-    A = createCoeffMatrix(alphaY, bcTop, bcBottom, inner_bc, rowMax, i, sy);
+    createCoeffMatrixInplace(A, alphaY, bcTop, bcBottom, inner_bc, rowMax, i, sy);
     b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
                              bcLeft, bcRight, inner_bc, rowMax, i, sy, sx);
 
@@ -462,11 +632,11 @@ void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
 template <class T>
-void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
+void BTCS_Thomas(T** A, Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
   } else if (grid.getDim() == 2) {
-    BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
+    BTCS_2D(A, grid, bc, timestep, ThomasAlgorithmNew, numThreads);
   } else {
     throw_invalid_argument(
         "Error: Only 1- and 2-dimensional grids are defined!");
