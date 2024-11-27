@@ -39,12 +39,12 @@ need to manually link your application/library to =tug=.
    - with =ssh=:
 
    #+BEGIN_SRC
-   $ git clone git@git.gfz-potsdam.de:sec34/tug.git
+   $ git clone git@git.gfz-potsdam.de:naaice/tug.git
    #+END_SRC
 
    - with =https=: 
    #+BEGIN_SRC
-   $ git clone https://git.gfz-potsdam.de/sec34/tug.git
+   $ git clone https://git.gfz-potsdam.de/naaice/tug.git
    #+END_SRC
 
 3. Add the following line into =CMakeLists.txt= file:
@@ -85,7 +85,7 @@ the source code documentation of =tug= and the examples in the
 - [X] 1D diffusion using BTCS
 - [X] 2D diffusion with ADI
 - [ ] 3D diffusion (?)
-- [X] R-API (see [[https://git.gfz-potsdam.de/sec34/rcppbtcs][RcppBTCS]])
+- [X] R-API (see [[https://git.gfz-potsdam.de/naaice/rcppbtcs][RcppBTCS]])
 - [-] Python-API (?)
 - [X] Testing
 
