@@ -10,8 +10,8 @@
 #ifndef BTCS_H_
 #define BTCS_H_
 
-#include "Matrix.hpp"
-#include "TugUtils.hpp"
+#include "../Matrix.hpp"
+#include "../TugUtils.hpp"
 
 #include <cstddef>
 #include <tug/Boundary.hpp>
@@ -351,18 +351,18 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
 
 // BTCS solution for 1D grid
 template <class T>
-static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+static void BTCS_1D(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep,
                     Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
                                                     Eigen::VectorX<T> &b)) {
-  int length = grid.getLength();
-  T sx = timestep / (grid.getDelta() * grid.getDelta());
+  int length = grid.getCol();
+  T sx = timestep / (grid.getDeltaCol() * grid.getDeltaCol());
 
   Eigen::VectorX<T> concentrations_t1(length);
 
   Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b(length);
 
-  const auto &alpha = grid.getAlpha();
+  const auto &alpha = grid.getAlphaX();
 
   const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
   const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
@@ -396,7 +396,7 @@ static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 // BTCS solution for 2D grid
 template <class T>
-static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+static void BTCS_2D(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep,
                     Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
                                                     Eigen::VectorX<T> &b),
                     int numThreads) {
@@ -449,7 +449,8 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
 template <class T>
-void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
+void BTCS_LU(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep,
+             int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
   } else if (grid.getDim() == 2) {
@@ -462,7 +463,8 @@ void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
 template <class T>
-void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
+void BTCS_Thomas(UnfiormGrid<T> &grid, Boundary<T> &bc, T timestep,
+                 int numThreads) {
   if (grid.getDim() == 1) {
     BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
   } else if (grid.getDim() == 2) {

@@ -1,3 +1,5 @@
+#include <Eigen/Core>
+#include <Eigen/src/Core/Matrix.h>
 #include <doctest/doctest.h>
 #include <iostream>
 #include <stdio.h>
@@ -31,8 +33,10 @@ TEST_CASE("BoundaryElement") {
 }
 
 TEST_CASE("Boundary Class") {
-  Grid grid1D = Grid64(10);
-  Grid grid2D = Grid64(10, 12);
+  Eigen::VectorXd conc(10);
+  UnfiormGrid grid1D = UniformGrid64(conc);
+  Eigen::MatrixXd conc2D(10, 12);
+  UnfiormGrid grid2D = UniformGrid64(conc2D);
   Boundary boundary1D = Boundary(grid1D);
   Boundary boundary2D = Boundary(grid2D);
   vector<BoundaryElement<double>> boundary1DVector(1, BoundaryElement(1.0));
@@ -53,26 +57,21 @@ TEST_CASE("Boundary Class") {
     CHECK_EQ(boundary1D.getBoundarySide(BC_SIDE_RIGHT).size(), 1);
     CHECK_EQ(boundary1D.getBoundaryElementType(BC_SIDE_LEFT, 0),
              BC_TYPE_CLOSED);
-    CHECK_THROWS(boundary1D.getBoundarySide(BC_SIDE_TOP));
-    CHECK_THROWS(boundary1D.getBoundarySide(BC_SIDE_BOTTOM));
     CHECK_NOTHROW(boundary1D.setBoundarySideClosed(BC_SIDE_LEFT));
-    CHECK_THROWS(boundary1D.setBoundarySideClosed(BC_SIDE_TOP));
     CHECK_NOTHROW(boundary1D.setBoundarySideConstant(BC_SIDE_LEFT, 1.0));
     CHECK_EQ(boundary1D.getBoundaryElementValue(BC_SIDE_LEFT, 0), 1.0);
-    CHECK_THROWS(boundary1D.getBoundaryElementValue(BC_SIDE_LEFT, 2));
     CHECK_EQ(boundary1D.getBoundaryElementType(BC_SIDE_LEFT, 0),
              BC_TYPE_CONSTANT);
     CHECK_EQ(boundary1D.getBoundaryElement(BC_SIDE_LEFT, 0).getType(),
              boundary1DVector[0].getType());
 
     CHECK_NOTHROW(boundary1D.setInnerBoundary(0, inner_condition_value));
-    CHECK_THROWS(boundary1D.setInnerBoundary(0, 0, inner_condition_value));
     CHECK_EQ(boundary1D.getInnerBoundary(0), innerBoundary);
     CHECK_EQ(boundary1D.getInnerBoundary(1).first, false);
   }
 
   SUBCASE("Boundaries 2D case") {
-    CHECK_NOTHROW(Boundary boundary(grid1D));
+    CHECK_NOTHROW(Boundary boundary(grid2D));
     CHECK_EQ(boundary2D.getBoundarySide(BC_SIDE_LEFT).size(), 10);
     CHECK_EQ(boundary2D.getBoundarySide(BC_SIDE_RIGHT).size(), 10);
     CHECK_EQ(boundary2D.getBoundarySide(BC_SIDE_TOP).size(), 12);
@@ -85,13 +84,11 @@ TEST_CASE("Boundary Class") {
     CHECK_NOTHROW(boundary2D.setBoundarySideClosed(BC_SIDE_TOP));
     CHECK_NOTHROW(boundary2D.setBoundarySideConstant(BC_SIDE_LEFT, 1.0));
     CHECK_EQ(boundary2D.getBoundaryElementValue(BC_SIDE_LEFT, 0), 1.0);
-    CHECK_THROWS(boundary2D.getBoundaryElementValue(BC_SIDE_LEFT, 12));
     CHECK_EQ(boundary2D.getBoundaryElementType(BC_SIDE_LEFT, 0),
              BC_TYPE_CONSTANT);
     CHECK_EQ(boundary2D.getBoundaryElement(BC_SIDE_LEFT, 0).getType(),
              boundary1DVector[0].getType());
 
-    CHECK_THROWS(boundary2D.setInnerBoundary(0, inner_condition_value));
     CHECK_NOTHROW(boundary2D.setInnerBoundary(0, 1, inner_condition_value));
     CHECK_EQ(boundary2D.getInnerBoundary(0, 1), innerBoundary);
     CHECK_EQ(boundary2D.getInnerBoundary(0, 2).first, false);

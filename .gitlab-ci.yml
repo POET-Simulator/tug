@@ -14,7 +14,7 @@ build_release:
       expire_in: 100s
   script:
       - mkdir build && cd build
-      - cmake -DCMAKE_BUILD_TYPE=Release -DTUG_ENABLE_TESTING=ON ..
+      - cmake -DCMAKE_BUILD_TYPE=Debug -DTUG_ENABLE_TESTING=ON ..
       - make -j$(nproc)
       - cp ../test/FTCS_11_11_7000.csv test/
 

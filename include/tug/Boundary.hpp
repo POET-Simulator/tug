@@ -7,7 +7,8 @@
 #ifndef BOUNDARY_H_
 #define BOUNDARY_H_
 
-#include "Grid.hpp"
+#include "UniformGrid.hpp"
+#include "tug/Core/TugUtils.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -114,7 +115,7 @@ public:
    *
    * @param length Length of the grid
    */
-  Boundary(std::uint32_t length) : Boundary(Grid<T>(length)){};
+  Boundary(std::uint32_t length) : Boundary(UnfiormGrid<T>(length)){};
 
   /**
    * @brief Creates a boundary object for a 2D grid
@@ -123,7 +124,7 @@ public:
    * @param cols Number of columns of the grid
    */
   Boundary(std::uint32_t rows, std::uint32_t cols)
-      : Boundary(Grid<T>(rows, cols)){};
+      : Boundary(UnfiormGrid<T>(rows, cols)){};
 
   /**
    * @brief Creates a boundary object based on the passed grid object and
@@ -132,7 +133,7 @@ public:
    * @param grid Grid object on the basis of which the simulation takes place
    *             and from which the dimensions (in 2D case) are taken.
    */
-  Boundary(const Grid<T> &grid)
+  Boundary(const UnfiormGrid<T> &grid)
       : dim(grid.getDim()), cols(grid.getCol()), rows(grid.getRow()) {
     if (this->dim == 1) {
       this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(
@@ -161,13 +162,11 @@ public:
    * @param side Side to be set to closed, e.g. BC_SIDE_LEFT.
    */
   void setBoundarySideClosed(BC_SIDE side) {
-    if (this->dim == 1) {
-      if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
-        throw std::invalid_argument(
-            "For the one-dimensional case, only the BC_SIDE_LEFT and "
-            "BC_SIDE_RIGHT borders exist.");
-      }
-    }
+    tug_assert((this->dim > 1) ||
+                   ((side == BC_SIDE_LEFT) || (side == BC_SIDE_RIGHT)),
+               "For the "
+               "one-dimensional case, only the BC_SIDE_LEFT and BC_SIDE_RIGHT "
+               "borders exist.");
 
     const bool is_vertical = side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT;
     const int n = is_vertical ? this->rows : this->cols;
@@ -186,13 +185,11 @@ public:
    * page.
    */
   void setBoundarySideConstant(BC_SIDE side, double value) {
-    if (this->dim == 1) {
-      if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
-        throw std::invalid_argument(
-            "For the one-dimensional case, only the BC_SIDE_LEFT and "
-            "BC_SIDE_RIGHT borders exist.");
-      }
-    }
+    tug_assert((this->dim > 1) ||
+                   ((side == BC_SIDE_LEFT) || (side == BC_SIDE_RIGHT)),
+               "For the "
+               "one-dimensional case, only the BC_SIDE_LEFT and BC_SIDE_RIGHT "
+               "borders exist.");
 
     const bool is_vertical = side == BC_SIDE_LEFT || side == BC_SIDE_RIGHT;
     const int n = is_vertical ? this->rows : this->cols;
@@ -212,10 +209,9 @@ public:
    */
   void setBoundaryElemenClosed(BC_SIDE side, int index) {
     // tests whether the index really points to an element of the boundary side.
-    if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument(
-          "Index is selected either too large or too small.");
-    }
+    tug_assert(boundaries[side].size() > index && index >= 0,
+               "Index is selected either too large or too small.");
+
     this->boundaries[side][index].setType(BC_TYPE_CLOSED);
   }
 
@@ -233,10 +229,8 @@ public:
    */
   void setBoundaryElementConstant(BC_SIDE side, int index, double value) {
     // tests whether the index really points to an element of the boundary side.
-    if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument(
-          "Index is selected either too large or too small.");
-    }
+    tug_assert(boundaries[side].size() > index && index >= 0,
+               "Index is selected either too large or too small.");
     this->boundaries[side][index].setType(BC_TYPE_CONSTANT);
     this->boundaries[side][index].setValue(value);
   }
@@ -251,13 +245,11 @@ public:
    * BoundaryElement<T> objects.
    */
   const std::vector<BoundaryElement<T>> &getBoundarySide(BC_SIDE side) const {
-    if (this->dim == 1) {
-      if ((side == BC_SIDE_BOTTOM) || (side == BC_SIDE_TOP)) {
-        throw std::invalid_argument(
-            "For the one-dimensional trap, only the BC_SIDE_LEFT and "
-            "BC_SIDE_RIGHT borders exist.");
-      }
-    }
+    tug_assert((this->dim > 1) ||
+                   ((side == BC_SIDE_LEFT) || (side == BC_SIDE_RIGHT)),
+               "For the "
+               "one-dimensional case, only the BC_SIDE_LEFT and BC_SIDE_RIGHT "
+               "borders exist.");
     return this->boundaries[side];
   }
 
@@ -295,10 +287,8 @@ public:
    * object.
    */
   BoundaryElement<T> getBoundaryElement(BC_SIDE side, int index) const {
-    if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument(
-          "Index is selected either too large or too small.");
-    }
+    tug_assert(boundaries[side].size() > index && index >= 0,
+               "Index is selected either too large or too small.");
     return this->boundaries[side][index];
   }
 
@@ -313,10 +303,8 @@ public:
    * @return Boundary Type of the corresponding boundary condition.
    */
   BC_TYPE getBoundaryElementType(BC_SIDE side, int index) const {
-    if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument(
-          "Index is selected either too large or too small.");
-    }
+    tug_assert(boundaries[side].size() > index && index >= 0,
+               "Index is selected either too large or too small.");
     return this->boundaries[side][index].getType();
   }
 
@@ -333,14 +321,12 @@ public:
    * object.
    */
   T getBoundaryElementValue(BC_SIDE side, int index) const {
-    if ((boundaries[side].size() < index) || index < 0) {
-      throw std::invalid_argument(
-          "Index is selected either too large or too small.");
-    }
-    if (boundaries[side][index].getType() != BC_TYPE_CONSTANT) {
-      throw std::invalid_argument(
-          "A value can only be output if it is a constant boundary condition.");
-    }
+    tug_assert(boundaries[side].size() > index && index >= 0,
+               "Index is selected either too large or too small.");
+    tug_assert(
+        boundaries[side][index].getType() == BC_TYPE_CONSTANT,
+        "A value can only be output if it is a constant boundary condition.");
+
     return this->boundaries[side][index].getValue();
   }
 
@@ -382,13 +368,8 @@ public:
    * @param value Value of the inner constant boundary condition
    */
   void setInnerBoundary(std::uint32_t index, T value) {
-    if (this->dim != 1) {
-      throw std::invalid_argument(
-          "This function is only available for 1D grids.");
-    }
-    if (index >= this->cols) {
-      throw std::invalid_argument("Index is out of bounds.");
-    }
+    tug_assert(this->dim == 1, "This function is only available for 1D grids.");
+    tug_assert(index < this->cols, "Index is out of bounds.");
 
     this->inner_boundary[std::make_pair(0, index)] = value;
   }
@@ -401,13 +382,8 @@ public:
    * @param value Value of the inner constant boundary condition
    */
   void setInnerBoundary(std::uint32_t row, std::uint32_t col, T value) {
-    if (this->dim != 2) {
-      throw std::invalid_argument(
-          "This function is only available for 2D grids.");
-    }
-    if (row >= this->rows || col >= this->cols) {
-      throw std::invalid_argument("Index is out of bounds.");
-    }
+    tug_assert(this->dim == 2, "This function is only available for 2D grids.");
+    tug_assert(row < this->rows && col < this->cols, "Index is out of bounds.");
 
     this->inner_boundary[std::make_pair(row, col)] = value;
   }
@@ -420,13 +396,8 @@ public:
    * set or not) and value of the inner constant boundary condition
    */
   std::pair<bool, T> getInnerBoundary(std::uint32_t index) const {
-    if (this->dim != 1) {
-      throw std::invalid_argument(
-          "This function is only available for 1D grids.");
-    }
-    if (index >= this->cols) {
-      throw std::invalid_argument("Index is out of bounds.");
-    }
+    tug_assert(this->dim == 1, "This function is only available for 1D grids.");
+    tug_assert(index < this->cols, "Index is out of bounds.");
 
     auto it = this->inner_boundary.find(std::make_pair(0, index));
     if (it == this->inner_boundary.end()) {
@@ -445,13 +416,8 @@ public:
    */
   std::pair<bool, T> getInnerBoundary(std::uint32_t row,
                                       std::uint32_t col) const {
-    if (this->dim != 2) {
-      throw std::invalid_argument(
-          "This function is only available for 2D grids.");
-    }
-    if (row >= this->rows || col >= this->cols) {
-      throw std::invalid_argument("Index is out of bounds.");
-    }
+    tug_assert(this->dim == 2, "This function is only available for 2D grids.");
+    tug_assert(row < this->rows && col < this->cols, "Index is out of bounds.");
 
     auto it = this->inner_boundary.find(std::make_pair(row, col));
     if (it == this->inner_boundary.end()) {
@@ -471,9 +437,7 @@ public:
    * condition
    */
   std::vector<std::pair<bool, T>> getInnerBoundaryRow(std::uint32_t row) const {
-    if (row >= this->rows) {
-      throw std::invalid_argument("Index is out of bounds.");
-    }
+    tug_assert(row < this->rows, "Index is out of bounds.");
 
     if (inner_boundary.empty()) {
       return std::vector<std::pair<bool, T>>(this->cols,
@@ -499,14 +463,8 @@ public:
    * condition
    */
   std::vector<std::pair<bool, T>> getInnerBoundaryCol(std::uint32_t col) const {
-    if (this->dim != 2) {
-      throw std::invalid_argument(
-          "This function is only available for 2D grids.");
-    }
-
-    if (col >= this->cols) {
-      throw std::invalid_argument("Index is out of bounds.");
-    }
+    tug_assert(this->dim == 2, "This function is only available for 2D grids.");
+    tug_assert(col < this->cols, "Index is out of bounds.");
 
     if (inner_boundary.empty()) {
       return std::vector<std::pair<bool, T>>(this->rows,
