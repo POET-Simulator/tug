@@ -1,10 +1,12 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <fstream>
-#include <ios>
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
+
+#include <gtest/gtest.h>
+
+#define TUG_TEST(x) TEST(Tug, x)
 
 inline Eigen::MatrixXd CSV2Eigen(std::string file2Convert) {
 

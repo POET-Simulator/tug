@@ -90,6 +90,7 @@ install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/tug DESTINATION include)
 
 if(TUG_ENABLE_TESTING)
+enable_testing()
   add_subdirectory(test)
 endif()
 
