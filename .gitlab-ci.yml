@@ -1,27 +1,26 @@
-image: git.gfz-potsdam.de:5000/naaice/tug:ci
+image: gcc:14
+
+before_script:
+  - apt-get update && apt-get install -y cmake ninja-build libeigen3-dev git
 
 stages:
-    - build
     - test
     - static_analyze
     - doc
 
-build_release:
-  stage: build
-  artifacts:
-      paths:
-          - build/test/testTug
-      expire_in: 100s
-  script:
-      - mkdir build && cd build
-      - cmake -DCMAKE_BUILD_TYPE=Release -DTUG_ENABLE_TESTING=ON ..
-      - make -j$(nproc)
-      - cp ../test/FTCS_11_11_7000.csv test/
-
 test:
     stage: test
     script:
-        - ./build/test/testTug
+      - mkdir build && cd build
+      - cmake -DCMAKE_BUILD_TYPE=Release -DTUG_ENABLE_TESTING=ON -G Ninja ..
+      - ninja 
+      - ctest --output-junit test_results.xml
+    artifacts:
+      when: always
+      paths:
+        - build/test_results.xml
+      reports:
+        junit: build/test_results.xml
 
 pages:
   stage: doc

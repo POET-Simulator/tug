@@ -1,13 +1,15 @@
 #include "TestUtils.hpp"
+#include <gtest/gtest.h>
+#include <stdexcept>
 #include <tug/Simulation.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
-#include <doctest/doctest.h>
-#include <stdio.h>
 #include <string>
 
 // include the configured header file
 #include <testSimulation.hpp>
+
+#define DIFFUSION_TEST(x) TEST(Diffusion, x)
 
 using namespace Eigen;
 using namespace std;
@@ -51,7 +53,7 @@ Grid64 setupSimulation(double timestep, int iterations) {
 constexpr double timestep = 0.001;
 constexpr double iterations = 7000;
 
-TEST_CASE("equality to reference matrix with FTCS") {
+DIFFUSION_TEST(EqualityFTCS) {
   // set string from the header file
   string test_path = testSimulationCSVDir;
   MatrixXd reference = CSV2Eigen(test_path);
@@ -69,10 +71,10 @@ TEST_CASE("equality to reference matrix with FTCS") {
   sim.run();
 
   cout << endl;
-  CHECK(checkSimilarity(reference, grid.getConcentrations(), 0.1) == true);
+  EXPECT_TRUE(checkSimilarity(reference, grid.getConcentrations(), 0.1));
 }
 
-TEST_CASE("equality to reference matrix with BTCS") {
+DIFFUSION_TEST(EqualityBTCS) {
   // set string from the header file
   string test_path = testSimulationCSVDir;
   MatrixXd reference = CSV2Eigen(test_path);
@@ -89,39 +91,35 @@ TEST_CASE("equality to reference matrix with BTCS") {
   sim.run();
 
   cout << endl;
-  CHECK(checkSimilarityV2(reference, grid.getConcentrations(), 0.01) == true);
+  EXPECT_TRUE(checkSimilarityV2(reference, grid.getConcentrations(), 0.01));
 }
 
-TEST_CASE("Initialize environment") {
+DIFFUSION_TEST(InitializeEnvironment) {
   int rc = 12;
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
 
-  CHECK_NOTHROW(Simulation sim(grid, boundary));
+  EXPECT_NO_THROW(Simulation sim(grid, boundary));
 }
 
-TEST_CASE("Simulation environment") {
+DIFFUSION_TEST(SimulationEnvironment) {
   int rc = 12;
   Grid64 grid(rc, rc);
   Boundary boundary(grid);
   Simulation<double, tug::FTCS_APPROACH> sim(grid, boundary);
 
-  SUBCASE("default paremeters") { CHECK_EQ(sim.getIterations(), -1); }
+  EXPECT_EQ(sim.getIterations(), -1);
 
-  SUBCASE("set iterations") {
-    CHECK_NOTHROW(sim.setIterations(2000));
-    CHECK_EQ(sim.getIterations(), 2000);
-    CHECK_THROWS(sim.setIterations(-300));
-  }
+  EXPECT_NO_THROW(sim.setIterations(2000));
+  EXPECT_EQ(sim.getIterations(), 2000);
+  EXPECT_THROW(sim.setIterations(-300), std::invalid_argument);
 
-  SUBCASE("set timestep") {
-    CHECK_NOTHROW(sim.setTimestep(0.1));
-    CHECK_EQ(sim.getTimestep(), 0.1);
-    CHECK_THROWS(sim.setTimestep(-0.3));
-  }
+  EXPECT_NO_THROW(sim.setTimestep(0.1));
+  EXPECT_DOUBLE_EQ(sim.getTimestep(), 0.1);
+  EXPECT_THROW(sim.setTimestep(-0.3), std::invalid_argument);
 }
 
-TEST_CASE("Closed Boundaries - no change expected") {
+DIFFUSION_TEST(ClosedBoundaries) {
 
   constexpr std::uint32_t nrows = 5;
   constexpr std::uint32_t ncols = 5;
@@ -148,11 +146,10 @@ TEST_CASE("Closed Boundaries - no change expected") {
   MatrixXd input_values(concentrations);
   sim.run();
 
-  CHECK(checkSimilarityV2(input_values, grid.getConcentrations(), 1E-12) ==
-        true);
+  EXPECT_TRUE(checkSimilarityV2(input_values, grid.getConcentrations(), 1E-12));
 }
 
-TEST_CASE("Constant inner cell - 'absorbing' concentration") {
+DIFFUSION_TEST(ConstantInnerCell) {
   constexpr std::uint32_t nrows = 5;
   constexpr std::uint32_t ncols = 5;
 
@@ -176,12 +173,10 @@ TEST_CASE("Constant inner cell - 'absorbing' concentration") {
   MatrixXd input_values(concentrations);
   sim.run();
 
-  CHECK(grid.getConcentrations()(2, 2) == 0);
-  CHECK(grid.getConcentrations().sum() < input_values.sum());
+  EXPECT_DOUBLE_EQ(grid.getConcentrations()(2, 2), 0);
+  EXPECT_LT(grid.getConcentrations().sum(), input_values.sum());
 
-  const bool greater_one = (grid.getConcentrations().array() > 1.0).any();
-  CHECK(greater_one == false);
+  EXPECT_FALSE((grid.getConcentrations().array() > 1.0).any());
 
-  const bool less_zero = (grid.getConcentrations().array() < 0.0).any();
-  CHECK(less_zero == false);
+  EXPECT_FALSE((grid.getConcentrations().array() < 0.0).any());
 }
