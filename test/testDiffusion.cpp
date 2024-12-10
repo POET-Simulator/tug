@@ -3,7 +3,8 @@
 #include "gtest/gtest.h"
 #include <gtest/gtest.h>
 #include <stdexcept>
-#include <tug/Diffusion.hpp>
+
+#include <tug/tug.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
 #include <string>

@@ -1,7 +1,6 @@
 #include <Eigen/Eigen>
 #include <iostream>
-#include <tug/Advection.hpp>
-#include <tug/Core/Matrix.hpp>
+#include <tug/tug.hpp>
 
 using namespace Eigen;
 using namespace tug;
