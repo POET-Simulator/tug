@@ -23,9 +23,9 @@
 #include <tug/Core/Numeric/BTCS.hpp>
 #include <tug/Core/Numeric/FTCS.hpp>
 #include <tug/Core/TugUtils.hpp>
-#include <tug/Diffusion.hpp>
+#include <tug/Diffusion/Diffusion.hpp>
 
-#include <tug/Core/Velocities.hpp>
+#include <tug/Advection/Velocities.hpp>
 
 using namespace Eigen;
 namespace tug {

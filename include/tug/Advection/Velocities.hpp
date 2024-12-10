@@ -25,7 +25,7 @@
 #include <tug/Core/Numeric/BTCS.hpp>
 #include <tug/Core/Numeric/FTCS.hpp>
 #include <tug/Core/TugUtils.hpp>
-#include <tug/Diffusion.hpp>
+#include <tug/Diffusion/Diffusion.hpp>
 
 using namespace Eigen;
 namespace tug {
