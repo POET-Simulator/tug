@@ -6,34 +6,17 @@ project(
   VERSION 0.4
   LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
-
-find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(Eigen3 3.4 REQUIRED NO_MODULE)
 find_package(OpenMP)
 
 include(GNUInstallDirs)
 
-# find_package(easy_profiler) option(EASY_OPTION_LOG "Verbose easy_profiler" 1)
-
-# SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O2 -mfma")
 option(TUG_USE_OPENMP "Compile tug with OpenMP support" ON)
-
-set(CMAKE_CXX_FLAGS_GENERICOPT
-    "-O3 -march=native"
-    CACHE STRING "Flags used by the C++ compiler during opt builds." FORCE)
-
-set(CMAKE_BUILD_TYPE
-    "${CMAKE_BUILD_TYPE}"
-    CACHE
-      STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel GenericOpt."
-      FORCE)
 
 option(
   TUG_USE_UNSAFE_MATH_OPT "Use compiler options to break IEEE compliances by
     oenabling reordering of instructions when adding/multiplying of floating
     points." OFF)
-
 
 option(TUG_ENABLE_TESTING "Run tests after succesfull compilation" OFF)
 
