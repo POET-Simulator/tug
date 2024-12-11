@@ -215,3 +215,33 @@ DIFFUSION_TEST(ConstantInnerCell) {
 
   EXPECT_FALSE((concentrations_result.array() < 0.0).any());
 }
+
+DIFFUSION_TEST(ConstantInnerCellFTCS) {
+  constexpr std::uint32_t nrows = 5;
+  constexpr std::uint32_t ncols = 5;
+
+  auto concentrations = Eigen::MatrixXd::Constant(nrows, ncols, 1.0);
+  auto alphax = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
+  auto alphay = Eigen::MatrixXd::Constant(nrows, ncols, 1E-5);
+
+  tug::Grid64 grid(concentrations);
+  grid.setAlpha(alphax, alphay);
+
+  tug::Boundary bc(grid);
+  // inner
+  bc.setInnerBoundary(2, 2, 0);
+
+  tug::Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
+  sim.setTimestep(1);
+  sim.setIterations(1);
+
+  MatrixXd input_values(concentrations);
+  sim.run();
+
+  EXPECT_DOUBLE_EQ(grid.getConcentrations()(2, 2), 0);
+  EXPECT_LT(grid.getConcentrations().sum(), input_values.sum());
+
+  EXPECT_FALSE((grid.getConcentrations().array() > 1.0).any());
+
+  EXPECT_FALSE((grid.getConcentrations().array() < 0.0).any());
+}

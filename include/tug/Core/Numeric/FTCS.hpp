@@ -11,6 +11,7 @@
 #include "tug/Core/TugUtils.hpp"
 #include <cstddef>
 #include <cstring>
+#include <iterator>
 #include <tug/Boundary.hpp>
 #include <tug/Core/Matrix.hpp>
 #include <tug/Core/Numeric/SimulationInput.hpp>
@@ -55,6 +56,27 @@ constexpr T calcChangeBoundary(T conc_c, T conc_neighbor, T alpha_center,
   tug_assert(false, "Undefined Boundary Condition Type!");
 }
 
+template <typename T>
+static inline void checkAndSetConstantInnerCells(const Boundary<T> &bc,
+                                                 Grid<T> &grid) {
+  const auto &inner_boundaries = bc.getInnerBoundaries();
+  if (inner_boundaries.empty()) {
+    return;
+  }
+
+  auto &concentrations = grid.getConcentrations();
+  const auto rows = grid.getRow();
+  const auto cols = grid.getCol();
+
+  for (const auto &[rowcol, value] : inner_boundaries) {
+    const auto &row = rowcol.first;
+    const auto &col = rowcol.second;
+    concentrations(row, col) = value;
+  }
+
+  return;
+}
+
 // FTCS solution for 1D grid
 template <class T> static void FTCS_1D(SimulationInput<T> &input) {
   const std::size_t &colMax = input.colMax;
@@ -70,6 +92,8 @@ template <class T> static void FTCS_1D(SimulationInput<T> &input) {
 
   // only one row in 1D case -> row constant at index 0
   int row = 0;
+
+  const auto inner_bc = bc.getInnerBoundaryRow(0);
 
   // inner cells
   // independent of boundary condition type
