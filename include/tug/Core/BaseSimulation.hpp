@@ -1,6 +1,10 @@
 #pragma once
 
-#include <stdexcept>
+#include "tug/Core/TugUtils.hpp"
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <tug/Core/Matrix.hpp>
 
 namespace tug {
 
@@ -35,15 +39,62 @@ enum TIME_MEASURE {
   TIME_MEASURE_ON   /*!< print time measure after last iteration */
 };
 
-class BaseSimulation {
+template <typename T> class BaseSimulationGrid {
 protected:
   CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
   CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT_OFF};
   TIME_MEASURE time_measure{TIME_MEASURE_OFF};
 
   int iterations{1};
+  RowMajMatMap<T> concentration_matrix;
+
+  const std::uint8_t dim;
+
+  T delta_col;
+  T delta_row;
 
 public:
+  BaseSimulationGrid(T *data, std::size_t length)
+      : BaseSimulationGrid(data, 1, length) {}
+
+  template <typename EigenType>
+  BaseSimulationGrid(const EigenType &origin)
+      : BaseSimulationGrid(origin.data(), origin.rows(), origin.cols()) {}
+
+  BaseSimulationGrid(T *data, std::size_t rows, std::size_t cols)
+      : concentration_matrix(data, rows, cols), delta_col(1), delta_row(1),
+        dim(rows == 1 ? 1 : 2) {}
+
+  std::size_t rows() const { return concentration_matrix.rows(); }
+  std::size_t cols() const { return concentration_matrix.cols(); }
+
+  T deltaCol() const { return delta_col; }
+  T deltaRow() const {
+    tug_assert(
+        dim == 1,
+        "Grid is not two dimensional, there is no delta in y-direction!");
+
+    return delta_row;
+  }
+
+  void setDomain(T domain_length) {
+    tug_assert(dim == 1, "Grid is not one dimensional, use 2D domain setter!");
+    tug_assert(domain_length > 0, "Given domain length is not positive!");
+
+    delta_col = domain_length / cols();
+  }
+
+  void setDomain(T domain_row, T domain_col) {
+    tug_assert(dim == 2, "Grid is not two dimensional, use 1D domain setter!");
+    tug_assert(domain_col > 0,
+               "Given domain size in x-direction is not positive!");
+    tug_assert(domain_row > 0,
+               "Given domain size in y-direction is not positive!");
+
+    delta_row = domain_row / rows();
+    delta_col = domain_col / cols();
+  }
+
   /**
    * @brief Set the option to output the results to a CSV file. Off by default.
    *
