@@ -1,10 +1,9 @@
 #pragma once
 
-#include "tug/Core/TugUtils.hpp"
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <tug/Core/Matrix.hpp>
+#include <tug/Core/TugUtils.hpp>
 
 namespace tug {
 
@@ -12,11 +11,11 @@ namespace tug {
  * @brief Enum holding different options for .csv output.
  *
  */
-enum CSV_OUTPUT {
-  CSV_OUTPUT_OFF,     /*!< do not produce csv output */
-  CSV_OUTPUT_ON,      /*!< produce csv output with last concentration matrix */
-  CSV_OUTPUT_VERBOSE, /*!< produce csv output with all concentration matrices */
-  CSV_OUTPUT_XTREME   /*!< csv output like VERBOSE but additional boundary
+enum class CSV_OUTPUT {
+  OFF,     /*!< do not produce csv output */
+  ON,      /*!< produce csv output with last concentration matrix */
+  VERBOSE, /*!< produce csv output with all concentration matrices */
+  XTREME   /*!< csv output like VERBOSE but additional boundary
                          conditions at beginning */
 };
 
@@ -24,26 +23,26 @@ enum CSV_OUTPUT {
  * @brief Enum holding different options for console output.
  *
  */
-enum CONSOLE_OUTPUT {
-  CONSOLE_OUTPUT_OFF, /*!< do not print any output to console */
-  CONSOLE_OUTPUT_ON,  /*!< print before and after concentrations to console */
-  CONSOLE_OUTPUT_VERBOSE /*!< print all concentration matrices to console */
+enum class CONSOLE_OUTPUT {
+  OFF,    /*!< do not print any output to console */
+  ON,     /*!< print before and after concentrations to console */
+  VERBOSE /*!< print all concentration matrices to console */
 };
 
 /**
  * @brief Enum holding different options for time measurement.
  *
  */
-enum TIME_MEASURE {
-  TIME_MEASURE_OFF, /*!< do not print any time measures */
-  TIME_MEASURE_ON   /*!< print time measure after last iteration */
+enum class TIME_MEASURE {
+  OFF, /*!< do not print any time measures */
+  ON   /*!< print time measure after last iteration */
 };
 
 template <typename T> class BaseSimulationGrid {
 protected:
-  CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
-  CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT_OFF};
-  TIME_MEASURE time_measure{TIME_MEASURE_OFF};
+  CSV_OUTPUT csv_output{CSV_OUTPUT::OFF};
+  CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT::OFF};
+  TIME_MEASURE time_measure{TIME_MEASURE::OFF};
 
   int iterations{1};
   RowMajMatMap<T> concentration_matrix;
@@ -109,13 +108,7 @@ public:
    *                     - CSV_OUTPUT_XTREME: produce csv output with all
    *                       concentration matrices and simulation environment
    */
-  void setOutputCSV(CSV_OUTPUT csv_output) {
-    if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid CSV output option given!");
-    }
-
-    this->csv_output = csv_output;
-  }
+  void setOutputCSV(CSV_OUTPUT csv_output) { this->csv_output = csv_output; }
 
   /**
    * @brief Set the options for outputting information to the console. Off by
@@ -131,11 +124,6 @@ public:
    * matrices to console
    */
   void setOutputConsole(CONSOLE_OUTPUT console_output) {
-    if (console_output < CONSOLE_OUTPUT_OFF &&
-        console_output > CONSOLE_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid console output option given!");
-    }
-
     this->console_output = console_output;
   }
 
@@ -149,10 +137,6 @@ public:
    * console
    */
   void setTimeMeasure(TIME_MEASURE time_measure) {
-    if (time_measure < TIME_MEASURE_OFF && time_measure > TIME_MEASURE_ON) {
-      throw std::invalid_argument("Invalid time measure option given!");
-    }
-
     this->time_measure = time_measure;
   }
 
@@ -163,10 +147,9 @@ public:
    * @param iterations Number of iterations to be simulated.
    */
   void setIterations(int iterations) {
-    if (iterations <= 0) {
-      throw std::invalid_argument(
-          "Number of iterations must be greater than zero.");
-    }
+    tug_assert(iterations > 0,
+               "Number of iterations must be greater than zero.");
+
     this->iterations = iterations;
   }
 
