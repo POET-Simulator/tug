@@ -8,28 +8,47 @@
 
 #pragma once
 
-#include "tug/Core/Matrix.hpp"
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
+#include <cstddef>
 #include <iostream>
 #include <stdexcept>
 #include <stdlib.h>
 #include <string>
-#include <tug/Boundary.hpp>
-#include <tug/Grid.hpp>
-#include <vector>
 
-#include <Eigen/Eigen>
-#include <Eigen/Sparse>
+#include <tug/Boundary.hpp>
+#include <tug/Core/Matrix.hpp>
 #include <tug/Core/Numeric/BTCS.hpp>
 #include <tug/Core/Numeric/FTCS.hpp>
 #include <tug/Core/TugUtils.hpp>
 #include <tug/Diffusion/Diffusion.hpp>
+#include <tug/Grid.hpp>
+
+#ifdef _OPENMP
+#include <omp.h>
+#else
+#define omp_get_num_procs() 1
+#endif
 
 using namespace Eigen;
 namespace tug {
-template <class T> class Velocities {
+
+enum HYDRAULIC_MODE { TRANSIENT, STEADY_STATE };
+enum HYDRAULIC_RESOLVE { EXPLICIT, IMPLICIT };
+
+template <class T, HYDRAULIC_MODE hyd_mode, HYDRAULIC_RESOLVE hyd_resolve>
+class Velocities : public BaseSimulation {
+private:
+  int innerIterations{1};
+  T timestep{-1};
+  T epsilon{1E-5};
+  int numThreads{omp_get_num_procs()};
+
+  Grid<T> &grid;
+  Boundary<T> &bc;
+
+  RowMajMat<T> velocitiesX;
+  RowMajMat<T> velocitiesY;
+
 public:
   /**
    * @brief Construct a new Velocities object, used to calculate Hydraulic
@@ -42,38 +61,9 @@ public:
    * @param grid Valid grid object
    * @param bc Valid boundary condition object
    */
-  Velocities(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc) {
-    outx = MatrixX<T>::Constant(grid.getRow(), grid.getCol() + 1, 0);
-    outy = MatrixX<T>::Constant(grid.getRow() + 1, grid.getCol(), 0);
-    center = std::make_pair(grid.getRow() / 2, grid.getCol() / 2);
-  };
-
-  /**
-   * @brief Sets a fixed, constant hydraulic charge at domain center.
-   *
-   * @param inj_h fixed hydraulic charge at domain center.
-   */
-  void setInjh(T inj_h) {
-    if (inj_h >= 0) {
-      this->inj_h = inj_h;
-      RowMajMat<T> &concentrations = grid.getConcentrations();
-      concentrations(center.first, center.second) = inj_h;
-      injhIsSet = true;
-    } else {
-      throw std::invalid_argument("Fixed hydraulic charge can not be negative");
-    }
-  };
-
-  /**
-   * @brief Sets a constant permeability coefficient
-   * @param K constant permeability coefficient
-   */
-  void setK(T K) {
-    this->K = K;
-    MatrixXd alphax = MatrixXd::Constant(grid.getRow(), grid.getCol(), K);
-    MatrixXd alphay = MatrixXd::Constant(grid.getRow(), grid.getCol(), K);
-    grid.setAlpha(alphax, alphay);
-  };
+  Velocities(Grid<T> &_grid, Boundary<T> &_bc)
+      : grid(_grid), bc(_bc), velocitiesX(grid.getRow(), grid.getCol() + 1),
+        velocitiesY(grid.getRow() + 1, grid.getCol()) {};
 
   /**
    * @brief Set the epsilon value, the relativ error allowed for convergence
@@ -81,12 +71,10 @@ public:
    * @param epsilon the new epsilon value
    */
   void setEpsilon(T epsilon) {
-    if (0 <= epsilon && epsilon < 1) {
-      this->epsilon = epsilon;
-    } else {
-      throw std::invalid_argument(
-          "Relative Error epsilon must be between 0 and 1");
-    }
+    tug_assert(0 <= epsilon && epsilon < 1,
+               "Relative Error epsilon must be between 0 and 1");
+
+    this->epsilon = epsilon;
   }
 
   /**
@@ -102,7 +90,11 @@ public:
     const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
     const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
     const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
-    T cfl = minDeltaSquare / (4 * K);
+
+    const T maxK =
+        std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
+
+    T cfl = minDeltaSquare / (4 * maxK);
     if (timestep > cfl) {
       this->innerIterations = (int)ceil(timestep / cfl);
       this->timestep = timestep / (double)innerIterations;
@@ -117,15 +109,6 @@ public:
       this->innerIterations = 1;
     }
   };
-
-  /**
-   * @brief Set the number of iterations. If set to a number smaller than 1,
-   * calculation will terminate at convergence
-   *
-   * @param iterations Number of desired iterations
-   */
-
-  void setIterations(int iterations) { this->iterations = iterations; }
 
   /**
    * @brief Set the number of desired openMP Threads.
@@ -147,173 +130,63 @@ public:
   }
 
   /**
-   * @brief Set the option to output the results to a CSV file. Off by default.
+   * @brief Getter function for outx, the matrix containing velocities in
+   * x-Direction; returns a reference to outx
    *
-   *
-   * @param csv_output Valid output option. The following options can be set
-   *                   here:
-   *                     - CSV_OUTPUT_OFF: do not produce csv output
-   *                     - CSV_OUTPUT_ON: produce csv output with last
-   *                       charge and velocities matrizes
-   *                     - CSV_OUTPUT_VERBOSE: produce csv output with all
-   *                       charge matrizes and and last velocities matrix
-   */
-  void setOutputCSV(CSV_OUTPUT csv_output) {
-    if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid CSV output option given!");
-    }
-    this->csv_output = csv_output;
-    if (csv_output >= CSV_OUTPUT_ON) {
-      filename1 = createCSVfile("Charge");
-      filename2 = createCSVfile("outx");
-      filename3 = createCSVfile("outy");
-    }
-  }
+   * */
+  const RowMajMat<T> &getVelocitiesX() const { return this->velocitiesX; }
 
   /**
-   * @brief Creates a CSV file with a name containing the current simulation
-   *        parameters. If the data name already exists, an additional counter
-   * is appended to the name. The name of the file is built up as follows:
-   *        <Information contained in file> + <number rows> + <number columns> +
-   * <number of iterations>+<counter>.csv
-   *
-   * @return string Filename with configured simulation parameters.
+   * @brief Getter function for outy, the matrix containing velocities in
+   * y-Direction; return a reference to outy
    */
-  std::string createCSVfile(std::string Type) const {
-    std::ofstream file;
-    int appendIdent = 0;
-    std::string appendIdentString;
-
-    std::string row = std::to_string(grid.getRow());
-    std::string col = std::to_string(grid.getCol());
-    std::string numIterations = std::to_string(iterations);
-
-    std::string filename =
-        Type + "_" + row + "_" + col + "_" + numIterations + ".csv";
-
-    while (std::filesystem::exists(filename)) {
-      appendIdent += 1;
-      appendIdentString = std::to_string(appendIdent);
-      filename = Type + "_" + row + "_" + col + "_" + numIterations + "-" +
-                 appendIdentString + ".csv";
-    }
-
-    file.open(filename);
-    if (!file) {
-      exit(1);
-    }
-
-    file.close();
-
-    return filename;
-  }
+  const RowMajMat<T> &getVelocitiesY() const { return this->velocitiesY; }
 
   /**
-   * @brief Writes the currently calculated Hydraulic Charge values of the grid
-   *        into the CSV file with the passed filename.
-   *
-   * @param filename Name of the file to which the Hydraulic Charge values are
-   *                 to be written.
+   * @brief Simulation of hydraulic charge either until convergence,
+   * or for a number of selected timesteps. Calculation of Darcy-velocities.
    */
-  void printChargeCSV(const std::string &filename) const {
-    std::ofstream file;
+  void run() {
+    // if iterations < 1 calculate hydraulic charge until steady state is
+    // reached
 
-    file.open(filename, std::ios_base::app);
-    if (!file) {
-      exit(1);
-    }
+    if constexpr (hyd_mode == STEADY_STATE) {
+      // Calculate largest possible timestep, depending on K and gridsize
+      const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+      const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+      const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
-    Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
-    file << grid.getConcentrations().format(do_not_align) << std::endl;
-    file << std::endl << std::endl;
-    file.close();
-  }
+      const T maxK =
+          std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
 
-  /**
-   * @brief Reads a matrix stored in a CSV file and uses it for values of
-   * Hydraulic Heads, Matrix and grid must be of equal size
-   *
-   * @param filename name of the CSV file
-   */
-  void readChargeCSV(std::string filename) {
-    std::ifstream file(filename);
-    std::string line;
-    Eigen::MatrixXd matrix;
+      setTimestep(minDeltaSquare / (4 * maxK));
 
-    if (file.is_open()) {
-      while (std::getline(file, line)) {
-        std::istringstream iss(line);
-        double value;
-        std::vector<double> row;
-        while (iss >> value) {
-          row.push_back(value);
-        }
-        if (!row.empty()) {
-          if (matrix.rows() == 0) {
-            matrix.resize(1, row.size());
-          } else {
-            matrix.conservativeResize(matrix.rows() + 1, Eigen::NoChange);
-          }
-          matrix.row(matrix.rows() - 1) =
-              Eigen::VectorXd::Map(row.data(), row.size());
-        }
-      }
-      file.close();
+      RowMajMat<T> oldConcentrations;
+      do {
+        oldConcentrations = grid.getConcentrations();
+        (void)calculate_hydraulic_flow();
+      } while (!checkConvergance(oldConcentrations, grid.getConcentrations()));
     } else {
-      std::cerr << "Unable to open file: " << filename << std::endl;
-    }
-    if (matrix.rows() == grid.getRow() && matrix.cols() == grid.getCol()) {
-      grid.setConcentrations(matrix);
-      velocities();
-      if (csv_output > CSV_OUTPUT_OFF) {
-        printChargeCSV(filename1);
-        printVelocitiesCSV(filename2, filename3);
+      if (timestep == -1) {
+        throw_invalid_argument("Timestep is not set");
       }
-    } else {
-      std::cerr << "gridsize and size of stored matrix dont align\n";
-    }
-  }
-
-  /**
-   * @brief Writes the current Darcy-velocities into a CSV file
-   *
-   * @param filenamex Name of the file to which velocities in direction x are
-   * written
-   * @param filenamey Name of the file to which velocities in direction y are
-   * written
-   */
-  void printVelocitiesCSV(const std::string &filenamex,
-                          const std::string &filenamey) const {
-    std::ofstream filex;
-    std::ofstream filey;
-
-    filex.open(filenamex, std::ios_base::app);
-    if (!filex) {
-      exit(1);
-    }
-    filey.open(filenamey, std::ios_base::app);
-    if (!filey) {
-      exit(1);
+      for (int i = 0; i < innerIterations; i++) {
+        (void)calculate_hydraulic_flow();
+      }
     }
 
-    Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
-    filex << outx.format(do_not_align) << std::endl;
-    filex << std::endl << std::endl;
-    filex.close();
+    (void)computeFluidVelocities();
+  };
 
-    filey << outy.format(do_not_align) << std::endl;
-    filey << std::endl << std::endl;
-    filey.close();
-  }
-
+private:
   /**
    * @brief Calculate the new hydraulic charge using FTCS
    */
-  void hydraulic_charge() {
-    FTCS_2D(this->grid, this->bc, this->timestep, this->numThreads);
-    if (injhIsSet == true) {
-      RowMajMat<T> &concentrations = grid.getConcentrations();
-      concentrations(center.first, center.second) = inj_h;
+  void calculate_hydraulic_flow() {
+    if constexpr (hyd_resolve == EXPLICIT) {
+      FTCS_2D(this->grid, this->bc, this->timestep, this->numThreads);
+    } else {
+      BTCS_2D(this->grid, this->bc, this->timestep, ThomasAlgorithm);
     }
   };
 
@@ -324,165 +197,111 @@ public:
    * containing old and new Charge values, the relative error is below the
    * selected Epsilon
    */
-  bool checkConvergance(Eigen::MatrixX<T> oldHeads,
-                        Eigen::MatrixX<T> newHeads) {
-    for (int i = 0; i < grid.getRow(); i++) {
-      for (int j = 0; j < grid.getCol(); j++) {
-        if (newHeads(i, j) != 0) {
-          if (abs((oldHeads(i, j) - newHeads(i, j)) / newHeads(i, j)) >
-              epsilon) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
+  bool checkConvergance(const RowMajMat<T> &oldHeads,
+                        const RowMajMat<T> &newHeads) {
+    const auto abs_err = (oldHeads - newHeads).cwiseAbs();
+    const auto rel_err = abs_err.cwiseQuotient(newHeads);
+
+    return rel_err.maxCoeff() < epsilon;
   }
 
   /**
    * @brief Update the matrices containing Darcy velocities in x and y
    * directions
    */
-  void velocities() {
-    int rows = grid.getRow();
-    int cols = grid.getCol();
-    float dx = grid.getDeltaRow();
-    float dy = grid.getDeltaCol();
-    Eigen::MatrixX<T> concentrations = grid.getConcentrations();
-// calculate outx
+  void computeFluidVelocities() {
+    const std::size_t rows = grid.getRow();
+    const std::size_t cols = grid.getCol();
+    const T dx = grid.getDeltaRow();
+    const T dy = grid.getDeltaCol();
+    const RowMajMat<T> &hydraulicCharges = grid.getConcentrations();
+
+    const RowMajMat<T> &permKX = grid.getAlphaX();
+    const RowMajMat<T> &permKY = grid.getAlphaY();
+
+    // calculate velocities in x-direction
+    for (std::size_t i_rows = 0; i_rows < rows; i_rows++) {
+      const auto bc_left = bc.getBoundaryElement(BC_SIDE_LEFT, i_rows);
+      switch (bc_left.getType()) {
+      case BC_TYPE_CLOSED: {
+        velocitiesX(i_rows, 0) = 0;
+        break;
+      }
+      case BC_TYPE_CONSTANT: {
+        velocitiesX(i_rows, 0) =
+            -permKX(i_rows, 0) *
+            (hydraulicCharges(i_rows, 0) - bc_left.getValue()) / (dx / 2);
+        break;
+      }
+      }
+
+      const auto bc_right = bc.getBoundaryElement(BC_SIDE_RIGHT, i_rows);
+      switch (bc_right.getType()) {
+      case BC_TYPE_CLOSED: {
+        velocitiesX(i_rows, cols) = 0;
+        break;
+      }
+      case BC_TYPE_CONSTANT: {
+        velocitiesX(i_rows, cols) =
+            -permKX(i_rows, cols - 1) *
+            (bc_right.getValue() - hydraulicCharges(i_rows, cols - 1)) /
+            (dx / 2);
+        break;
+      }
+      }
+    }
+
+// main loop for calculating velocities in x-direction for inner cells
 #pragma omp parallel for num_threads(numThreads)
     for (int i = 0; i < rows; i++) {
-      for (int j = 0; j < cols + 1; j++) {
-        if (j == 0) {
-          if (bc.getBoundaryElementType(BC_SIDE_LEFT, i) == BC_TYPE_CLOSED) {
-            outx(i, j) = 0;
-          } else {
-            outx(i, j) = -K *
-                         (concentrations(i, j) -
-                          bc.getBoundaryElementValue(BC_SIDE_LEFT, i)) /
-                         (dx / 2);
-          }
-        } else if (j == cols) {
-          if (bc.getBoundaryElementType(BC_SIDE_RIGHT, i) == BC_TYPE_CLOSED) {
-            outx(i, j) = 0;
-          } else {
-            outx(i, j) = -K *
-                         (bc.getBoundaryElementValue(BC_SIDE_RIGHT, i) -
-                          concentrations(i, j - 1)) /
-                         (dx / 2);
-          }
-
-        } else {
-          outx(i, j) =
-              -K * (concentrations(i, j) - concentrations(i, j - 1)) / dx;
-        }
+      for (int j = 1; j < cols; j++) {
+        velocitiesX(i, j) =
+            -permKX(i, j - 1) *
+            (hydraulicCharges(i, j) - hydraulicCharges(i, j - 1)) / dx;
       }
     }
-// calculate outy
+
+    // calculate velocities in y-direction
+    for (std::size_t i_cols = 0; i_cols < cols; i_cols++) {
+      const auto bc_top = bc.getBoundaryElement(BC_SIDE_TOP, i_cols);
+      switch (bc_top.getType()) {
+      case BC_TYPE_CLOSED: {
+        velocitiesY(0, i_cols) = 0;
+        break;
+      }
+      case BC_TYPE_CONSTANT: {
+        velocitiesY(0, i_cols) =
+            -permKY(0, i_cols) *
+            (hydraulicCharges(0, i_cols) - bc_top.getValue()) / (dy / 2);
+        break;
+      }
+      }
+
+      const auto bc_bottom = bc.getBoundaryElement(BC_SIDE_BOTTOM, i_cols);
+      switch (bc_bottom.getType()) {
+      case BC_TYPE_CLOSED: {
+        velocitiesY(rows, i_cols) = 0;
+        break;
+      }
+      case BC_TYPE_CONSTANT: {
+        velocitiesY(rows, i_cols) =
+            -permKY(rows - 1, i_cols) *
+            (bc_bottom.getValue() - hydraulicCharges(rows - 1, i_cols)) /
+            (dy / 2);
+        break;
+      }
+      }
+    }
+
+// main loop for calculating velocities in y-direction for inner cells
 #pragma omp parallel for num_threads(numThreads)
-    for (int i = 0; i < rows + 1; i++) {
+    for (int i = 1; i < rows; i++) {
       for (int j = 0; j < cols; j++) {
-        if (i == 0) {
-          if (bc.getBoundaryElementType(BC_SIDE_TOP, j) == BC_TYPE_CLOSED) {
-            outy(i, j) = 0;
-          } else {
-            outy(i, j) = -K *
-                         (concentrations(i, j) -
-                          bc.getBoundaryElementValue(BC_SIDE_TOP, j)) /
-                         (dy / 2);
-          }
-        } else if (i == rows) {
-          if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, j) == BC_TYPE_CLOSED) {
-            outy(i, j) = 0;
-          } else {
-            outy(i, j) = -K *
-                         (bc.getBoundaryElementValue(BC_SIDE_BOTTOM, j) -
-                          concentrations(i - 1, j)) /
-                         (dy / 2);
-          }
-        } else {
-          outy(i, j) =
-              -K * (concentrations(i, j) - concentrations(i - 1, j)) / dy;
-        }
+        velocitiesY(i, j) =
+            -permKY(i, j) *
+            (hydraulicCharges(i, j) - hydraulicCharges(i - 1, j)) / dy;
       }
     }
   };
-
-  /**
-   * @brief Getter function for outx, the matrix containing velocities in
-   * x-Direction; returns a reference to outx
-   *
-   * */
-  const Eigen::MatrixX<T> &getOutx() const { return outx; }
-
-  /**
-   * @brief Getter function for outy, the matrix containing velocities in
-   * y-Direction; return a reference to outy
-   */
-  const Eigen::MatrixX<T> &getOuty() const { return outy; }
-
-  /**
-   * @brief Simulation of hydraulic charge either until convergence,
-   * or for a number of selected timesteps. Calculation of Darcy-velocities.
-   */
-  void run() {
-    // if iterations < 1 calculate hydraulic charge until steady state is
-    // reached
-    if (iterations < 1) {
-      // Calculate largest possible timestep, depending on K and gridsize
-      const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-      const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
-      const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
-      setTimestep(minDeltaSquare / (4 * K));
-
-      Eigen::MatrixX<T> oldConcentrations;
-      do {
-        oldConcentrations = grid.getConcentrations();
-        if (csv_output >= CSV_OUTPUT_VERBOSE) {
-          printChargeCSV(filename1);
-        }
-        for (int i = 0; i < (grid.getRow() + grid.getCol() - 2); i++) {
-          hydraulic_charge();
-        }
-      } while (checkConvergance(oldConcentrations, grid.getConcentrations()) ==
-               false);
-    }
-    // if iterations >= 1 calculate hydraulice charge for a given number of
-    // iterations
-    else {
-      if (timestep == -1) {
-        throw_invalid_argument("Timestep is not set");
-      }
-      for (int i = 0; i < iterations * innerIterations; i++) {
-        hydraulic_charge();
-      }
-    }
-
-    velocities();
-
-    if (csv_output > CSV_OUTPUT_OFF) {
-      printChargeCSV(filename1);
-      printVelocitiesCSV(filename2, filename3);
-    }
-  };
-
-private:
-  int iterations{-1};
-  int innerIterations{1};
-  bool injhIsSet{false};
-  T timestep{-1};
-  T inj_h{1};
-  T K{1};
-  T epsilon{1E-5};
-  int numThreads{omp_get_num_procs()};
-  Grid<T> &grid;
-  Boundary<T> &bc;
-  CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
-  Eigen::MatrixX<T> outx;
-  Eigen::MatrixX<T> outy;
-  std::pair<int, int> center;
-  std::string filename1;
-  std::string filename2;
-  std::string filename3;
 };
 } // namespace tug
