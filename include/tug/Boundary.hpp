@@ -7,12 +7,13 @@
 #ifndef BOUNDARY_H_
 #define BOUNDARY_H_
 
-#include "Grid.hpp"
 #include "tug/Core/TugUtils.hpp"
 
+#include <Eigen/Dense>
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -45,7 +46,7 @@ public:
    *        BC_TYPE_CLOSED, where the value takes -1 and does not hold any
    *        physical meaning.
    */
-  BoundaryElement(){};
+  BoundaryElement() {};
 
   /**
    * @brief Construct a new Boundary Element object for the constant case.
@@ -115,7 +116,7 @@ public:
    *
    * @param length Length of the grid
    */
-  Boundary(std::uint32_t length) : Boundary(Grid<T>(length)){};
+  Boundary(std::uint32_t length) : Boundary(1, length) {};
 
   /**
    * @brief Creates a boundary object for a 2D grid
@@ -124,17 +125,7 @@ public:
    * @param cols Number of columns of the grid
    */
   Boundary(std::uint32_t rows, std::uint32_t cols)
-      : Boundary(Grid<T>(rows, cols)){};
-
-  /**
-   * @brief Creates a boundary object based on the passed grid object and
-   *        initializes the boundaries as closed.
-   *
-   * @param grid Grid object on the basis of which the simulation takes place
-   *             and from which the dimensions (in 2D case) are taken.
-   */
-  Boundary(const Grid<T> &grid)
-      : dim(grid.getDim()), cols(grid.getCol()), rows(grid.getRow()) {
+      : dim(rows == 1 ? 1 : 2), cols(cols), rows(rows) {
     if (this->dim == 1) {
       this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(
           2); // in 1D only left and right boundary
@@ -153,8 +144,37 @@ public:
       this->boundaries[BC_SIDE_BOTTOM] =
           std::vector<BoundaryElement<T>>(this->cols, BoundaryElement<T>());
     }
-  }
+  };
 
+  /**
+   * @brief Creates a boundary object based on the passed grid object and
+   *        initializes the boundaries as closed.
+   *
+   * @param grid Grid object on the basis of which the simulation takes place
+   *             and from which the dimensions (in 2D case) are taken.
+   */
+  // Boundary(const Grid<T> &grid)
+  //     : dim(grid.getDim()), cols(grid.getCol()), rows(grid.getRow()) {
+  //   if (this->dim == 1) {
+  //     this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(
+  //         2); // in 1D only left and right boundary
+  //
+  //     this->boundaries[BC_SIDE_LEFT].push_back(BoundaryElement<T>());
+  //     this->boundaries[BC_SIDE_RIGHT].push_back(BoundaryElement<T>());
+  //   } else if (this->dim == 2) {
+  //     this->boundaries = std::vector<std::vector<BoundaryElement<T>>>(4);
+  //
+  //     this->boundaries[BC_SIDE_LEFT] =
+  //         std::vector<BoundaryElement<T>>(this->rows, BoundaryElement<T>());
+  //     this->boundaries[BC_SIDE_RIGHT] =
+  //         std::vector<BoundaryElement<T>>(this->rows, BoundaryElement<T>());
+  //     this->boundaries[BC_SIDE_TOP] =
+  //         std::vector<BoundaryElement<T>>(this->cols, BoundaryElement<T>());
+  //     this->boundaries[BC_SIDE_BOTTOM] =
+  //         std::vector<BoundaryElement<T>>(this->cols, BoundaryElement<T>());
+  //   }
+  // }
+  //
   /**
    * @brief Sets all elements of the specified boundary side to the boundary
    *        condition closed.

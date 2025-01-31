@@ -1,3 +1,4 @@
+#include "tug/Core/Matrix.hpp"
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <fstream>
@@ -8,7 +9,7 @@
 
 #define TUG_TEST(x) TEST(Tug, x)
 
-inline Eigen::MatrixXd CSV2Eigen(std::string file2Convert) {
+inline tug::RowMajMat<double> CSV2Eigen(std::string file2Convert) {
 
   std::vector<double> matrixEntries;
 
@@ -31,21 +32,20 @@ inline Eigen::MatrixXd CSV2Eigen(std::string file2Convert) {
     }
   }
 
-  return Eigen::Map<
-      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>>(
-      matrixEntries.data(), matrixRowNumber,
-      matrixEntries.size() / matrixRowNumber);
+  return tug::RowMajMatMap<double>(matrixEntries.data(), matrixRowNumber,
+                                   matrixEntries.size() / matrixRowNumber);
 }
 
-inline bool checkSimilarity(Eigen::MatrixXd a, Eigen::MatrixXd b,
+inline bool checkSimilarity(tug::RowMajMat<double> &a,
+                            tug::RowMajMatMap<double> &b,
                             double precision = 1e-5) {
   return a.isApprox(b, precision);
 }
 
-inline bool checkSimilarityV2(Eigen::MatrixXd a, Eigen::MatrixXd b,
-                              double maxDiff) {
+inline bool checkSimilarityV2(tug::RowMajMat<double> &a,
+                              tug::RowMajMatMap<double> &b, double maxDiff) {
 
-  Eigen::MatrixXd diff = a - b;
+  tug::RowMajMat<double> diff = a - b;
   double maxCoeff = diff.maxCoeff();
   return abs(maxCoeff) < maxDiff;
 }

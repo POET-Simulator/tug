@@ -1,5 +1,6 @@
 #pragma once
 
+#include "tug/Boundary.hpp"
 #include <cstddef>
 #include <cstdint>
 #include <tug/Core/Matrix.hpp>
@@ -38,14 +39,25 @@ enum class TIME_MEASURE {
   ON   /*!< print time measure after last iteration */
 };
 
+/**
+ * @brief A base class for simulation grids.
+ *
+ * This class provides a base implementation for simulation grids, including
+ * methods for setting and getting grid dimensions, domain sizes, and output
+ * options. It also includes methods for running simulations, which must be
+ * implemented by derived classes.
+ *
+ * @tparam T The type of the elements in the grid.
+ */
 template <typename T> class BaseSimulationGrid {
-protected:
+private:
   CSV_OUTPUT csv_output{CSV_OUTPUT::OFF};
   CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT::OFF};
   TIME_MEASURE time_measure{TIME_MEASURE::OFF};
 
   int iterations{1};
-  RowMajMatMap<T> concentration_matrix;
+  RowMajMatMap<T> concentrationMatrix;
+  Boundary<T> boundaryConditions;
 
   const std::uint8_t dim;
 
@@ -53,29 +65,196 @@ protected:
   T delta_row;
 
 public:
+  /**
+   * @brief Constructs a BaseSimulationGrid from a given RowMajMat object.
+   *
+   * This constructor initializes a BaseSimulationGrid using the data, number of
+   * rows, and number of columns from the provided RowMajMat object.
+   *
+   * @tparam T The type of the elements in the RowMajMat.
+   * @param origin The RowMajMat object from which to initialize the
+   * BaseSimulationGrid.
+   */
+  BaseSimulationGrid(RowMajMat<T> &origin)
+      : BaseSimulationGrid(origin.data(), origin.rows(), origin.cols()) {}
+
+  /**
+   * @brief Constructs a BaseSimulationGrid object.
+   *
+   * @tparam T The type of the data elements.
+   * @param data Pointer to the data array.
+   * @param rows Number of rows in the grid.
+   * @param cols Number of columns in the grid.
+   *
+   * Initializes the concentration_matrix with the provided data, rows, and
+   * columns. Sets delta_col and delta_row to 1. Determines the dimension (dim)
+   * based on the number of rows: if rows == 1, dim is set to 1; otherwise, dim
+   * is set to 2.
+   */
+  BaseSimulationGrid(T *data, std::size_t rows, std::size_t cols)
+      : concentrationMatrix(data, rows, cols), boundaryConditions(rows, cols),
+        delta_col(1), delta_row(1), dim(rows == 1 ? 1 : 2) {}
+
+  /**
+   * @brief Constructs a BaseSimulationGrid with a single dimension.
+   *
+   * This constructor initializes a BaseSimulationGrid object with the provided
+   * data and length. It assumes the grid has only one dimension.
+   *
+   * @param data Pointer to the data array.
+   * @param length The length of the data array.
+   */
   BaseSimulationGrid(T *data, std::size_t length)
       : BaseSimulationGrid(data, 1, length) {}
 
-  template <typename EigenType>
-  BaseSimulationGrid(const EigenType &origin)
-      : BaseSimulationGrid(origin.data(), origin.rows(), origin.cols()) {}
+  /**
+   * @brief Overloaded function call operator to access elements in a
+   * one-dimensional grid.
+   *
+   * This operator provides access to elements in the concentration matrix using
+   * a single index. It asserts that the grid is one-dimensional before
+   * accessing the element.
+   *
+   * @tparam T The type of elements in the concentration matrix.
+   * @param index The index of the element to access.
+   * @return A reference to the element at the specified index in the
+   * concentration matrix.
+   */
+  constexpr T &operator()(std::size_t index) {
+    tug_assert(dim == 1, "Grid is not one dimensional, use 2D index operator!");
 
-  BaseSimulationGrid(T *data, std::size_t rows, std::size_t cols)
-      : concentration_matrix(data, rows, cols), delta_col(1), delta_row(1),
-        dim(rows == 1 ? 1 : 2) {}
+    return concentrationMatrix(index);
+  }
 
-  std::size_t rows() const { return concentration_matrix.rows(); }
-  std::size_t cols() const { return concentration_matrix.cols(); }
+  /**
+   * @brief Overloaded function call operator to access elements in a 2D
+   * concentration matrix.
+   *
+   * This operator allows accessing elements in the concentration matrix using
+   * row and column indices. It asserts that the grid is two-dimensional before
+   * accessing the element.
+   *
+   * @param row The row index of the element to access.
+   * @param col The column index of the element to access.
+   * @return A reference to the element at the specified row and column in the
+   * concentration matrix.
+   */
+  constexpr T &operator()(std::size_t row, std::size_t col) {
+    tug_assert(dim == 2, "Grid is not two dimensional, use 1D index operator!");
 
+    return concentrationMatrix(row, col);
+  }
+
+  /**
+   * @brief Retrieves the concentration matrix.
+   *
+   * @tparam T The data type of the elements in the concentration matrix.
+   * @return RowMajMat<T>& Reference to the concentration matrix.
+   */
+  RowMajMatMap<T> &getConcentrationMatrix() { return concentrationMatrix; }
+
+  const RowMajMatMap<T> &getConcentrationMatrix() const {
+    return concentrationMatrix;
+  }
+
+  /**
+   * @brief Retrieves the boundary conditions for the simulation.
+   *
+   * @tparam T The type parameter for the Boundary class.
+   * @return Boundary<T>& A reference to the boundary conditions.
+   */
+  Boundary<T> &getBoundaryConditions() { return boundaryConditions; }
+
+  const Boundary<T> &getBoundaryConditions() const {
+    return boundaryConditions;
+  }
+
+  /**
+   * @brief Retrieves the dimension value.
+   *
+   * @return The dimension value as an 8-bit unsigned integer.
+   */
+  std::uint8_t getDim() const { return dim; }
+
+  /**
+   * @brief Returns the number of rows in the concentration matrix.
+   *
+   * @return std::size_t The number of rows in the concentration matrix.
+   */
+  std::size_t rows() const { return concentrationMatrix.rows(); }
+
+  /**
+   * @brief Get the number of columns in the concentration matrix.
+   *
+   * @return std::size_t The number of columns in the concentration matrix.
+   */
+  std::size_t cols() const { return concentrationMatrix.cols(); }
+
+  /**
+   * @brief Returns the cell size in meter of the x-direction.
+   *
+   * This function returns the value of the delta column, which is used
+   * to represent the difference or change in the column value.
+   *
+   * @return T The cell size in meter of the x-direction.
+   */
   T deltaCol() const { return delta_col; }
+
+  /**
+   * @brief Returns the cell size in meter of the y-direction.
+   *
+   * This function asserts that the grid is two-dimensional. If the grid is not
+   * two-dimensional, an assertion error is raised with the message "Grid is not
+   * two dimensional, there is no delta in y-direction!".
+   *
+   * @return The cell size in meter of the y-direction.
+   */
   T deltaRow() const {
     tug_assert(
-        dim == 1,
+        dim == 2,
         "Grid is not two dimensional, there is no delta in y-direction!");
 
     return delta_row;
   }
 
+  /**
+   * @brief Computes the domain size in the X direction.
+   *
+   * This function calculates the size of the domain in the X direction by
+   * multiplying the column spacing (delta_col) by the number of columns (cols).
+   *
+   * @return The size of the domain in the X direction.
+   */
+  T domainX() const { return delta_col * cols(); }
+
+  /**
+   * @brief Returns the size of the domain in the y-direction.
+   *
+   * This function calculates the size of the domain in the y-direction
+   * by multiplying the row spacing (delta_row) by the number of rows.
+   * It asserts that the grid is two-dimensional before performing the
+   * calculation.
+   *
+   * @return The size of the domain in the y-direction.
+   */
+  T domainY() const {
+    tug_assert(
+        dim == 2,
+        "Grid is not two dimensional, there is no domain in y-direction!");
+
+    return delta_row * rows();
+  }
+
+  /**
+   * @brief Sets the domain length for a one-dimensional grid.
+   *
+   * This function sets the domain length for a one-dimensional grid and
+   * calculates the column width (delta_col) based on the given domain length
+   * and the number of columns. It asserts that the grid is one-dimensional and
+   * that the given domain length is positive.
+   *
+   * @param domain_length The length of the domain. Must be positive.
+   */
   void setDomain(T domain_length) {
     tug_assert(dim == 1, "Grid is not one dimensional, use 2D domain setter!");
     tug_assert(domain_length > 0, "Given domain length is not positive!");
@@ -83,6 +262,17 @@ public:
     delta_col = domain_length / cols();
   }
 
+  /**
+   * @brief Sets the domain size for a 2D grid simulation.
+   *
+   * This function sets the domain size in the x and y directions for a
+   * two-dimensional grid simulation. It asserts that the grid is indeed
+   * two-dimensional and that the provided domain sizes are positive.
+   *
+   * @tparam T The type of the domain size parameters.
+   * @param domain_row The size of the domain in the y-direction.
+   * @param domain_col The size of the domain in the x-direction.
+   */
   void setDomain(T domain_row, T domain_col) {
     tug_assert(dim == 2, "Grid is not two dimensional, use 1D domain setter!");
     tug_assert(domain_col > 0,
@@ -111,6 +301,15 @@ public:
   void setOutputCSV(CSV_OUTPUT csv_output) { this->csv_output = csv_output; }
 
   /**
+   * @brief Retrieves the CSV output.
+   *
+   * This function returns the CSV output associated with the simulation.
+   *
+   * @return CSV_OUTPUT The CSV output of the simulation.
+   */
+  constexpr CSV_OUTPUT getOutputCSV() const { return this->csv_output; }
+
+  /**
    * @brief Set the options for outputting information to the console. Off by
    * default.
    *
@@ -128,6 +327,17 @@ public:
   }
 
   /**
+   * @brief Retrieves the console output.
+   *
+   * This function returns the current state of the console output.
+   *
+   * @return CONSOLE_OUTPUT The current console output.
+   */
+  constexpr CONSOLE_OUTPUT getOutputConsole() const {
+    return this->console_output;
+  }
+
+  /**
    * @brief Set the Time Measure option. Off by default.
    *
    * @param time_measure The following options are allowed:
@@ -139,6 +349,13 @@ public:
   void setTimeMeasure(TIME_MEASURE time_measure) {
     this->time_measure = time_measure;
   }
+
+  /**
+   * @brief Retrieves the current time measurement.
+   *
+   * @return TIME_MEASURE The current time measurement.
+   */
+  constexpr TIME_MEASURE getTimeMeasure() const { return this->time_measure; }
 
   /**
    * @brief Set the desired iterations to be calculated. A value greater
@@ -165,5 +382,7 @@ public:
    *        parameters.
    */
   virtual void run() = 0;
+
+  virtual void setTimestep(T timestep) = 0;
 };
 } // namespace tug

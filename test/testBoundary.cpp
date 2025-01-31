@@ -28,12 +28,8 @@ BOUNDARY_TEST(Element) {
 }
 
 BOUNDARY_TEST(Class) {
-  Eigen::VectorXd conc(10);
-  Grid grid1D = Grid64(conc);
-  Eigen::MatrixXd conc2D(10, 12);
-  Grid grid2D = Grid64(conc2D);
-  Boundary boundary1D = Boundary(grid1D);
-  Boundary boundary2D = Boundary(grid2D);
+  Boundary<double> boundary1D(10);
+  Boundary<double> boundary2D(10, 12);
   vector<BoundaryElement<double>> boundary1DVector(1, BoundaryElement(1.0));
 
   constexpr double inner_condition_value = -5;
@@ -47,7 +43,6 @@ BOUNDARY_TEST(Class) {
   col_ibc[0] = innerBoundary;
 
   {
-    EXPECT_NO_THROW(Boundary boundary(grid1D));
     EXPECT_EQ(boundary1D.getBoundarySide(BC_SIDE_LEFT).size(), 1);
     EXPECT_EQ(boundary1D.getBoundarySide(BC_SIDE_RIGHT).size(), 1);
     EXPECT_EQ(boundary1D.getBoundaryElementType(BC_SIDE_LEFT, 0),
@@ -76,7 +71,6 @@ BOUNDARY_TEST(Class) {
   }
 
   {
-    EXPECT_NO_THROW(Boundary boundary(grid1D));
     EXPECT_EQ(boundary2D.getBoundarySide(BC_SIDE_LEFT).size(), 10);
     EXPECT_EQ(boundary2D.getBoundarySide(BC_SIDE_RIGHT).size(), 10);
     EXPECT_EQ(boundary2D.getBoundarySide(BC_SIDE_TOP).size(), 12);

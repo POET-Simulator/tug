@@ -10,14 +10,15 @@
 #ifndef BTCS_H_
 #define BTCS_H_
 
-#include "../Matrix.hpp"
-#include "../TugUtils.hpp"
-
 #include <cstddef>
 #include <tug/Boundary.hpp>
-#include <tug/Grid.hpp>
+#include <tug/Core/Matrix.hpp>
+#include <tug/Core/Numeric/SimulationInput.hpp>
 #include <utility>
 #include <vector>
+
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -159,9 +160,9 @@ constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
 
 // creates a solution vector for next time step from the current state of
 // concentrations
-template <class T>
+template <class T, class EigenType>
 static Eigen::VectorX<T>
-createSolutionVector(const RowMajMat<T> &concentrations,
+createSolutionVector(const EigenType &concentrations,
                      const RowMajMat<T> &alphaX, const RowMajMat<T> &alphaY,
                      const std::vector<BoundaryElement<T>> &bcLeft,
                      const std::vector<BoundaryElement<T>> &bcRight,
@@ -351,25 +352,27 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
 
 // BTCS solution for 1D grid
 template <class T>
-static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+static void BTCS_1D(SimulationInput<T> &input,
                     Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
                                                     Eigen::VectorX<T> &b)) {
-  int length = grid.getCol();
-  T sx = timestep / (grid.getDeltaCol() * grid.getDeltaCol());
+  const std::size_t &length = input.colMax;
+  T sx = input.timestep / (input.deltaCol * input.deltaCol);
 
   Eigen::VectorX<T> concentrations_t1(length);
 
   Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b(length);
 
-  const auto &alpha = grid.getAlphaX();
+  const auto &alpha = input.alphaX;
+
+  const auto &bc = input.boundaries;
 
   const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
   const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
 
   const auto inner_bc = bc.getInnerBoundaryRow(0);
 
-  RowMajMat<T> &concentrations = grid.getConcentrations();
+  RowMajMatMap<T> &concentrations = input.concentrations;
   int rowIndex = 0;
   A = createCoeffMatrix(alpha, bcLeft, bcRight, inner_bc, length, rowIndex,
                         sx); // this is exactly same as in 2D
@@ -396,29 +399,31 @@ static void BTCS_1D(Grid<T> &grid, Boundary<T> &bc, T timestep,
 
 // BTCS solution for 2D grid
 template <class T>
-static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
+static void BTCS_2D(SimulationInput<T> &input,
                     Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
                                                     Eigen::VectorX<T> &b),
                     int numThreads) {
-  int rowMax = grid.getRow();
-  int colMax = grid.getCol();
-  T sx = timestep / (2 * grid.getDeltaCol() * grid.getDeltaCol());
-  T sy = timestep / (2 * grid.getDeltaRow() * grid.getDeltaRow());
+  const std::size_t &rowMax = input.rowMax;
+  const std::size_t &colMax = input.colMax;
+  const T sx = input.timestep / (2 * input.deltaCol * input.deltaCol);
+  const T sy = input.timestep / (2 * input.deltaRow * input.deltaRow);
 
   RowMajMat<T> concentrations_t1(rowMax, colMax);
 
   Eigen::SparseMatrix<T> A;
   Eigen::VectorX<T> b;
 
-  RowMajMat<T> alphaX = grid.getAlphaX();
-  RowMajMat<T> alphaY = grid.getAlphaY();
+  const RowMajMat<T> &alphaX = input.alphaX;
+  const RowMajMat<T> &alphaY = input.alphaY;
+
+  const auto &bc = input.boundaries;
 
   const auto &bcLeft = bc.getBoundarySide(BC_SIDE_LEFT);
   const auto &bcRight = bc.getBoundarySide(BC_SIDE_RIGHT);
   const auto &bcTop = bc.getBoundarySide(BC_SIDE_TOP);
   const auto &bcBottom = bc.getBoundarySide(BC_SIDE_BOTTOM);
 
-  RowMajMat<T> &concentrations = grid.getConcentrations();
+  RowMajMatMap<T> &concentrations = input.concentrations;
 
 #pragma omp parallel for num_threads(numThreads) private(A, b)
   for (int i = 0; i < rowMax; i++) {
@@ -432,44 +437,43 @@ static void BTCS_2D(Grid<T> &grid, Boundary<T> &bc, T timestep,
   }
 
   concentrations_t1.transposeInPlace();
-  alphaX.transposeInPlace();
-  alphaY.transposeInPlace();
+  const RowMajMat<T> alphaX_t = alphaX.transpose();
+  const RowMajMat<T> alphaY_t = alphaY.transpose();
 
 #pragma omp parallel for num_threads(numThreads) private(A, b)
   for (int i = 0; i < colMax; i++) {
     auto inner_bc = bc.getInnerBoundaryCol(i);
     // swap alphas, boundary conditions and sx/sy for column-wise calculation
-    A = createCoeffMatrix(alphaY, bcTop, bcBottom, inner_bc, rowMax, i, sy);
-    b = createSolutionVector(concentrations_t1, alphaY, alphaX, bcTop, bcBottom,
-                             bcLeft, bcRight, inner_bc, rowMax, i, sy, sx);
+    A = createCoeffMatrix(alphaY_t, bcTop, bcBottom, inner_bc, rowMax, i, sy);
+    b = createSolutionVector(concentrations_t1, alphaY_t, alphaX_t, bcTop,
+                             bcBottom, bcLeft, bcRight, inner_bc, rowMax, i, sy,
+                             sx);
 
     concentrations.col(i) = solverFunc(A, b);
   }
 }
 
 // entry point for EigenLU solver; differentiate between 1D and 2D grid
-template <class T>
-void BTCS_LU(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
-  if (grid.getDim() == 1) {
-    BTCS_1D(grid, bc, timestep, EigenLUAlgorithm);
-  } else if (grid.getDim() == 2) {
-    BTCS_2D(grid, bc, timestep, EigenLUAlgorithm, numThreads);
+template <class T> void BTCS_LU(SimulationInput<T> &input, int numThreads) {
+  tug_assert(input.dim <= 2,
+             "Error: Only 1- and 2-dimensional grids are defined!");
+
+  if (input.dim == 1) {
+    BTCS_1D(input, EigenLUAlgorithm);
   } else {
-    throw_invalid_argument(
-        "Error: Only 1- and 2-dimensional grids are defined!");
+    BTCS_2D(input.dim, EigenLUAlgorithm, numThreads);
   }
 }
 
 // entry point for Thomas algorithm solver; differentiate 1D and 2D grid
-template <class T>
-void BTCS_Thomas(Grid<T> &grid, Boundary<T> &bc, T timestep, int numThreads) {
-  if (grid.getDim() == 1) {
-    BTCS_1D(grid, bc, timestep, ThomasAlgorithm);
-  } else if (grid.getDim() == 2) {
-    BTCS_2D(grid, bc, timestep, ThomasAlgorithm, numThreads);
+template <class T> void BTCS_Thomas(SimulationInput<T> &input, int numThreads) {
+  tug_assert(input.dim <= 2,
+             "Error: Only 1- and 2-dimensional grids are defined!");
+
+  if (input.dim == 1) {
+    BTCS_1D(input, ThomasAlgorithm);
   } else {
-    throw_invalid_argument(
-        "Error: Only 1- and 2-dimensional grids are defined!");
+    BTCS_2D(input, ThomasAlgorithm, numThreads);
   }
 }
 } // namespace tug
