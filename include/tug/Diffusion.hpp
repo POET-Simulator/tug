@@ -84,21 +84,45 @@ private:
   }
 
 public:
+  /**
+   * @brief Construct a new Diffusion object from a given Eigen matrix
+   *
+   */
   Diffusion(RowMajMat<T> &origin) : BaseSimulationGrid<T>(origin) {
     init_alpha();
   }
 
+  /**
+   * @brief Construct a new 2D Diffusion object from a given data pointer and
+   * the dimensions.
+   *
+   */
   Diffusion(T *data, int rows, int cols)
       : BaseSimulationGrid<T>(data, rows, cols) {
     init_alpha();
   }
 
+  /**
+   * @brief Construct a new 1D Diffusion object from a given data pointer and
+   * the length.
+   *
+   */
   Diffusion(T *data, std::size_t length) : BaseSimulationGrid<T>(data, length) {
     init_alpha();
   }
 
+  /**
+   * @brief Get the alphaX matrix.
+   *
+   * @return RowMajMat<T>& Reference to the alphaX matrix.
+   */
   RowMajMat<T> &getAlphaX() { return alphaX; }
 
+  /**
+   * @brief Get the alphaY matrix.
+   *
+   * @return RowMajMat<T>& Reference to the alphaY matrix.
+   */
   RowMajMat<T> &getAlphaY() {
     tug_assert(
         this->getDim(),
@@ -107,8 +131,18 @@ public:
     return alphaY;
   }
 
+  /**
+   * @brief Set the alphaX matrix.
+   *
+   * @param alphaX The new alphaX matrix.
+   */
   void setAlphaX(const RowMajMat<T> &alphaX) { this->alphaX = alphaX; }
 
+  /**
+   * @brief Set the alphaY matrix.
+   *
+   * @param alphaY The new alphaY matrix.
+   */
   void setAlphaY(const RowMajMat<T> &alphaY) {
     tug_assert(
         this->getDim(),
@@ -116,22 +150,6 @@ public:
 
     this->alphaY = alphaY;
   }
-
-  // /**
-  //  * @brief Set up a simulation environment. The timestep and number of
-  //  * iterations must be set. For the BTCS approach, the Thomas algorithm is
-  //  used
-  //  * as the default linear equation solver as this is faster for tridiagonal
-  //  *        matrices. CSV output, console output and time measure are off by
-  //  * default. Also, the number of cores is set to the maximum number of cores
-  //  -1
-  //  * by default.
-  //  *
-  //  * @param grid Valid grid object
-  //  * @param bc Valid boundary condition object
-  //  * @param approach Approach to solving the problem. Either FTCS or BTCS.
-  //  */
-  // Diffusion(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc) {};
 
   /**
    * @brief Setting the time step for each iteration step. Time step must be
