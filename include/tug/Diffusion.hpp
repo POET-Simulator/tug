@@ -1,16 +1,14 @@
 /**
- * @file Simulation.hpp
- * @brief API of Simulation class, that holds all information regarding a
+ * @file Diffusion.hpp
+ * @brief API of Diffusion class, that holds all information regarding a
  * specific simulation run like its timestep, number of iterations and output
- * options. Simulation object also holds a predefined Grid and Boundary object.
+ * options. Diffusion object also holds a predefined Grid and Boundary object.
  *
  */
 
-#ifndef SIMULATION_H_
-#define SIMULATION_H_
+#pragma once
 
-#include "Boundary.hpp"
-#include "Grid.hpp"
+#include "tug/Core/Matrix.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
@@ -19,9 +17,9 @@
 #include <string>
 #include <vector>
 
-#include "Core/BTCS.hpp"
-#include "Core/FTCS.hpp"
-#include "Core/TugUtils.hpp"
+#include <tug/Core/BaseSimulation.hpp>
+#include <tug/Core/Numeric/BTCS.hpp>
+#include <tug/Core/Numeric/FTCS.hpp>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -52,37 +50,6 @@ enum SOLVER {
 };
 
 /**
- * @brief Enum holding different options for .csv output.
- *
- */
-enum CSV_OUTPUT {
-  CSV_OUTPUT_OFF,     /*!< do not produce csv output */
-  CSV_OUTPUT_ON,      /*!< produce csv output with last concentration matrix */
-  CSV_OUTPUT_VERBOSE, /*!< produce csv output with all concentration matrices */
-  CSV_OUTPUT_XTREME   /*!< csv output like VERBOSE but additional boundary
-                         conditions at beginning */
-};
-
-/**
- * @brief Enum holding different options for console output.
- *
- */
-enum CONSOLE_OUTPUT {
-  CONSOLE_OUTPUT_OFF, /*!< do not print any output to console */
-  CONSOLE_OUTPUT_ON,  /*!< print before and after concentrations to console */
-  CONSOLE_OUTPUT_VERBOSE /*!< print all concentration matrices to console */
-};
-
-/**
- * @brief Enum holding different options for time measurement.
- *
- */
-enum TIME_MEASURE {
-  TIME_MEASURE_OFF, /*!< do not print any time measures */
-  TIME_MEASURE_ON   /*!< print time measure after last iteration */
-};
-
-/**
  * @brief The class forms the interface for performing the diffusion simulations
  * and contains all the methods for controlling the desired parameters, such as
  * time step, number of simulations, etc.
@@ -94,81 +61,94 @@ enum TIME_MEASURE {
  */
 template <class T, APPROACH approach = BTCS_APPROACH,
           SOLVER solver = THOMAS_ALGORITHM_SOLVER>
-class Simulation {
+class Diffusion : public BaseSimulationGrid<T> {
+private:
+  T timestep{-1};
+  int innerIterations{1};
+  int numThreads{omp_get_num_procs()};
+
+  RowMajMat<T> alphaX;
+  RowMajMat<T> alphaY;
+
+  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
+
+  static constexpr T DEFAULT_ALPHA = 1E-8;
+
+  void init_alpha() {
+    this->alphaX =
+        RowMajMat<T>::Constant(this->rows(), this->cols(), DEFAULT_ALPHA);
+    if (this->getDim() == 2) {
+      this->alphaY =
+          RowMajMat<T>::Constant(this->rows(), this->cols(), DEFAULT_ALPHA);
+    }
+  }
+
 public:
   /**
-   * @brief Set up a simulation environment. The timestep and number of
-   * iterations must be set. For the BTCS approach, the Thomas algorithm is used
-   * as the default linear equation solver as this is faster for tridiagonal
-   *        matrices. CSV output, console output and time measure are off by
-   * default. Also, the number of cores is set to the maximum number of cores -1
-   * by default.
+   * @brief Construct a new Diffusion object from a given Eigen matrix
    *
-   * @param grid Valid grid object
-   * @param bc Valid boundary condition object
-   * @param approach Approach to solving the problem. Either FTCS or BTCS.
    */
-  Simulation(Grid<T> &_grid, Boundary<T> &_bc) : grid(_grid), bc(_bc){};
-
-  /**
-   * @brief Set the option to output the results to a CSV file. Off by default.
-   *
-   *
-   * @param csv_output Valid output option. The following options can be set
-   *                   here:
-   *                     - CSV_OUTPUT_OFF: do not produce csv output
-   *                     - CSV_OUTPUT_ON: produce csv output with last
-   *                       concentration matrix
-   *                     - CSV_OUTPUT_VERBOSE: produce csv output with all
-   *                       concentration matrices
-   *                     - CSV_OUTPUT_XTREME: produce csv output with all
-   *                       concentration matrices and simulation environment
-   */
-  void setOutputCSV(CSV_OUTPUT csv_output) {
-    if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid CSV output option given!");
-    }
-
-    this->csv_output = csv_output;
+  Diffusion(RowMajMat<T> &origin) : BaseSimulationGrid<T>(origin) {
+    init_alpha();
   }
 
   /**
-   * @brief Set the options for outputting information to the console. Off by
-   * default.
+   * @brief Construct a new 2D Diffusion object from a given data pointer and
+   * the dimensions.
    *
-   * @param console_output Valid output option. The following options can be set
-   *                       here:
-   *                        - CONSOLE_OUTPUT_OFF: do not print any output to
-   * console
-   *                        - CONSOLE_OUTPUT_ON: print before and after
-   * concentrations to console
-   *                        - CONSOLE_OUTPUT_VERBOSE: print all concentration
-   * matrices to console
    */
-  void setOutputConsole(CONSOLE_OUTPUT console_output) {
-    if (console_output < CONSOLE_OUTPUT_OFF &&
-        console_output > CONSOLE_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid console output option given!");
-    }
-
-    this->console_output = console_output;
+  Diffusion(T *data, int rows, int cols)
+      : BaseSimulationGrid<T>(data, rows, cols) {
+    init_alpha();
   }
 
   /**
-   * @brief Set the Time Measure option. Off by default.
+   * @brief Construct a new 1D Diffusion object from a given data pointer and
+   * the length.
    *
-   * @param time_measure The following options are allowed:
-   *                     - TIME_MEASURE_OFF: Time of simulation is not printed
-   * to console
-   *                     - TIME_MEASURE_ON: Time of simulation run is printed to
-   * console
    */
-  void setTimeMeasure(TIME_MEASURE time_measure) {
-    if (time_measure < TIME_MEASURE_OFF && time_measure > TIME_MEASURE_ON) {
-      throw std::invalid_argument("Invalid time measure option given!");
-    }
+  Diffusion(T *data, std::size_t length) : BaseSimulationGrid<T>(data, length) {
+    init_alpha();
+  }
 
-    this->time_measure = time_measure;
+  /**
+   * @brief Get the alphaX matrix.
+   *
+   * @return RowMajMat<T>& Reference to the alphaX matrix.
+   */
+  RowMajMat<T> &getAlphaX() { return alphaX; }
+
+  /**
+   * @brief Get the alphaY matrix.
+   *
+   * @return RowMajMat<T>& Reference to the alphaY matrix.
+   */
+  RowMajMat<T> &getAlphaY() {
+    tug_assert(
+        this->getDim(),
+        "Grid is not two dimensional, there is no domain in y-direction!");
+
+    return alphaY;
+  }
+
+  /**
+   * @brief Set the alphaX matrix.
+   *
+   * @param alphaX The new alphaX matrix.
+   */
+  void setAlphaX(const RowMajMat<T> &alphaX) { this->alphaX = alphaX; }
+
+  /**
+   * @brief Set the alphaY matrix.
+   *
+   * @param alphaY The new alphaY matrix.
+   */
+  void setAlphaY(const RowMajMat<T> &alphaY) {
+    tug_assert(
+        this->getDim(),
+        "Grid is not two dimensional, there is no domain in y-direction!");
+
+    this->alphaY = alphaY;
   }
 
   /**
@@ -177,33 +157,31 @@ public:
    *
    * @param timestep Valid timestep greater than zero.
    */
-  void setTimestep(T timestep) {
-    if (timestep <= 0) {
-      throw_invalid_argument("Timestep has to be greater than zero.");
-    }
+  void setTimestep(T timestep) override {
+    tug_assert(timestep > 0, "Timestep has to be greater than zero.");
 
     if constexpr (approach == FTCS_APPROACH ||
                   approach == CRANK_NICOLSON_APPROACH) {
       T cfl;
-      if (grid.getDim() == 1) {
+      if (this->getDim() == 1) {
 
-        const T deltaSquare = grid.getDelta();
-        const T maxAlpha = grid.getAlpha().maxCoeff();
+        const T deltaSquare = this->deltaCol();
+        const T maxAlpha = this->alphaX.maxCoeff();
 
         // Courant-Friedrichs-Lewy condition
         cfl = deltaSquare / (4 * maxAlpha);
-      } else if (grid.getDim() == 2) {
-        const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
+      } else if (this->getDim() == 2) {
+        const T deltaColSquare = this->deltaCol() * this->deltaCol();
         // will be 0 if 1D, else ...
-        const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+        const T deltaRowSquare = this->deltaRow() * this->deltaRow();
         const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
         const T maxAlpha =
-            std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
+            std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
 
         cfl = minDeltaSquare / (4 * maxAlpha);
       }
-      const std::string dim = std::to_string(grid.getDim()) + "D";
+      const std::string dim = std::to_string(this->getDim()) + "D";
 
       const std::string &approachPrefix = this->approach_names[approach];
       std::cout << approachPrefix << "_" << dim << " :: CFL condition: " << cfl
@@ -245,20 +223,6 @@ public:
   T getTimestep() const { return this->timestep; }
 
   /**
-   * @brief Set the desired iterations to be calculated. A value greater
-   *        than zero must be specified here. Setting iterations is required.
-   *
-   * @param iterations Number of iterations to be simulated.
-   */
-  void setIterations(int iterations) {
-    if (iterations <= 0) {
-      throw std::invalid_argument(
-          "Number of iterations must be greater than zero.");
-    }
-    this->iterations = iterations;
-  }
-
-  /**
    * @brief Set the number of desired openMP Threads.
    *
    * @param num_threads Number of desired threads. Must have a value between
@@ -278,18 +242,11 @@ public:
   }
 
   /**
-   * @brief Return the currently set iterations to be calculated.
-   *
-   * @return int Number of iterations.
-   */
-  int getIterations() const { return this->iterations; }
-
-  /**
    * @brief Outputs the current concentrations of the grid on the console.
    *
    */
-  inline void printConcentrationsConsole() const {
-    std::cout << grid.getConcentrations() << std::endl;
+  void printConcentrationsConsole() const {
+    std::cout << this->getConcentrationMatrix() << std::endl;
     std::cout << std::endl;
   }
 
@@ -309,9 +266,9 @@ public:
 
     // string approachString = (approach == 0) ? "FTCS" : "BTCS";
     const std::string &approachString = this->approach_names[approach];
-    std::string row = std::to_string(grid.getRow());
-    std::string col = std::to_string(grid.getCol());
-    std::string numIterations = std::to_string(iterations);
+    std::string row = std::to_string(this->rows());
+    std::string col = std::to_string(this->cols());
+    std::string numIterations = std::to_string(this->getIterations());
 
     std::string filename =
         approachString + "_" + row + "_" + col + "_" + numIterations + ".csv";
@@ -330,7 +287,9 @@ public:
 
     // adds lines at the beginning of verbose output csv that represent the
     // boundary conditions and their values -1 in case of closed boundary
-    if (csv_output == CSV_OUTPUT_XTREME) {
+    if (this->getOutputCSV() == CSV_OUTPUT::XTREME) {
+      const auto &bc = this->getBoundaryConditions();
+
       Eigen::IOFormat one_row(Eigen::StreamPrecision, Eigen::DontAlignCols, "",
                               " ");
       file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row)
@@ -365,7 +324,7 @@ public:
     }
 
     Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
-    file << grid.getConcentrations().format(do_not_align) << std::endl;
+    file << this->getConcentrationMatrix().format(do_not_align) << std::endl;
     file << std::endl << std::endl;
     file.close();
   }
@@ -374,35 +333,42 @@ public:
    * @brief Method starts the simulation process with the previously set
    *        parameters.
    */
-  void run() {
-    if (this->timestep == -1) {
-      throw_invalid_argument("Timestep is not set!");
-    }
-    if (this->iterations == -1) {
-      throw_invalid_argument("Number of iterations are not set!");
-    }
+  void run() override {
+    tug_assert(this->getTimestep() > 0, "Timestep is not set!");
+    tug_assert(this->getIterations() > 0, "Number of iterations are not set!");
 
     std::string filename;
-    if (this->console_output > CONSOLE_OUTPUT_OFF) {
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
       printConcentrationsConsole();
     }
-    if (this->csv_output > CSV_OUTPUT_OFF) {
+    if (this->getOutputCSV() > CSV_OUTPUT::OFF) {
       filename = createCSVfile();
     }
 
     auto begin = std::chrono::high_resolution_clock::now();
 
-    if constexpr (approach == FTCS_APPROACH) { // FTCS case
+    SimulationInput<T> sim_input = {.concentrations =
+                                        this->getConcentrationMatrix(),
+                                    .alphaX = this->getAlphaX(),
+                                    .alphaY = this->getAlphaY(),
+                                    .boundaries = this->getBoundaryConditions(),
+                                    .dim = this->getDim(),
+                                    .timestep = this->getTimestep(),
+                                    .rowMax = this->rows(),
+                                    .colMax = this->cols(),
+                                    .deltaRow = this->deltaRow(),
+                                    .deltaCol = this->deltaCol()};
 
-      for (int i = 0; i < iterations * innerIterations; i++) {
-        if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+    if constexpr (approach == FTCS_APPROACH) { // FTCS case
+      for (int i = 0; i < this->getIterations() * innerIterations; i++) {
+        if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
           printConcentrationsConsole();
         }
-        if (csv_output >= CSV_OUTPUT_VERBOSE) {
+        if (this->getOutputCSV() >= CSV_OUTPUT::VERBOSE) {
           printConcentrationsCSV(filename);
         }
 
-        FTCS(this->grid, this->bc, this->timestep, this->numThreads);
+        FTCS(sim_input, this->numThreads);
 
         // if (i % (iterations * innerIterations / 100) == 0) {
         //     double percentage = (double)i / ((double)iterations *
@@ -415,29 +381,28 @@ public:
     } else if constexpr (approach == BTCS_APPROACH) { // BTCS case
 
       if constexpr (solver == EIGEN_LU_SOLVER) {
-        for (int i = 0; i < iterations; i++) {
-          if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+        for (int i = 0; i < this->getIterations(); i++) {
+          if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
             printConcentrationsConsole();
           }
-          if (csv_output >= CSV_OUTPUT_VERBOSE) {
+          if (this->getOutputCSV() >= CSV_OUTPUT::VERBOSE) {
             printConcentrationsCSV(filename);
           }
 
-          BTCS_LU(this->grid, this->bc, this->timestep, this->numThreads);
+          BTCS_LU(sim_input, this->numThreads);
         }
       } else if constexpr (solver == THOMAS_ALGORITHM_SOLVER) {
-        for (int i = 0; i < iterations; i++) {
-          if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+        for (int i = 0; i < this->getIterations(); i++) {
+          if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
             printConcentrationsConsole();
           }
-          if (csv_output >= CSV_OUTPUT_VERBOSE) {
+          if (this->getOutputCSV() >= CSV_OUTPUT::VERBOSE) {
             printConcentrationsCSV(filename);
           }
 
-          BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
+          BTCS_Thomas(sim_input, this->numThreads);
         }
       }
-
     } else if constexpr (approach ==
                          CRANK_NICOLSON_APPROACH) { // Crank-Nicolson case
 
@@ -449,22 +414,22 @@ public:
       RowMajMat<T> concentrations;
       RowMajMat<T> concentrationsFTCS;
       RowMajMat<T> concentrationsResult;
-      for (int i = 0; i < iterations * innerIterations; i++) {
-        if (console_output == CONSOLE_OUTPUT_VERBOSE && i > 0) {
+      for (int i = 0; i < this->getIterations() * innerIterations; i++) {
+        if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
           printConcentrationsConsole();
         }
-        if (csv_output >= CSV_OUTPUT_VERBOSE) {
+        if (this->getOutputCSV() >= CSV_OUTPUT::VERBOSE) {
           printConcentrationsCSV(filename);
         }
 
-        concentrations = grid.getConcentrations();
+        concentrations = this->getConcentrationMatrix();
         FTCS(this->grid, this->bc, this->timestep, this->numThreads);
-        concentrationsFTCS = grid.getConcentrations();
-        grid.setConcentrations(concentrations);
-        BTCS_Thomas(this->grid, this->bc, this->timestep, this->numThreads);
-        concentrationsResult =
-            beta * concentrationsFTCS + (1 - beta) * grid.getConcentrations();
-        grid.setConcentrations(concentrationsResult);
+        concentrationsFTCS = this->getConcentrationMatrix();
+        this->getConcentrationMatrix() = concentrations;
+        BTCS_Thomas(sim_input, this->numThreads);
+        concentrationsResult = beta * concentrationsFTCS +
+                               (1 - beta) * this->getConcentrationMatrix();
+        this->getConcentrationMatrix() = concentrationsResult;
       }
     }
 
@@ -472,33 +437,18 @@ public:
     auto milliseconds =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
-    if (this->console_output > CONSOLE_OUTPUT_OFF) {
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
       printConcentrationsConsole();
     }
-    if (this->csv_output > CSV_OUTPUT_OFF) {
+    if (this->getOutputCSV() > CSV_OUTPUT::OFF) {
       printConcentrationsCSV(filename);
     }
-    if (this->time_measure > TIME_MEASURE_OFF) {
+    if (this->getTimeMeasure() > TIME_MEASURE::OFF) {
       const std::string &approachString = this->approach_names[approach];
-      const std::string dimString = std::to_string(grid.getDim()) + "D";
+      const std::string dimString = std::to_string(this->getDim()) + "D";
       std::cout << approachString << dimString << ":: run() finished in "
                 << milliseconds.count() << "ms" << std::endl;
     }
   }
-
-private:
-  T timestep{-1};
-  int iterations{-1};
-  int innerIterations{1};
-  int numThreads{omp_get_num_procs()};
-  CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
-  CONSOLE_OUTPUT console_output{CONSOLE_OUTPUT_OFF};
-  TIME_MEASURE time_measure{TIME_MEASURE_OFF};
-
-  Grid<T> &grid;
-  Boundary<T> &bc;
-
-  const std::vector<std::string> approach_names = {"FTCS", "BTCS", "CRNI"};
 };
 } // namespace tug
-#endif // SIMULATION_H_

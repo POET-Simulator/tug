@@ -1,4 +1,0 @@
-Grid
-====
-
-.. doxygenclass:: tug::Grid

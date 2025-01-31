@@ -1,9 +1,6 @@
-#ifndef TUGUTILS_H_
-#define TUGUTILS_H_
+#pragma once
 
-#include <chrono>
-#include <stdexcept>
-#include <string>
+#include <cassert>
 
 #define throw_invalid_argument(msg)                                            \
   throw std::invalid_argument(std::string(__FILE__) + ":" +                    \
@@ -24,6 +21,8 @@
     duration.count();                                                          \
   })
 
+#define tug_assert(expr, msg) assert((expr) && msg)
+
 // calculates arithmetic or harmonic mean of alpha between two cells
 template <typename T>
 constexpr T calcAlphaIntercell(T alpha1, T alpha2, bool useHarmonic = true) {
@@ -38,4 +37,3 @@ constexpr T calcAlphaIntercell(T alpha1, T alpha2, bool useHarmonic = true) {
     return 0.5 * (alpha1 + alpha2);
   }
 }
-#endif // TUGUTILS_H_

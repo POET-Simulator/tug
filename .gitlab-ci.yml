@@ -12,7 +12,7 @@ test:
     stage: test
     script:
       - mkdir build && cd build
-      - cmake -DCMAKE_BUILD_TYPE=Release -DTUG_ENABLE_TESTING=ON -G Ninja ..
+      - cmake -DCMAKE_BUILD_TYPE=Debug -DTUG_ENABLE_TESTING=ON -G Ninja ..
       - ninja 
       - ctest --output-junit test_results.xml
     artifacts:
@@ -27,7 +27,7 @@ pages:
   image: python:slim
   before_script:
     - apt-get update && apt-get install --no-install-recommends -y graphviz imagemagick doxygen make
-    - pip install --upgrade pip && pip install Sphinx Pillow breathe sphinx-rtd-theme m2r2
+    - pip install --upgrade pip && pip install Sphinx Pillow breathe sphinx-rtd-theme sphinx-mdinclude
     - mkdir public
   script:
     - pushd docs_sphinx

@@ -7,11 +7,11 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <tug/Simulation.hpp>
 #include <type_traits>
 #include <vector>
 
-#include "files.hpp"
+#include <files.hpp>
+#include <tug/Diffusion.hpp>
 
 using namespace tug;
 
@@ -114,15 +114,14 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
 
   std::cout << name << " grid: " << ngrid << std::endl;
 
-  Grid<T> grid(ngrid, ngrid);
   // Grid64 grid(ngrid, ngrid);
 
   // (optional) set the domain, e.g.:
-  grid.setDomain(0.1, 0.1);
 
   Eigen::MatrixX<T> initConc64 = Eigen::MatrixX<T>::Constant(ngrid, ngrid, 0);
   initConc64(50, 50) = 1E-6;
-  grid.setConcentrations(initConc64);
+  Grid<T> grid(initConc64);
+  grid.setDomain(0.1, 0.1);
 
   const T sum_init64 = initConc64.sum();
 
@@ -142,8 +141,7 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
   bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
 
   // set up a simulation environment
-  Simulation Sim =
-      Simulation<T, app>(grid, bc); // grid_64,boundary,simulation-approach
+  Diffusion Sim(grid, bc); // grid_64,boundary,simulation-approach
 
   // Sim64.setSolver(THOMAS_ALGORITHM_SOLVER);
 
