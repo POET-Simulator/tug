@@ -25,11 +25,15 @@ VELOCITIES_TEST(SteadyStateCenter) {
   tug::RowMajMat<double> permKY =
       tug::RowMajMat<double>::Constant(rows, cols, K);
 
-  tug::Grid64 gridHeads(hydHeads);
-  gridHeads.setDomain(100, 100);
-  gridHeads.setAlpha(permKX, permKY);
+  tug::Velocities<double, tug::HYDRAULIC_MODE::STEADY_STATE,
+                  tug::HYDRAULIC_RESOLVE::EXPLICIT>
+      velo(hydHeads);
 
-  tug::Boundary bcH = tug::Boundary(gridHeads);
+  velo.setDomain(100, 100);
+  velo.setAlphaX(permKX);
+  velo.setAlphaY(permKY);
+
+  tug::Boundary<double> &bcH = velo.getBoundaryConditions();
   bcH.setBoundarySideConstant(tug::BC_SIDE_LEFT, 1);
   bcH.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 1);
   bcH.setBoundarySideConstant(tug::BC_SIDE_TOP, 1);
@@ -37,14 +41,10 @@ VELOCITIES_TEST(SteadyStateCenter) {
 
   bcH.setInnerBoundary(center_row, center_col, 10);
 
-  tug::Velocities<double, tug::HYDRAULIC_MODE::STEADY_STATE,
-                  tug::HYDRAULIC_RESOLVE::EXPLICIT>
-      velocities(gridHeads, bcH);
+  velo.run();
 
-  velocities.run();
-
-  const auto &velocitiesX = velocities.getVelocitiesX();
-  const auto &velocitiesY = velocities.getVelocitiesY();
+  const auto &velocitiesX = velo.getVelocitiesX();
+  const auto &velocitiesY = velo.getVelocitiesY();
 
   // Assert
 

@@ -4,4 +4,3 @@
 #include <tug/Boundary.hpp>
 #include <tug/Core/Matrix.hpp>
 #include <tug/Diffusion/Diffusion.hpp>
-#include <tug/Grid.hpp>
