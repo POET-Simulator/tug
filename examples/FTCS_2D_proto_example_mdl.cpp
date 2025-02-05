@@ -7,7 +7,7 @@
  */
 
 #include <Eigen/Eigen>
-#include <tug/Simulation.hpp>
+#include <tug/Diffusion.hpp>
 
 using namespace Eigen;
 using namespace tug;
@@ -22,7 +22,6 @@ int main(int argc, char *argv[]) {
   int row = 64;
   int col = 64;
   int n2 = row / 2 - 1;
-  Grid64 grid(row, col);
 
   // (optional) set the domain, e.g.:
   // grid.setDomain(20, 20);
@@ -35,7 +34,7 @@ int main(int argc, char *argv[]) {
   concentrations(n2, n2 + 1) = 1;
   concentrations(n2 + 1, n2) = 1;
   concentrations(n2 + 1, n2 + 1) = 1;
-  grid.setConcentrations(concentrations);
+  Grid64 grid(concentrations);
 
   // (optional) set alphas of the grid, e.g.:
   MatrixXd alphax = MatrixXd::Constant(row, col, 1E-4); // row,col,value
@@ -60,8 +59,8 @@ int main(int argc, char *argv[]) {
   // ************************
 
   // set up a simulation environment
-  Simulation simulation =
-      Simulation<double, tug::FTCS_APPROACH>(grid, bc); // grid,boundary,simulation-approach
+  Diffusion<double, tug::FTCS_APPROACH> simulation(
+      grid, bc); // grid,boundary,simulation-approach
 
   // (optional) set the timestep of the simulation
   simulation.setTimestep(1000); // timestep

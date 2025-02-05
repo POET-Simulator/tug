@@ -1,3 +1,5 @@
+#include "gtest/gtest.h"
+#include <stdexcept>
 #include <tug/Boundary.hpp>
 #include <utility>
 #include <vector>
@@ -15,7 +17,7 @@ BOUNDARY_TEST(Element) {
   EXPECT_NO_THROW(BoundaryElement<double>());
   EXPECT_EQ(boundaryElementClosed.getType(), BC_TYPE_CLOSED);
   EXPECT_DOUBLE_EQ(boundaryElementClosed.getValue(), -1);
-  EXPECT_ANY_THROW(boundaryElementClosed.setValue(0.2));
+  EXPECT_THROW(boundaryElementClosed.setValue(0.2), std::invalid_argument);
 
   BoundaryElement boundaryElementConstant = BoundaryElement(0.1);
   EXPECT_NO_THROW(BoundaryElement(0.1));
@@ -26,10 +28,8 @@ BOUNDARY_TEST(Element) {
 }
 
 BOUNDARY_TEST(Class) {
-  Grid grid1D = Grid64(10);
-  Grid grid2D = Grid64(10, 12);
-  Boundary boundary1D = Boundary(grid1D);
-  Boundary boundary2D = Boundary(grid2D);
+  Boundary<double> boundary1D(10);
+  Boundary<double> boundary2D(10, 12);
   vector<BoundaryElement<double>> boundary1DVector(1, BoundaryElement(1.0));
 
   constexpr double inner_condition_value = -5;
@@ -43,31 +43,34 @@ BOUNDARY_TEST(Class) {
   col_ibc[0] = innerBoundary;
 
   {
-    EXPECT_NO_THROW(Boundary boundary(grid1D));
     EXPECT_EQ(boundary1D.getBoundarySide(BC_SIDE_LEFT).size(), 1);
     EXPECT_EQ(boundary1D.getBoundarySide(BC_SIDE_RIGHT).size(), 1);
     EXPECT_EQ(boundary1D.getBoundaryElementType(BC_SIDE_LEFT, 0),
               BC_TYPE_CLOSED);
-    EXPECT_ANY_THROW(boundary1D.getBoundarySide(BC_SIDE_TOP));
-    EXPECT_ANY_THROW(boundary1D.getBoundarySide(BC_SIDE_BOTTOM));
+    EXPECT_DEATH(boundary1D.getBoundarySide(BC_SIDE_TOP),
+                 ".*BC_SIDE_LEFT .* BC_SIDE_RIGHT.*");
+    EXPECT_DEATH(boundary1D.getBoundarySide(BC_SIDE_BOTTOM),
+                 ".*BC_SIDE_LEFT .* BC_SIDE_RIGHT.*");
     EXPECT_NO_THROW(boundary1D.setBoundarySideClosed(BC_SIDE_LEFT));
-    EXPECT_ANY_THROW(boundary1D.setBoundarySideClosed(BC_SIDE_TOP));
+    EXPECT_DEATH(boundary1D.setBoundarySideClosed(BC_SIDE_TOP),
+                 ".*BC_SIDE_LEFT .* BC_SIDE_RIGHT.*");
     EXPECT_NO_THROW(boundary1D.setBoundarySideConstant(BC_SIDE_LEFT, 1.0));
     EXPECT_DOUBLE_EQ(boundary1D.getBoundaryElementValue(BC_SIDE_LEFT, 0), 1.0);
-    EXPECT_ANY_THROW(boundary1D.getBoundaryElementValue(BC_SIDE_LEFT, 2));
+    EXPECT_DEATH(boundary1D.getBoundaryElementValue(BC_SIDE_LEFT, 2),
+                 ".*Index is selected either too large or too small.*");
     EXPECT_EQ(boundary1D.getBoundaryElementType(BC_SIDE_LEFT, 0),
               BC_TYPE_CONSTANT);
     EXPECT_EQ(boundary1D.getBoundaryElement(BC_SIDE_LEFT, 0).getType(),
               boundary1DVector[0].getType());
 
     EXPECT_NO_THROW(boundary1D.setInnerBoundary(0, inner_condition_value));
-    EXPECT_ANY_THROW(boundary1D.setInnerBoundary(0, 0, inner_condition_value));
+    EXPECT_DEATH(boundary1D.setInnerBoundary(0, 0, inner_condition_value),
+                 ".*only available for 2D grids.*");
     EXPECT_EQ(boundary1D.getInnerBoundary(0), innerBoundary);
     EXPECT_FALSE(boundary1D.getInnerBoundary(1).first);
   }
 
   {
-    EXPECT_NO_THROW(Boundary boundary(grid1D));
     EXPECT_EQ(boundary2D.getBoundarySide(BC_SIDE_LEFT).size(), 10);
     EXPECT_EQ(boundary2D.getBoundarySide(BC_SIDE_RIGHT).size(), 10);
     EXPECT_EQ(boundary2D.getBoundarySide(BC_SIDE_TOP).size(), 12);
@@ -80,13 +83,15 @@ BOUNDARY_TEST(Class) {
     EXPECT_NO_THROW(boundary2D.setBoundarySideClosed(BC_SIDE_TOP));
     EXPECT_NO_THROW(boundary2D.setBoundarySideConstant(BC_SIDE_LEFT, 1.0));
     EXPECT_DOUBLE_EQ(boundary2D.getBoundaryElementValue(BC_SIDE_LEFT, 0), 1.0);
-    EXPECT_ANY_THROW(boundary2D.getBoundaryElementValue(BC_SIDE_LEFT, 12));
+    EXPECT_DEATH(boundary2D.getBoundaryElementValue(BC_SIDE_LEFT, 12),
+                 ".*too large or too small.*");
     EXPECT_EQ(boundary2D.getBoundaryElementType(BC_SIDE_LEFT, 0),
               BC_TYPE_CONSTANT);
     EXPECT_EQ(boundary2D.getBoundaryElement(BC_SIDE_LEFT, 0).getType(),
               boundary1DVector[0].getType());
 
-    EXPECT_ANY_THROW(boundary2D.setInnerBoundary(0, inner_condition_value));
+    EXPECT_DEATH(boundary2D.setInnerBoundary(0, inner_condition_value),
+                 ".* 1D .*");
     EXPECT_NO_THROW(boundary2D.setInnerBoundary(0, 1, inner_condition_value));
     EXPECT_EQ(boundary2D.getInnerBoundary(0, 1), innerBoundary);
     EXPECT_FALSE(boundary2D.getInnerBoundary(0, 2).first);
