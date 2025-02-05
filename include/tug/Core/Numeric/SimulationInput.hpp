@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <tug/Boundary.hpp>
 #include <tug/Core/Matrix.hpp>
 
