@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "tug/Core/Numeric/SimulationInput.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <iostream>
@@ -16,12 +17,12 @@
 #include <string>
 
 #include <tug/Boundary.hpp>
+#include <tug/Core/BaseSimulation.hpp>
 #include <tug/Core/Matrix.hpp>
 #include <tug/Core/Numeric/BTCS.hpp>
 #include <tug/Core/Numeric/FTCS.hpp>
 #include <tug/Core/TugUtils.hpp>
 #include <tug/Diffusion/Diffusion.hpp>
-#include <tug/Grid.hpp>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -32,38 +33,38 @@
 using namespace Eigen;
 namespace tug {
 
-enum HYDRAULIC_MODE { TRANSIENT, STEADY_STATE };
-enum HYDRAULIC_RESOLVE { EXPLICIT, IMPLICIT };
+enum class HYDRAULIC_MODE { TRANSIENT, STEADY_STATE };
+enum class HYDRAULIC_RESOLVE { EXPLICIT, IMPLICIT };
 
 template <class T, HYDRAULIC_MODE hyd_mode, HYDRAULIC_RESOLVE hyd_resolve>
-class Velocities : public BaseSimulation {
+class Velocities : public BaseSimulationGrid<T> {
 private:
   int innerIterations{1};
   T timestep{-1};
   T epsilon{1E-5};
   int numThreads{omp_get_num_procs()};
 
-  Grid<T> &grid;
-  Boundary<T> &bc;
-
   RowMajMat<T> velocitiesX;
   RowMajMat<T> velocitiesY;
 
+  RowMajMat<T> alphaX;
+  RowMajMat<T> alphaY;
+
 public:
-  /**
-   * @brief Construct a new Velocities object, used to calculate Hydraulic
-   * Charge and Darcy-Velocities. A timestep and a number of iterations can be
-   * set. By default iterations is set to -1. If the number of iterations is set
-   * to a value below 1 the simulation will run until the Hydraulic Charge
-   * converges. The Epsilon value to check convergence can be set, the default
-   * is 1E-5. CSV Output is off by default.
-   *
-   * @param grid Valid grid object
-   * @param bc Valid boundary condition object
-   */
-  Velocities(Grid<T> &_grid, Boundary<T> &_bc)
-      : grid(_grid), bc(_bc), velocitiesX(grid.getRow(), grid.getCol() + 1),
-        velocitiesY(grid.getRow() + 1, grid.getCol()) {};
+  Velocities(RowMajMat<T> &origin)
+      : BaseSimulationGrid<T>(origin),
+        velocitiesX(origin.rows(), origin.cols() + 1),
+        velocitiesY(origin.rows() + 1, origin.cols()),
+        alphaX(origin.rows(), origin.cols()),
+        alphaY(origin.rows(), origin.cols()) {};
+
+  Velocities(T *data, std::size_t rows, std::size_t cols)
+      : BaseSimulationGrid<T>(data, rows, cols), velocitiesX(rows, cols + 1),
+        velocitiesY(rows + 1, cols), alphaX(rows, cols), alphaY(rows, cols) {};
+
+  Velocities(T *data, std::size_t length)
+      : BaseSimulationGrid<T>(data, 1, length), velocitiesX(1, length + 1),
+        alphaX(1, length) {};
 
   /**
    * @brief Set the epsilon value, the relativ error allowed for convergence
@@ -78,21 +79,60 @@ public:
   }
 
   /**
+   * @brief Get the alphaX matrix.
+   *
+   * @return RowMajMat<T>& Reference to the alphaX matrix.
+   */
+  RowMajMat<T> &getAlphaX() { return alphaX; }
+
+  /**
+   * @brief Get the alphaY matrix.
+   *
+   * @return RowMajMat<T>& Reference to the alphaY matrix.
+   */
+  RowMajMat<T> &getAlphaY() {
+    tug_assert(
+        this->getDim(),
+        "Grid is not two dimensional, there is no domain in y-direction!");
+
+    return alphaY;
+  }
+
+  /**
+   * @brief Set the alphaX matrix.
+   *
+   * @param alphaX The new alphaX matrix.
+   */
+  void setAlphaX(const RowMajMat<T> &alphaX) { this->alphaX = alphaX; }
+
+  /**
+   * @brief Set the alphaY matrix.
+   *
+   * @param alphaY The new alphaY matrix.
+   */
+  void setAlphaY(const RowMajMat<T> &alphaY) {
+    tug_assert(
+        this->getDim(),
+        "Grid is not two dimensional, there is no domain in y-direction!");
+
+    this->alphaY = alphaY;
+  }
+
+  /**
    * @brief Set the timestep per iteration
    *
    * @param timestep timestep per iteration
    */
-  void setTimestep(T timestep) {
+  void setTimestep(T timestep) override {
     if (timestep <= 0) {
       throw std::invalid_argument("Timestep must be greater than zero");
     }
     this->timestep = timestep;
-    const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-    const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+    const T deltaColSquare = this->deltaCol() * this->deltaCol();
+    const T deltaRowSquare = this->deltaRow() * this->deltaRow();
     const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
-    const T maxK =
-        std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
+    const T maxK = std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
 
     T cfl = minDeltaSquare / (4 * maxK);
     if (timestep > cfl) {
@@ -146,32 +186,45 @@ public:
    * @brief Simulation of hydraulic charge either until convergence,
    * or for a number of selected timesteps. Calculation of Darcy-velocities.
    */
-  void run() {
+  void run() override {
     // if iterations < 1 calculate hydraulic charge until steady state is
     // reached
 
-    if constexpr (hyd_mode == STEADY_STATE) {
-      // Calculate largest possible timestep, depending on K and gridsize
-      const T deltaColSquare = grid.getDeltaCol() * grid.getDeltaCol();
-      const T deltaRowSquare = grid.getDeltaRow() * grid.getDeltaRow();
+    SimulationInput<T> input = {.concentrations =
+                                    this->getConcentrationMatrix(),
+                                .alphaX = this->getAlphaX(),
+                                .alphaY = this->getAlphaY(),
+                                .boundaries = this->getBoundaryConditions(),
+                                .dim = this->getDim(),
+                                .timestep = this->timestep,
+                                .rowMax = this->rows(),
+                                .colMax = this->cols(),
+                                .deltaRow = this->deltaRow(),
+                                .deltaCol = this->deltaCol()};
+
+    if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
+      const T deltaColSquare = this->deltaCol() * this->deltaCol();
+      const T deltaRowSquare = this->deltaRow() * this->deltaRow();
       const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
-      const T maxK =
-          std::max(grid.getAlphaX().maxCoeff(), grid.getAlphaY().maxCoeff());
+      const T maxK = std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
+      // Calculate largest possible timestep, depending on K and gridsize
 
       setTimestep(minDeltaSquare / (4 * maxK));
 
+      input.timestep = this->timestep;
+
       RowMajMat<T> oldConcentrations;
       do {
-        oldConcentrations = grid.getConcentrations();
-        (void)calculate_hydraulic_flow();
-      } while (!checkConvergance(oldConcentrations, grid.getConcentrations()));
+        oldConcentrations = this->getConcentrationMatrix();
+        (void)calculate_hydraulic_flow(input);
+      } while (!checkConvergance(oldConcentrations));
     } else {
       if (timestep == -1) {
         throw_invalid_argument("Timestep is not set");
       }
       for (int i = 0; i < innerIterations; i++) {
-        (void)calculate_hydraulic_flow();
+        (void)calculate_hydraulic_flow(input);
       }
     }
 
@@ -182,11 +235,11 @@ private:
   /**
    * @brief Calculate the new hydraulic charge using FTCS
    */
-  void calculate_hydraulic_flow() {
-    if constexpr (hyd_resolve == EXPLICIT) {
-      FTCS_2D(this->grid, this->bc, this->timestep, this->numThreads);
+  void calculate_hydraulic_flow(SimulationInput<T> &sim_in) {
+    if constexpr (hyd_resolve == HYDRAULIC_RESOLVE::EXPLICIT) {
+      FTCS_2D(sim_in, numThreads);
     } else {
-      BTCS_2D(this->grid, this->bc, this->timestep, ThomasAlgorithm);
+      BTCS_2D(sim_in, ThomasAlgorithm, numThreads);
     }
   };
 
@@ -197,10 +250,9 @@ private:
    * containing old and new Charge values, the relative error is below the
    * selected Epsilon
    */
-  bool checkConvergance(const RowMajMat<T> &oldHeads,
-                        const RowMajMat<T> &newHeads) {
-    const auto abs_err = (oldHeads - newHeads).cwiseAbs();
-    const auto rel_err = abs_err.cwiseQuotient(newHeads);
+  bool checkConvergance(const RowMajMat<T> &oldHeads) {
+    const auto abs_err = (oldHeads - this->getConcentrationMatrix()).cwiseAbs();
+    const auto rel_err = abs_err.cwiseQuotient(this->getConcentrationMatrix());
 
     return rel_err.maxCoeff() < epsilon;
   }
@@ -210,14 +262,16 @@ private:
    * directions
    */
   void computeFluidVelocities() {
-    const std::size_t rows = grid.getRow();
-    const std::size_t cols = grid.getCol();
-    const T dx = grid.getDeltaRow();
-    const T dy = grid.getDeltaCol();
-    const RowMajMat<T> &hydraulicCharges = grid.getConcentrations();
+    const std::size_t rows = this->rows();
+    const std::size_t cols = this->cols();
+    const T dx = this->deltaCol();
+    const T dy = this->deltaRow();
+    const RowMajMat<T> &hydraulicCharges = this->getConcentrationMatrix();
 
-    const RowMajMat<T> &permKX = grid.getAlphaX();
-    const RowMajMat<T> &permKY = grid.getAlphaY();
+    const RowMajMat<T> &permKX = this->alphaX;
+    const RowMajMat<T> &permKY = this->alphaY;
+
+    const Boundary<T> &bc = this->getBoundaryConditions();
 
     // calculate velocities in x-direction
     for (std::size_t i_rows = 0; i_rows < rows; i_rows++) {
@@ -229,7 +283,7 @@ private:
       }
       case BC_TYPE_CONSTANT: {
         velocitiesX(i_rows, 0) =
-            -permKX(i_rows, 0) *
+            -this->alphaX(i_rows, 0) *
             (hydraulicCharges(i_rows, 0) - bc_left.getValue()) / (dx / 2);
         break;
       }
