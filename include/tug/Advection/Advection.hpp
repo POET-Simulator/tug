@@ -8,18 +8,16 @@
 #pragma once
 
 #include "tug/Core/Matrix.hpp"
+#include <Eigen/src/Core/Array.h>
+#include <Eigen/src/Core/Matrix.h>
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
+#include <cstddef>
 #include <stdexcept>
 #include <stdlib.h>
 #include <string>
 #include <tug/Boundary.hpp>
-#include <tug/Grid.hpp>
 
 #include <Eigen/Eigen>
-#include <Eigen/Sparse>
 #include <tug/Core/Numeric/BTCS.hpp>
 #include <tug/Core/Numeric/FTCS.hpp>
 #include <tug/Core/TugUtils.hpp>
@@ -29,7 +27,15 @@
 
 using namespace Eigen;
 namespace tug {
-template <class T> class Advection {
+template <class T, HYDRAULIC_MODE hyd_mode, HYDRAULIC_RESOLVE hyd_resolve>
+class Advection : public BaseSimulationGrid<T> {
+private:
+  T timestep{-1};
+  int numThreads{omp_get_num_procs()};
+
+  Velocities<T, hyd_mode, hyd_resolve> &velocities;
+  RowMajMat<T> porosity;
+
 public:
   /**
    * @brief Construct a new Advection object, used to calculate material
@@ -46,39 +52,36 @@ public:
    * @param Steady Used to choose between Steady and Transient case. Either true
    * or false
    */
-  Advection(Velocities<T> &_velocities, Grid<T> &_grid, Boundary<T> &_bc,
-            bool Steady)
-      : velocities(_velocities), grid(_grid), bc(_bc),
-        outx(_velocities.getOutx()), outy(_velocities.getOuty()),
-        Steady(Steady) {};
+  Advection(RowMajMat<T> &origin,
+            Velocities<T, hyd_mode, hyd_resolve> &_velocities)
+      : BaseSimulationGrid<T>(origin), velocities(_velocities) {
+    tug_assert(origin.rows() == velocities.getConcentrationMatrix().rows() &&
+                   origin.cols() == velocities.getConcentrationMatrix().cols(),
+               "Advection grid and Velocities must have the same dimensions");
+  };
+
+  Advection(T *data, std::size_t rows, std::size_t cols,
+            Velocities<T, hyd_mode, hyd_resolve> &_velocities)
+      : BaseSimulationGrid<T>(data, rows, cols), velocities(_velocities) {
+    tug_assert(rows == velocities.getConcentrationMatrix().rows() &&
+                   cols == velocities.getConcentrationMatrix().cols(),
+               "Advection grid and Velocities must have the same dimensions");
+  };
 
   /**
    * @brief Sets the porosity of the medium
    *
    * @param porosity new porosity value
    */
-  void setPorosity(T porosity) {
-    if (porosity < 0 || porosity > 1) {
-      throw std::invalid_argument(
-          "Porosity must be a value between 0 and 1 (inclusive)");
-    }
+  void setPorosity(const RowMajMat<T> &porosity) {
+    tug_assert(porosity.rows() == this->rows() &&
+                   porosity.cols() == this->cols(),
+               "Porosity matrix must have the same dimensions as the grid");
+    tug_assert(porosity.minCoeff() >= 0 && porosity.maxCoeff() <= 1,
+               "Porosity must be a value between 0 and 1 (inclusive)");
+
     this->porosity = porosity;
   }
-
-  /**
-   * @brief Set the desired iterations to be calculated. A value greater
-   *        than zero must be specified here. Setting iterations is required.
-   *
-   * @param iterations Number of iterations to be simulated.
-   */
-  void setIterations(int iterations) {
-    if (iterations <= 0) {
-      throw std::invalid_argument(
-          "Number of iterations must be greater than zero. Provided value: " +
-          std::to_string(iterations));
-    }
-    this->iterations = iterations;
-  };
 
   /**
    * @brief Set the size of the timestep. Must be greater than zero
@@ -86,13 +89,8 @@ public:
    * @param timestep Size of the timestep
    */
   void setTimestep(T timestep) {
-    if (timestep <= 0) {
-      throw std::invalid_argument(
-          "Timestep must be greater than zero. Provided value: " +
-          std::to_string(timestep));
-    } else {
-      this->timestep = timestep;
-    }
+    tug_assert(timestep > 0, "Timestep must be greater than zero");
+    this->timestep = timestep;
   }
 
   /**
@@ -118,113 +116,54 @@ public:
     }
   }
 
-  /**
-   * @brief Set the option to output the results to a CSV file. Off by default.
-   *
-   *
-   * @param csv_output Valid output option. The following options can be set
-   *                   here:
-   *                     - CSV_OUTPUT_OFF: do not produce csv output
-   *                     - CSV_OUTPUT_ON: produce csv output with last
-   *                       concentration matrix
-    if (csv_output < CSV_OUTPUT_OFF || csv_output > CSV_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid CSV output option given: " +
-  std::to_string(csv_output));
-    }
-  void setOutputCSV(CSV_OUTPUT csv_output) {
-    if (csv_output < CSV_OUTPUT_OFF && csv_output > CSV_OUTPUT_VERBOSE) {
-      throw std::invalid_argument("Invalid CSV output option given!");
-    }
+  void run() {
+    this->setDomain(velocities.domainX(), velocities.domainY());
 
-    this->csv_output = csv_output;
+    velocities.run();
+
+    for (int i = 0; i < this->getIterations(); i++) {
+      if constexpr (hyd_mode == HYDRAULIC_MODE::TRANSIENT) {
+        velocities.run();
+      }
+      adv();
+    }
   }
 
-  /**
-   * @brief Creates a CSV file with a name containing the current simulation
-   *        parameters. If the data name already exists, an additional counter
-   * is appended to the name. The name of the file is built up as follows:
-   *        <Information contained in file> + <number rows> + <number columns> +
-   * <number of iterations>+<counter>.csv
-   *
-   * @return string Filename with configured simulation parameters.
-   */
-  std::string createCSVfile(std::string Type) const {
-    std::ofstream file;
-    int appendIdent = 0;
-    std::string appendIdentString;
-
-    std::string row = std::to_string(grid.getRow());
-    std::string col = std::to_string(grid.getCol());
-    std::string numIterations = std::to_string(iterations);
-
-    std::string filename =
-        Type + "_" + row + "_" + col + "_" + numIterations + ".csv";
-
-    while (std::filesystem::exists(filename)) {
-      appendIdent += 1;
-      appendIdentString = std::to_string(appendIdent);
-      filename = Type + "_" + row + "_" + col + "_" + numIterations + "-" +
-                 appendIdentString + ".csv";
-    }
-
-    file.open(filename);
-    if (!file) {
-      throw std::runtime_error("Failed to open file: " + filename);
-    }
-
-    file.close();
-
-    return filename;
-  }
-  /**
-   * @brief Writes the currently calculated Concentration values of the grid
-   *        into the CSV file with the passed filename.
-   *
-   * @param filename Name of the file to which the Concentration values are
-   *                 to be written.
-   */
-  void printConcentrationCSV(const std::string &filename) const {
-    std::ofstream file;
-
-    file.open(filename, std::ios_base::app);
-    if (!file) {
-      throw std::runtime_error("Failed to open file: " + filename);
-    }
-
-    Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
-    file << grid.getConcentrations().format(do_not_align) << std::endl;
-    file << std::endl << std::endl;
-    file.close();
-  }
-
+private:
   /**
    * @brief function calculating material transport for one timestep
    */
   void adv() {
-    int rows = grid.getRow();
-    int cols = grid.getCol();
-    T volume = grid.getDeltaRow() * grid.getDeltaCol();
+    const std::size_t rows = this->rows();
+    const std::size_t cols = this->cols();
+    const T volume = this->deltaCol() * this->deltaRow();
 
-    RowMajMat<T> &newConcentrations = grid.getConcentrations();
+    RowMajMatMap<T> &newConcentrations = this->getConcentrationMatrix();
+
+    const RowMajMat<T> &outx = this->velocities.getVelocitiesX();
+    const RowMajMat<T> &outy = this->velocities.getVelocitiesY();
+    const Boundary<T> &bc = this->getBoundaryConditions();
 
     // Calculate Courant-Levy-Frederich condition
-    T maxFx = std::max(abs(outx.maxCoeff()), abs(outx.minCoeff()));
-    T maxFy = std::max(abs(outy.maxCoeff()), abs(outy.minCoeff()));
-    T maxF = std::max(maxFx, maxFy);
+    const T maxFx = std::max(abs(outx.maxCoeff()), abs(outx.minCoeff()));
+    const T maxFy = std::max(abs(outy.maxCoeff()), abs(outy.minCoeff()));
+    const T maxF = std::max(maxFx, maxFy);
 
-    if (maxF == 0) {
-      throw std::runtime_error("Division by zero: maxF is zero.");
-    }
+    tug_assert(maxF != 0, "Division by zero: maxF is zero.");
 
-    T cvf = abs((volume * porosity) / maxF);
-    int innerSteps = (int)ceil(timestep / cvf);
-    T innerTimestep = timestep / innerSteps;
+    const RowMajMat<T> volumeTimesPorosity = volume * porosity;
+
+    const T cvf = (volumeTimesPorosity / maxF).maxCoeff();
+    const int innerSteps = (int)ceil(timestep / cvf);
+    const T innerTimestep = timestep / innerSteps;
+
+    const RowMajMat<T> multiplier = volumeTimesPorosity * (1 / innerTimestep);
 
     for (int k = 0; k < innerSteps; k++) {
-      const Eigen::MatrixX<T> oldConcentrations = newConcentrations;
+      const RowMajMat<T> oldConcentrations = newConcentrations;
 // Calculate sum of incoming/outgoing Flow*Concentration in x-direction in each
 // cell
-#pragma omp parallel for num_threads(numThreads) schedule(static)
+#pragma omp parallel for num_threads(numThreads)
       for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols + 1; j++) {
           if (j == 0) {
@@ -318,51 +257,15 @@ public:
           }
         }
       }
-      newConcentrations =
-          oldConcentrations +
-          newConcentrations * (innerTimestep / (porosity * volume));
+
+      for (std::size_t row_i = 0; row_i < rows; row_i++) {
+        for (std::size_t col_i = 0; col_i < cols; col_i++) {
+          newConcentrations(row_i, col_i) =
+              oldConcentrations(row_i, col_i) +
+              newConcentrations(row_i, col_i) * multiplier(row_i, col_i);
+        }
+      }
     }
   }
-
-  void run() {
-    std::string filename;
-    if (csv_output >= CSV_OUTPUT_ON) {
-      filename = createCSVfile("Concentrations");
-    }
-
-    if (Steady == false) {
-      velocities.setTimestep(timestep);
-      velocities.setIterations(1);
-    }
-
-    for (int i = 0; i < iterations; i++) {
-      if (csv_output >= CSV_OUTPUT_VERBOSE) {
-        printConcentrationCSV(filename);
-      }
-      // if steady==false update charge and velocities with equal timestep
-      if (Steady == false) {
-        velocities.run();
-      }
-      adv();
-    }
-
-    if (csv_output >= CSV_OUTPUT_ON) {
-      printConcentrationCSV(filename);
-    }
-  }
-
-private:
-  Grid<T> &grid;
-  Boundary<T> &bc;
-  Velocities<T> &velocities;
-  bool Steady{true};
-  int iterations{-1};
-  int innerIterations{1};
-  T timestep{-1};
-  int numThreads{omp_get_num_procs()};
-  T porosity{1};
-  const Eigen::MatrixX<T> &outx;
-  const Eigen::MatrixX<T> &outy;
-  CSV_OUTPUT csv_output{CSV_OUTPUT_OFF};
 };
 } // namespace tug
