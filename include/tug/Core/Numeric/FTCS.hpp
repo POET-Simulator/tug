@@ -82,14 +82,13 @@ template <class T> static void FTCS_1D(SimulationInput<T> &input) {
   const T &timestep = input.timestep;
 
   RowMajMatMap<T> &concentrations_grid = input.concentrations;
-  // matrix for concentrations at time t+1
-  RowMajMat<T> concentrations_t1 = concentrations_grid;
 
   const auto &alphaX = input.alphaX;
   const auto &bc = input.boundaries;
-
   checkAndSetConstantInnerCells(bc, concentrations_grid, input.rowMax,
                                 input.colMax);
+  // matrix for concentrations at time t+1
+  RowMajMat<T> concentrations_t1 = concentrations_grid;
 
   // only one row in 1D case -> row constant at index 0
   int row = 0;
@@ -99,6 +98,9 @@ template <class T> static void FTCS_1D(SimulationInput<T> &input) {
   // inner cells
   // independent of boundary condition type
   for (int col = 1; col < colMax - 1; col++) {
+    if (inner_bc[col].first) {
+      continue;
+    }
     const T &conc_c = concentrations_grid(row, col);
     const T &conc_left = concentrations_grid(row, col - 1);
     const T &conc_right = concentrations_grid(row, col + 1);
@@ -115,8 +117,8 @@ template <class T> static void FTCS_1D(SimulationInput<T> &input) {
   }
 
   // left boundary; hold column constant at index 0
-  {
-    int col = 0;
+  int col = 0;
+  if (!inner_bc[col].first) {
     const T &conc_c = concentrations_grid(row, col);
     const T &conc_right = concentrations_grid(row, col + 1);
     const T &alpha_c = alphaX(row, col);
@@ -132,8 +134,8 @@ template <class T> static void FTCS_1D(SimulationInput<T> &input) {
   }
 
   // right boundary; hold column constant at max index
-  {
-    int col = colMax - 1;
+  col = colMax - 1;
+  if (!inner_bc[col].first) {
     const T &conc_c = concentrations_grid(row, col);
     const T &conc_left = concentrations_grid(row, col - 1);
     const T &alpha_c = alphaX(row, col);
@@ -161,27 +163,28 @@ static void FTCS_2D(SimulationInput<T> &input, int numThreads) {
   const T &timestep = input.timestep;
 
   RowMajMatMap<T> &concentrations_grid = input.concentrations;
-
-  // matrix for concentrations at time t+1
-  RowMajMat<T> concentrations_t1 = concentrations_grid;
-
   const auto &alphaX = input.alphaX;
   const auto &alphaY = input.alphaY;
   const auto &bc = input.boundaries;
 
+  const T sx = timestep / (deltaCol * deltaCol);
+  const T sy = timestep / (deltaRow * deltaRow);
+
   checkAndSetConstantInnerCells(bc, concentrations_grid, input.rowMax,
                                 input.colMax);
 
-  const T sx = timestep / (deltaCol * deltaCol);
-  const T sy = timestep / (deltaRow * deltaRow);
+  // matrix for concentrations at time t+1
+  RowMajMat<T> concentrations_t1 = concentrations_grid;
 
 #pragma omp parallel for num_threads(numThreads)
   for (std::size_t row_i = 0; row_i < rowMax; row_i++) {
     for (std::size_t col_i = 0; col_i < colMax; col_i++) {
+      if (bc.getInnerBoundary(row_i, col_i).first) {
+        continue;
+      }
       // horizontal change
       T horizontal_change;
       {
-
         const T &conc_c = concentrations_grid(row_i, col_i);
         const T &alpha_c = alphaX(row_i, col_i);
 
