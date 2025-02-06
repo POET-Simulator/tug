@@ -43,6 +43,7 @@ private:
   T timestep{-1};
   T epsilon{1E-5};
   int numThreads{omp_get_num_procs()};
+  bool steady{false};
 
   RowMajMat<T> velocitiesX;
   RowMajMat<T> velocitiesY;
@@ -117,6 +118,8 @@ public:
 
     this->permKY = alphaY;
   }
+
+  bool isSteady() const { return steady; }
 
   /**
    * @brief Set the timestep per iteration
@@ -219,6 +222,9 @@ public:
         oldConcentrations = this->getConcentrationMatrix();
         (void)calculate_hydraulic_flow(input);
       } while (!checkConvergance(oldConcentrations));
+
+      steady = true;
+
     } else {
       if (timestep == -1) {
         throw_invalid_argument("Timestep is not set");

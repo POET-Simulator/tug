@@ -20,9 +20,7 @@ VELOCITIES_TEST(SteadyStateCenter) {
   tug::RowMajMat<double> hydHeads =
       tug::RowMajMat<double>::Constant(rows, cols, 1);
 
-  tug::RowMajMat<double> permKX =
-      tug::RowMajMat<double>::Constant(rows, cols, K);
-  tug::RowMajMat<double> permKY =
+  tug::RowMajMat<double> permK =
       tug::RowMajMat<double>::Constant(rows, cols, K);
 
   tug::Velocities<double, tug::HYDRAULIC_MODE::STEADY_STATE,
@@ -30,14 +28,10 @@ VELOCITIES_TEST(SteadyStateCenter) {
       velo(hydHeads);
 
   velo.setDomain(100, 100);
-  velo.setPermKX(permKX);
-  velo.setPermKY(permKY);
+  velo.setPermKX(permK);
+  velo.setPermKY(permK);
 
   tug::Boundary<double> &bcH = velo.getBoundaryConditions();
-  bcH.setBoundarySideConstant(tug::BC_SIDE_LEFT, 1);
-  bcH.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 1);
-  bcH.setBoundarySideConstant(tug::BC_SIDE_TOP, 1);
-  bcH.setBoundarySideConstant(tug::BC_SIDE_BOTTOM, 1);
 
   bcH.setInnerBoundary(center_row, center_col, 10);
 
