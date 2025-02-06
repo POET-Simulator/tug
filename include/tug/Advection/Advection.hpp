@@ -119,13 +119,17 @@ public:
   void run() {
     this->setDomain(velocities.domainX(), velocities.domainY());
 
-    velocities.run();
+    if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
+      if (!velocities.isSteady()) {
+        velocities.run();
+      }
+    }
 
     for (int i = 0; i < this->getIterations(); i++) {
       if constexpr (hyd_mode == HYDRAULIC_MODE::TRANSIENT) {
         velocities.run();
       }
-      adv();
+      startAdvection();
     }
   }
 
@@ -133,7 +137,7 @@ private:
   /**
    * @brief function calculating material transport for one timestep
    */
-  void adv() {
+  void startAdvection() {
     const std::size_t rows = this->rows();
     const std::size_t cols = this->cols();
     const T volume = this->deltaCol() * this->deltaRow();
