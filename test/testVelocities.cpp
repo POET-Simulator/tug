@@ -30,8 +30,8 @@ VELOCITIES_TEST(SteadyStateCenter) {
       velo(hydHeads);
 
   velo.setDomain(100, 100);
-  velo.setAlphaX(permKX);
-  velo.setAlphaY(permKY);
+  velo.setPermKX(permKX);
+  velo.setPermKY(permKY);
 
   tug::Boundary<double> &bcH = velo.getBoundaryConditions();
   bcH.setBoundarySideConstant(tug::BC_SIDE_LEFT, 1);

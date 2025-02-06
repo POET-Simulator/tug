@@ -47,24 +47,24 @@ private:
   RowMajMat<T> velocitiesX;
   RowMajMat<T> velocitiesY;
 
-  RowMajMat<T> alphaX;
-  RowMajMat<T> alphaY;
+  RowMajMat<T> permKX;
+  RowMajMat<T> permKY;
 
 public:
   Velocities(RowMajMat<T> &origin)
       : BaseSimulationGrid<T>(origin),
         velocitiesX(origin.rows(), origin.cols() + 1),
         velocitiesY(origin.rows() + 1, origin.cols()),
-        alphaX(origin.rows(), origin.cols()),
-        alphaY(origin.rows(), origin.cols()) {};
+        permKX(origin.rows(), origin.cols()),
+        permKY(origin.rows(), origin.cols()) {};
 
   Velocities(T *data, std::size_t rows, std::size_t cols)
       : BaseSimulationGrid<T>(data, rows, cols), velocitiesX(rows, cols + 1),
-        velocitiesY(rows + 1, cols), alphaX(rows, cols), alphaY(rows, cols) {};
+        velocitiesY(rows + 1, cols), permKX(rows, cols), permKY(rows, cols) {};
 
-  Velocities(T *data, std::size_t length)
-      : BaseSimulationGrid<T>(data, 1, length), velocitiesX(1, length + 1),
-        alphaX(1, length) {};
+  // Velocities(T *data, std::size_t length)
+  //     : BaseSimulationGrid<T>(data, 1, length), velocitiesX(1, length + 1),
+  //       alphaX(1, length) {};
 
   /**
    * @brief Set the epsilon value, the relativ error allowed for convergence
@@ -83,19 +83,19 @@ public:
    *
    * @return RowMajMat<T>& Reference to the alphaX matrix.
    */
-  RowMajMat<T> &getAlphaX() { return alphaX; }
+  RowMajMat<T> &getPermKX() { return permKX; }
 
   /**
    * @brief Get the alphaY matrix.
    *
    * @return RowMajMat<T>& Reference to the alphaY matrix.
    */
-  RowMajMat<T> &getAlphaY() {
+  RowMajMat<T> &getPermKY() {
     tug_assert(
         this->getDim(),
         "Grid is not two dimensional, there is no domain in y-direction!");
 
-    return alphaY;
+    return permKY;
   }
 
   /**
@@ -103,19 +103,19 @@ public:
    *
    * @param alphaX The new alphaX matrix.
    */
-  void setAlphaX(const RowMajMat<T> &alphaX) { this->alphaX = alphaX; }
+  void setPermKX(const RowMajMat<T> &alphaX) { this->permKX = alphaX; }
 
   /**
    * @brief Set the alphaY matrix.
    *
    * @param alphaY The new alphaY matrix.
    */
-  void setAlphaY(const RowMajMat<T> &alphaY) {
+  void setPermKY(const RowMajMat<T> &alphaY) {
     tug_assert(
         this->getDim(),
         "Grid is not two dimensional, there is no domain in y-direction!");
 
-    this->alphaY = alphaY;
+    this->permKY = alphaY;
   }
 
   /**
@@ -132,7 +132,7 @@ public:
     const T deltaRowSquare = this->deltaRow() * this->deltaRow();
     const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
-    const T maxK = std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
+    const T maxK = std::max(this->permKX.maxCoeff(), this->permKY.maxCoeff());
 
     T cfl = minDeltaSquare / (4 * maxK);
     if (timestep > cfl) {
@@ -192,8 +192,8 @@ public:
 
     SimulationInput<T> input = {.concentrations =
                                     this->getConcentrationMatrix(),
-                                .alphaX = this->getAlphaX(),
-                                .alphaY = this->getAlphaY(),
+                                .alphaX = this->getPermKX(),
+                                .alphaY = this->getPermKY(),
                                 .boundaries = this->getBoundaryConditions(),
                                 .dim = this->getDim(),
                                 .timestep = this->timestep,
@@ -207,7 +207,7 @@ public:
       const T deltaRowSquare = this->deltaRow() * this->deltaRow();
       const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
 
-      const T maxK = std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
+      const T maxK = std::max(this->permKX.maxCoeff(), this->permKY.maxCoeff());
       // Calculate largest possible timestep, depending on K and gridsize
 
       setTimestep(minDeltaSquare / (4 * maxK));
@@ -268,8 +268,8 @@ private:
     const T dy = this->deltaRow();
     const RowMajMat<T> &hydraulicCharges = this->getConcentrationMatrix();
 
-    const RowMajMat<T> &permKX = this->alphaX;
-    const RowMajMat<T> &permKY = this->alphaY;
+    const RowMajMat<T> &permKX = this->permKX;
+    const RowMajMat<T> &permKY = this->permKY;
 
     const Boundary<T> &bc = this->getBoundaryConditions();
 
@@ -283,7 +283,7 @@ private:
       }
       case BC_TYPE_CONSTANT: {
         velocitiesX(i_rows, 0) =
-            -this->alphaX(i_rows, 0) *
+            -this->permKX(i_rows, 0) *
             (hydraulicCharges(i_rows, 0) - bc_left.getValue()) / (dx / 2);
         break;
       }
