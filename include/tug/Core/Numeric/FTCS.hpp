@@ -57,23 +57,6 @@ constexpr T calcChangeBoundary(T conc_c, T conc_neighbor, T alpha_center,
   return 0;
 }
 
-template <typename T>
-static inline void
-checkAndSetConstantInnerCells(const Boundary<T> &bc,
-                              RowMajMatMap<T> &concentrations, std::size_t rows,
-                              std::size_t cols) {
-  const auto &inner_boundaries = bc.getInnerBoundaries();
-  if (inner_boundaries.empty()) {
-    return;
-  }
-
-  for (const auto &[rowcol, value] : inner_boundaries) {
-    const auto &row = rowcol.first;
-    const auto &col = rowcol.second;
-    concentrations(row, col) = value;
-  }
-}
-
 // FTCS solution for 1D grid
 template <class T> static void FTCS_1D(SimulationInput<T> &input) {
   const std::size_t &colMax = input.colMax;
@@ -84,8 +67,6 @@ template <class T> static void FTCS_1D(SimulationInput<T> &input) {
 
   const auto &alphaX = input.alphaX;
   const auto &bc = input.boundaries;
-  checkAndSetConstantInnerCells(bc, concentrations_grid, input.rowMax,
-                                input.colMax);
   // matrix for concentrations at time t+1
   RowMajMat<T> concentrations_t1 = concentrations_grid;
 
@@ -168,9 +149,6 @@ static void FTCS_2D(SimulationInput<T> &input, int numThreads) {
 
   const T sx = timestep / (deltaCol * deltaCol);
   const T sy = timestep / (deltaRow * deltaRow);
-
-  checkAndSetConstantInnerCells(bc, concentrations_grid, input.rowMax,
-                                input.colMax);
 
   // matrix for concentrations at time t+1
   RowMajMat<T> concentrations_t1 = concentrations_grid;
