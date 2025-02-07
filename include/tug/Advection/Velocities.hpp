@@ -219,6 +219,9 @@ public:
       const T maxK = std::max(this->permKX.maxCoeff(), this->permKY.maxCoeff());
       // Calculate largest possible timestep, depending on K and gridsize
 
+      std::cout << "CFL (hydHead) timestep: " << minDeltaSquare / (4 * maxK)
+                << std::endl;
+
       setTimestep(minDeltaSquare / (4 * maxK));
 
       input.timestep = this->timestep;
