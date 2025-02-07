@@ -119,6 +119,8 @@ public:
   void run() {
     this->setDomain(velocities.domainX(), velocities.domainY());
 
+    this->applyInnerBoundaries();
+
     if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
       velocities.run();
     }

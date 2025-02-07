@@ -193,6 +193,8 @@ public:
     // if iterations < 1 calculate hydraulic charge until steady state is
     // reached
 
+    this->applyInnerBoundaries();
+
     SimulationInput<T> input = {.concentrations =
                                     this->getConcentrationMatrix(),
                                 .alphaX = this->getPermKX(),
