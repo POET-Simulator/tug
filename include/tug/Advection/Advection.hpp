@@ -155,20 +155,21 @@ private:
     // Calculate Courant-Levy-Frederich condition
     const T maxFx = std::max(abs(veloX.maxCoeff()), abs(veloX.minCoeff()));
     const T maxFy = std::max(abs(veloY.maxCoeff()), abs(veloY.minCoeff()));
-    const T maxF = std::max(maxFx, maxFy);
+    const T maxFlux = std::max(maxFx, maxFy);
 
-    tug_assert(maxF != 0, "Division by zero: maxF is zero.");
+    tug_assert(maxFlux != 0, "Division by zero: maxF is zero.");
 
     // TODO: sustitute 1 by porisity
     const RowMajMat<T> porevolume =
         RowMajMat<T>::Constant(rows, cols, volume) * 1;
 
-    const T cfl = (porevolume / maxF).maxCoeff() / 2;
+    const T cfl = (porevolume / maxFlux).minCoeff();
     const int innerSteps = (int)ceil(timestep / cfl);
     const T innerTimestep = timestep / innerSteps;
 
     std::cout << "CFL (adv) timestep: " << cfl << std::endl;
     std::cout << "Inner iterations (adv): " << innerSteps << std::endl;
+    std::cout << "Inner timestep (adv): " << innerTimestep << std::endl;
 
     // const RowMajMat<T> multiplier = porevolume * (1 / innerTimestep);
 
@@ -191,7 +192,7 @@ private:
                 cellIndex < 0 ? BC_SIDE_LEFT : BC_SIDE_RIGHT, row_i);
             // if we have a constant boundary, we use the value of the boundary
             if (bcElement.getType() == BC_TYPE_CONSTANT) {
-              currentFlux *= bcElement.getValue() * (2 * innerTimestep) / dx;
+              currentFlux *= bcElement.getValue() * (innerTimestep) / dx;
               continue;
             }
 
