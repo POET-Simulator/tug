@@ -12,9 +12,10 @@ FetchContent_MakeAvailable(googletest)
 add_executable(testTug 
 setup.cpp
 testDiffusion.cpp 
+testVelocities.cpp
+testAdvection.cpp
 testFTCS.cpp 
 testBoundary.cpp
-testVelocities.cpp
 )
 target_link_libraries(testTug tug GTest::gtest)
   
