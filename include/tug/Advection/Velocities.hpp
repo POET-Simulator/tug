@@ -206,6 +206,10 @@ public:
                                 .deltaCol = this->deltaCol()};
 
     if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
+      if (steady) {
+        return;
+      }
+
       const T deltaColSquare = this->deltaCol() * this->deltaCol();
       const T deltaRowSquare = this->deltaRow() * this->deltaRow();
       const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
