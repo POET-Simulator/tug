@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
              tug::HYDRAULIC_RESOLVE::EXPLICIT>
       velocities(hydHeads);
 
-  velocities.setDomain(1, 1);
+  velocities.setDomain(5, 5);
   velocities.setPermKX(RowMajMat<double>::Constant(row, col, 3E-7));
   velocities.setPermKY(RowMajMat<double>::Constant(row, col, 3E-7));
   velocities.setEpsilon(1E-8);
@@ -25,9 +25,9 @@ int main(int argc, char *argv[]) {
   Advection advection = Advection(concentrations, velocities);
 
   advection.setPorosity(RowMajMat<double>::Constant(row, col, 0.2));
-  advection.setIterations(6);
+  advection.setIterations(3);
   // 1 hour
-  advection.setTimestep(6666);
+  advection.setTimestep(1.6666e+06);
 
   // create boundaries
   Boundary<double> &bcH = velocities.getBoundaryConditions();
