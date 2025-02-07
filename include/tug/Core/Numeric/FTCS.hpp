@@ -54,6 +54,7 @@ constexpr T calcChangeBoundary(T conc_c, T conc_neighbor, T alpha_center,
   }
 
   tug_assert(false, "Undefined Boundary Condition Type!");
+  return 0;
 }
 
 template <typename T>
@@ -71,8 +72,6 @@ checkAndSetConstantInnerCells(const Boundary<T> &bc,
     const auto &col = rowcol.second;
     concentrations(row, col) = value;
   }
-
-  return;
 }
 
 // FTCS solution for 1D grid
