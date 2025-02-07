@@ -120,9 +120,7 @@ public:
     this->setDomain(velocities.domainX(), velocities.domainY());
 
     if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
-      if (!velocities.isSteady()) {
-        velocities.run();
-      }
+      velocities.run();
     }
 
     for (int i = 0; i < this->getIterations(); i++) {
