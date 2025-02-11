@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <stdexcept>
 #include <stdlib.h>
 #include <string>
@@ -173,9 +172,8 @@ private:
 
     // const RowMajMat<T> multiplier = porevolume * (1 / innerTimestep);
 
-    // convienient renaming to same memory
-    auto &fluxX = veloX;
-    auto &fluxY = veloY;
+    RowMajMat<T> fluxX(rows, cols + 1);
+    RowMajMat<T> fluxY(rows + 1, cols);
 
     for (std::size_t k = 0; k < innerSteps; k++) {
       const RowMajMat<T> oldConcentrations = newConcentrations;
@@ -185,14 +183,16 @@ private:
         for (std::size_t col_i = 0; col_i < fluxX.cols(); col_i++) {
           T &currentFlux = fluxX(row_i, col_i);
           const std::int32_t cellIndex =
-              (fluxX(row_i, col_i) > 0) ? col_i - 1 : col_i;
+              (veloX(row_i, col_i) > 0) ? col_i - 1 : col_i;
+          const T &currentVelo = veloX(row_i, col_i);
 
           if (cellIndex < 0 || cellIndex >= cols) {
             const auto bcElement = bc.getBoundaryElement(
                 cellIndex < 0 ? BC_SIDE_LEFT : BC_SIDE_RIGHT, row_i);
             // if we have a constant boundary, we use the value of the boundary
             if (bcElement.getType() == BC_TYPE_CONSTANT) {
-              currentFlux *= bcElement.getValue() * (innerTimestep) / dx;
+              currentFlux =
+                  currentVelo * bcElement.getValue() * (innerTimestep) / dx;
               continue;
             }
 
@@ -202,37 +202,40 @@ private:
           }
           // otherwise we use the concentration of the inflow/outflow cell,
           // multiplied by the velocity
-          currentFlux *=
-              oldConcentrations(row_i, cellIndex) * innerTimestep / dx;
+          currentFlux = currentVelo * oldConcentrations(row_i, cellIndex) *
+                        innerTimestep / dx;
         }
       }
 
       // Update flux with concentrations in y-direction
-      // for (std::size_t row_i = 0; row_i < fluxY.rows(); row_i++) {
-      //   for (std::size_t col_i = 0; col_i < fluxY.cols(); col_i++) {
-      //     T &currentFlux = fluxY(row_i, col_i);
-      //     const std::int32_t cellIndex =
-      //         (fluxY(row_i, col_i) > 0) ? row_i - 1 : row_i;
-      //
-      //     if (cellIndex < 0 || cellIndex >= rows) {
-      //       const auto bcElement = bc.getBoundaryElement(
-      //           cellIndex < 0 ? BC_SIDE_TOP : BC_SIDE_BOTTOM, col_i);
-      //       // if we have a constant boundary, we use the value of the
-      //       boundary if (bcElement.getType() == BC_TYPE_CONSTANT) {
-      //         currentFlux *= bcElement.getValue() * (2 * innerTimestep) / dy;
-      //         continue;
-      //       }
-      //
-      //       // otherwise it is a closed boundary
-      //       currentFlux = 0;
-      //       continue;
-      //     }
-      //     // otherwise we use the concentration of the inflow/outflow cell,
-      //     // multiplied by the velocity
-      //     currentFlux *=
-      //         oldConcentrations(cellIndex, col_i) * innerTimestep / dy;
-      //   }
-      // }
+      for (std::size_t row_i = 0; row_i < fluxY.rows(); row_i++) {
+        for (std::size_t col_i = 0; col_i < fluxY.cols(); col_i++) {
+          T &currentFlux = fluxY(row_i, col_i);
+          const std::int32_t cellIndex =
+              (veloY(row_i, col_i) > 0) ? row_i - 1 : row_i;
+          const T &currentVelo = veloY(row_i, col_i);
+
+          if (cellIndex < 0 || cellIndex >= rows) {
+            const auto bcElement = bc.getBoundaryElement(
+                cellIndex < 0 ? BC_SIDE_TOP : BC_SIDE_BOTTOM, col_i);
+            // if we have a constant boundary, we use the value of the
+            // boundary
+            if (bcElement.getType() == BC_TYPE_CONSTANT) {
+              currentFlux =
+                  currentVelo * bcElement.getValue() * (2 * innerTimestep) / dy;
+              continue;
+            }
+
+            // otherwise it is a closed boundary
+            currentFlux = 0;
+            continue;
+          }
+          // otherwise we use the concentration of the inflow/outflow cell,
+          // multiplied by the velocity
+          currentFlux = currentVelo * oldConcentrations(cellIndex, col_i) *
+                        innerTimestep / dy;
+        }
+      }
 
       // Update concentrations
       for (std::size_t row_i = 0; row_i < rows; row_i++) {
