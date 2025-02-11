@@ -182,9 +182,8 @@ private:
       for (std::size_t row_i = 0; row_i < fluxX.rows(); row_i++) {
         for (std::size_t col_i = 0; col_i < fluxX.cols(); col_i++) {
           T &currentFlux = fluxX(row_i, col_i);
-          const std::int32_t cellIndex =
-              (veloX(row_i, col_i) > 0) ? col_i - 1 : col_i;
           const T &currentVelo = veloX(row_i, col_i);
+          const std::int32_t cellIndex = (currentVelo > 0) ? col_i - 1 : col_i;
 
           if (cellIndex < 0 || cellIndex >= cols) {
             const auto bcElement = bc.getBoundaryElement(
@@ -211,9 +210,8 @@ private:
       for (std::size_t row_i = 0; row_i < fluxY.rows(); row_i++) {
         for (std::size_t col_i = 0; col_i < fluxY.cols(); col_i++) {
           T &currentFlux = fluxY(row_i, col_i);
-          const std::int32_t cellIndex =
-              (veloY(row_i, col_i) > 0) ? row_i - 1 : row_i;
           const T &currentVelo = veloY(row_i, col_i);
+          const std::int32_t cellIndex = (currentVelo > 0) ? row_i - 1 : row_i;
 
           if (cellIndex < 0 || cellIndex >= rows) {
             const auto bcElement = bc.getBoundaryElement(
@@ -242,7 +240,7 @@ private:
         for (std::size_t col_i = 0; col_i < cols; col_i++) {
           const T horizontalFlux =
               fluxX(row_i, col_i) - fluxX(row_i, col_i + 1);
-          const T verticalFlux = 0;
+          const T verticalFlux = fluxY(row_i, col_i) - fluxY(row_i + 1, col_i);
           newConcentrations(row_i, col_i) =
               oldConcentrations(row_i, col_i) + horizontalFlux + verticalFlux;
         }
