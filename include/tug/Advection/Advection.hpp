@@ -9,6 +9,7 @@
 
 #include "tug/Core/Matrix.hpp"
 #include <Eigen/src/Core/Array.h>
+#include <Eigen/src/Core/AssignEvaluator.h>
 #include <Eigen/src/Core/Matrix.h>
 #include <algorithm>
 #include <cstddef>
@@ -190,8 +191,7 @@ private:
                 cellIndex < 0 ? BC_SIDE_LEFT : BC_SIDE_RIGHT, row_i);
             // if we have a constant boundary, we use the value of the boundary
             if (bcElement.getType() == BC_TYPE_CONSTANT) {
-              currentFlux =
-                  currentVelo * bcElement.getValue() * (innerTimestep) / dx;
+              currentFlux = currentVelo * bcElement.getValue();
               continue;
             }
 
@@ -201,8 +201,7 @@ private:
           }
           // otherwise we use the concentration of the inflow/outflow cell,
           // multiplied by the velocity
-          currentFlux = currentVelo * oldConcentrations(row_i, cellIndex) *
-                        innerTimestep / dx;
+          currentFlux = currentVelo * oldConcentrations(row_i, cellIndex);
         }
       }
 
@@ -219,8 +218,7 @@ private:
             // if we have a constant boundary, we use the value of the
             // boundary
             if (bcElement.getType() == BC_TYPE_CONSTANT) {
-              currentFlux =
-                  currentVelo * bcElement.getValue() * (2 * innerTimestep) / dy;
+              currentFlux = currentVelo * bcElement.getValue();
               continue;
             }
 
@@ -230,8 +228,7 @@ private:
           }
           // otherwise we use the concentration of the inflow/outflow cell,
           // multiplied by the velocity
-          currentFlux = currentVelo * oldConcentrations(cellIndex, col_i) *
-                        innerTimestep / dy;
+          currentFlux = currentVelo * oldConcentrations(cellIndex, col_i);
         }
       }
 
@@ -241,8 +238,10 @@ private:
           const T horizontalFlux =
               fluxX(row_i, col_i) - fluxX(row_i, col_i + 1);
           const T verticalFlux = fluxY(row_i, col_i) - fluxY(row_i + 1, col_i);
-          newConcentrations(row_i, col_i) =
-              oldConcentrations(row_i, col_i) + horizontalFlux + verticalFlux;
+          newConcentrations(row_i, col_i) = oldConcentrations(row_i, col_i) +
+                                            innerTimestep /
+                                                porevolume(row_i, col_i) *
+                                                (horizontalFlux + verticalFlux);
         }
       }
 
