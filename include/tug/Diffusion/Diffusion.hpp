@@ -347,6 +347,8 @@ public:
 
     auto begin = std::chrono::high_resolution_clock::now();
 
+    this->applyInnerBoundaries();
+
     SimulationInput<T> sim_input = {.concentrations =
                                         this->getConcentrationMatrix(),
                                     .alphaX = this->getAlphaX(),

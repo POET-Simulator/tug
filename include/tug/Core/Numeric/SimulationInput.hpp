@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <tug/Boundary.hpp>
 #include <tug/Core/Matrix.hpp>
 
@@ -10,9 +11,8 @@ template <typename T> struct SimulationInput {
   const RowMajMat<T> &alphaX;
   const RowMajMat<T> &alphaY;
   const Boundary<T> boundaries;
-
   const std::uint8_t dim;
-  const T timestep;
+  T timestep;
   const std::size_t rowMax;
   const std::size_t colMax;
   const T deltaRow;

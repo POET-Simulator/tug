@@ -7,7 +7,7 @@
  */
 
 #include <Eigen/Eigen>
-#include <tug/Diffusion.hpp>
+#include <tug/tug.hpp>
 
 using namespace Eigen;
 using namespace tug;

@@ -9,7 +9,7 @@
 #include <Eigen/Eigen>
 #include <cstdlib>
 #include <iostream>
-#include <tug/Diffusion.hpp>
+#include <tug/tug.hpp>
 
 using namespace Eigen;
 using namespace tug;
