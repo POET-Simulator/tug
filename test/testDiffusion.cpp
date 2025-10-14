@@ -21,8 +21,9 @@ constexpr int row = 11;
 constexpr int col = 11;
 
 template <tug::APPROACH approach, tug::SOLVER solver>
-Diffusion<double, approach> setupSimulation(RowMajMat<double> &concentrations,
-                                            double timestep, int iterations) {
+Diffusion<double, approach, solver>
+setupSimulation(RowMajMat<double> &concentrations, double timestep,
+                int iterations) {
   int domain_row = 10;
   int domain_col = 10;
 
