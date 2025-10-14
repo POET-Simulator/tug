@@ -74,7 +74,8 @@ DIFFUSION_TEST(EqualityFTCS) {
   RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
 
   Diffusion<double, tug::FTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER> sim =
-      setupSimulation<tug::FTCS_APPROACH>(concentrations, timestep, iterations);
+      setupSimulation<tug::FTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER>(
+          concentrations, timestep, iterations);
 
   // Boundary bc = Boundary(grid);
 
@@ -99,8 +100,9 @@ DIFFUSION_TEST(EqualityBTCS) {
   RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
 
   Diffusion<double, tug::BTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER> sim =
-      setupSimulation<tug::BTCS_APPROACH>(concentrations, timestep,
-                                          iterations); // Boundary
+      setupSimulation<tug::BTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER>(
+          concentrations, timestep,
+          iterations); // Boundary
 
   // Boundary bc = Boundary(grid);
 
@@ -124,8 +126,9 @@ DIFFUSION_TEST(EqualityEigenLU) {
   RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
 
   Diffusion<double, tug::BTCS_APPROACH, tug::EIGEN_LU_SOLVER> sim =
-      setupSimulation<tug::BTCS_APPROACH>(concentrations, timestep,
-                                          iterations); // Boundary
+      setupSimulation<tug::BTCS_APPROACH, tug::EIGEN_LU_SOLVER>(
+          concentrations, timestep,
+          iterations); // Boundary
 
   // Boundary bc = Boundary(grid);
 
