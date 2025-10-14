@@ -114,6 +114,31 @@ DIFFUSION_TEST(EqualityBTCS) {
   EXPECT_TRUE(checkSimilarityV2(reference, sim.getConcentrationMatrix(), 0.01));
 }
 
+DIFFUSION_TEST(EqualityEigenLU) {
+  // set string from the header file
+  string test_path = testSimulationCSVDir;
+  RowMajMat<double> reference = CSV2Eigen(test_path);
+  cout << "BTCS Test: " << endl;
+
+  RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
+
+  Diffusion<double, tug::BTCS_APPROACH, tug::EIGEN_LU_SOLVER> sim =
+      setupSimulation<tug::BTCS_APPROACH>(concentrations, timestep,
+                                          iterations); // Boundary
+
+  // Boundary bc = Boundary(grid);
+
+  // Simulation
+  // Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
+  // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+  // sim.setTimestep(timestep);
+  // sim.setIterations(iterations);
+  sim.run();
+
+  cout << endl;
+  EXPECT_TRUE(checkSimilarityV2(reference, sim.getConcentrationMatrix(), 0.01));
+}
+
 DIFFUSION_TEST(InitializeEnvironment) {
   int rc = 12;
   RowMajMat<double> concentrations(rc, rc);
