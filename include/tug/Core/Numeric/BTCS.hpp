@@ -464,7 +464,7 @@ template <class T> void BTCS_LU(SimulationInput<T> &input, int numThreads) {
   if (input.dim == 1) {
     BTCS_1D(input, EigenLUAlgorithm);
   } else {
-    BTCS_2D(input.dim, EigenLUAlgorithm, numThreads);
+    BTCS_2D(input, EigenLUAlgorithm, numThreads);
   }
 }
 
