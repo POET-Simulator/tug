@@ -72,7 +72,7 @@ DIFFUSION_TEST(EqualityFTCS) {
 
   RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
 
-  Diffusion<double, tug::FTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER> sim =
+  Diffusion<double, tug::FTCS_APPROACH> sim =
       setupSimulation<tug::FTCS_APPROACH>(concentrations, timestep, iterations);
 
   // Boundary bc = Boundary(grid);
