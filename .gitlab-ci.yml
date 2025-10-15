@@ -5,8 +5,8 @@ before_script:
 
 stages:
     - test
-    - static_analyze
     - release
+    - static_analyze
 
 test:
     stage: test
