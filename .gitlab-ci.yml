@@ -6,7 +6,7 @@ before_script:
 stages:
     - test
     - static_analyze
-    - doc
+    - release
 
 test:
     stage: test
@@ -22,8 +22,8 @@ test:
       reports:
         junit: build/test_results.xml
 
-pages:
-  stage: doc
+doc:
+  stage: release
   image: python:slim
   before_script:
     - apt-get update && apt-get install --no-install-recommends -y graphviz imagemagick doxygen make
@@ -38,6 +38,22 @@ pages:
       - public
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+
+push:
+  stage: release
+  variables:
+    GITHUB_REPOSITORY: 'git@github.com:POET-Simulator/tug.git'
+    ORIGINAL_REPO_URL: 'https://git.gfz-potsdam.de/naaice/tug.git'
+    ORIGINAL_REPO_NAME: 'tug'
+  before_script:
+    # I know that there is this file env variable in gitlab, but somehow it does not work for me (still complaining about white spaces ...)
+    # Therefore, the ssh key is stored as a base64 encoded string
+    - mkdir -p ~/.ssh && echo $GITHUB_SSH_PRIVATE_KEY | base64 -d > ~/.ssh/id_ed25519 && chmod 0600 ~/.ssh/id_ed25519
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  script:
+    - rm -rf $ORIGINAL_REPO_NAME.git
+    - git clone --mirror $ORIGINAL_REPO_URL "$ORIGINAL_REPO_NAME.git" && cd $ORIGINAL_REPO_NAME.git
+    - git push --mirror $GITHUB_REPOSITORY
 
 lint:
   stage: static_analyze
