@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: TUG
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Max
+    family-names: Lübke
+    email: mluebke@uni-potsdam.de
+    orcid: 'https://orcid.org/0009-0008-9773-3038'
+  - given-names: Philipp
+    family-names: Ungrund
+    email: ungrund@uni-potsdam.de
+  - given-names: Hannes
+    family-names: Signer
+    email: signer@uni-potsdam.de
+    orcid: 'https://orcid.org/0009-0000-3058-8472'
+  - given-names: Marco
+    family-names: De Lucia
+    email: delucia@gfz.de
+    orcid: 'https://orcid.org/0009-0000-3058-8472'
+repository-code: 'https://github.com/POET-Simulator/tug'
+abstract: >-
+  tug implements different numerical approaches for
+  transport problems, notably diffusion with implicit BTCS
+  (Backward Time, Central Space) Euler and parallel 2D ADI
+  (Alternating Direction Implicit).
+keywords:
+  - diffusion
+  - advection
+  - BTCS
+  - FTCS
+  - Thomas-Algorithm
+license: GPL-2.0
