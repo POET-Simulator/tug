@@ -11,7 +11,7 @@ authors:
     orcid: 'https://orcid.org/0009-0000-3058-8472'
 - given-names: Max
     family-names: Lübke
-    email: mluebke@uni-potsdam.de
+    email: max.luebke@uni-potsdam.de
     orcid: 'https://orcid.org/0009-0008-9773-3038'
 - given-names: Bettina
     family-names: Schnor
@@ -23,7 +23,7 @@ authors:
     orcid: 'https://orcid.org/0009-0000-3058-8472'
 - given-names: Philipp
     family-names: Ungrund
-    email: ungrund@uni-potsdam.de#
+    email: ungrund@uni-potsdam.de
     orcid: 'https://orcid.org/0009-0007-0182-4051'
 repository-code: 'https://github.com/POET-Simulator/tug'
 abstract: >-
