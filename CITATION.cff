@@ -5,21 +5,26 @@ message: >-
   metadata from this file.
 type: software
 authors:
-  - given-names: Max
-    family-names: Lübke
-    email: mluebke@uni-potsdam.de
-    orcid: 'https://orcid.org/0009-0008-9773-3038'
-  - given-names: Philipp
-    family-names: Ungrund
-    email: ungrund@uni-potsdam.de
-  - given-names: Hannes
-    family-names: Signer
-    email: signer@uni-potsdam.de
-    orcid: 'https://orcid.org/0009-0000-3058-8472'
-  - given-names: Marco
+- given-names: Marco
     family-names: De Lucia
     email: delucia@gfz.de
     orcid: 'https://orcid.org/0009-0000-3058-8472'
+- given-names: Max
+    family-names: Lübke
+    email: mluebke@uni-potsdam.de
+    orcid: 'https://orcid.org/0009-0008-9773-3038'
+- given-names: Bettina
+    family-names: Schnor
+    email: schnor@cs.uni-potsdam.de
+    orcid: 'https://orcid.org/0000-0001-7369-8057'
+- given-names: Hannes
+    family-names: Signer
+    email: signer@uni-potsdam.de
+    orcid: 'https://orcid.org/0009-0000-3058-8472'
+- given-names: Philipp
+    family-names: Ungrund
+    email: ungrund@uni-potsdam.de#
+    orcid: 'https://orcid.org/0009-0007-0182-4051'
 repository-code: 'https://github.com/POET-Simulator/tug'
 abstract: >-
   tug implements different numerical approaches for
