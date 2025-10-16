@@ -28,6 +28,18 @@
 
 namespace tug {
 
+// optimization to remove Eigen sparse matrix
+template <class T> class Diagonals {
+public:
+  Diagonals() : left(), center(), right() {};
+  Diagonals(std::size_t size) : left(size), center(size), right(size) {};
+
+public:
+  std::vector<T> left;
+  std::vector<T> center;
+  std::vector<T> right;
+};
+
 // calculates coefficient for boundary in constant case
 template <class T>
 constexpr std::pair<T, T> calcBoundaryCoeffConstant(T alpha_center,
@@ -52,7 +64,7 @@ constexpr std::pair<T, T> calcBoundaryCoeffClosed(T alpha_center, T alpha_side,
 
 // creates coefficient matrix for next time step from alphas in x-direction
 template <class T>
-static Eigen::SparseMatrix<T>
+static Diagonals<T>
 createCoeffMatrix(const RowMajMat<T> &alpha,
                   const std::vector<BoundaryElement<T>> &bcLeft,
                   const std::vector<BoundaryElement<T>> &bcRight,
@@ -60,26 +72,25 @@ createCoeffMatrix(const RowMajMat<T> &alpha,
                   int rowIndex, T sx) {
 
   // square matrix of column^2 dimension for the coefficients
-  Eigen::SparseMatrix<T> cm(numCols, numCols);
-  cm.reserve(Eigen::VectorXi::Constant(numCols, 3));
+  Diagonals<T> cm(numCols);
 
   // left column
   if (inner_bc[0].first) {
-    cm.insert(0, 0) = 1;
+    cm.center[0] = 1;
   } else {
     switch (bcLeft[rowIndex].getType()) {
     case BC_TYPE_CONSTANT: {
       auto [centerCoeffTop, rightCoeffTop] =
           calcBoundaryCoeffConstant(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
-      cm.insert(0, 0) = centerCoeffTop;
-      cm.insert(0, 1) = rightCoeffTop;
+      cm.center[0] = centerCoeffTop;
+      cm.right[0] = rightCoeffTop;
       break;
     }
     case BC_TYPE_CLOSED: {
       auto [centerCoeffTop, rightCoeffTop] =
           calcBoundaryCoeffClosed(alpha(rowIndex, 0), alpha(rowIndex, 1), sx);
-      cm.insert(0, 0) = centerCoeffTop;
-      cm.insert(0, 1) = rightCoeffTop;
+      cm.center[0] = centerCoeffTop;
+      cm.right[0] = rightCoeffTop;
       break;
     }
     default: {
@@ -93,36 +104,36 @@ createCoeffMatrix(const RowMajMat<T> &alpha,
   int n = numCols - 1;
   for (int i = 1; i < n; i++) {
     if (inner_bc[i].first) {
-      cm.insert(i, i) = 1;
+      cm.center[i] = 1;
       continue;
     }
-    cm.insert(i, i - 1) =
+    cm.left[i] =
         -sx * calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i));
-    cm.insert(i, i) =
+    cm.center[i] =
         1 +
         sx * (calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex, i + 1)) +
               calcAlphaIntercell(alpha(rowIndex, i - 1), alpha(rowIndex, i)));
-    cm.insert(i, i + 1) =
+    cm.right[i] =
         -sx * calcAlphaIntercell(alpha(rowIndex, i), alpha(rowIndex, i + 1));
   }
 
   // right column
   if (inner_bc[n].first) {
-    cm.insert(n, n) = 1;
+    cm.center[n] = 1;
   } else {
     switch (bcRight[rowIndex].getType()) {
     case BC_TYPE_CONSTANT: {
       auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffConstant(
           alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
-      cm.insert(n, n - 1) = leftCoeffBottom;
-      cm.insert(n, n) = centerCoeffBottom;
+      cm.left[n] = leftCoeffBottom;
+      cm.center[n] = centerCoeffBottom;
       break;
     }
     case BC_TYPE_CLOSED: {
       auto [centerCoeffBottom, leftCoeffBottom] = calcBoundaryCoeffClosed(
           alpha(rowIndex, n), alpha(rowIndex, n - 1), sx);
-      cm.insert(n, n - 1) = leftCoeffBottom;
-      cm.insert(n, n) = centerCoeffBottom;
+      cm.left[n] = leftCoeffBottom;
+      cm.center[n] = centerCoeffBottom;
       break;
     }
     default: {
@@ -131,8 +142,6 @@ createCoeffMatrix(const RowMajMat<T> &alpha,
     }
     }
   }
-
-  cm.makeCompressed(); // important for Eigen solver
 
   return cm;
 }
@@ -271,12 +280,28 @@ createSolutionVector(const EigenType &concentrations,
 // b to the solution vector
 // use of EigenLU solver
 template <class T>
-static Eigen::VectorX<T> EigenLUAlgorithm(Eigen::SparseMatrix<T> &A,
+static Eigen::VectorX<T> EigenLUAlgorithm(Diagonals<T> &A,
                                           Eigen::VectorX<T> &b) {
 
+  // convert A to Eigen sparse matrix
+  size_t dim_A = A.center.size();
+  Eigen::SparseMatrix<T> A_sparse(dim_A, dim_A);
+
+  A_sparse.insert(0, 0) = A.center[0];
+  A_sparse.insert(0, 1) = A.right[0];
+
+  for (size_t i = 1; i < dim_A - 1; i++) {
+    A_sparse.insert(i, i - 1) = A.left[i];
+    A_sparse.insert(i, i) = A.center[i];
+    A_sparse.insert(i, i + 1) = A.right[i];
+  }
+
+  A_sparse.insert(dim_A - 1, dim_A - 2) = A.left[dim_A - 1];
+  A_sparse.insert(dim_A - 1, dim_A - 1) = A.center[dim_A - 1];
+
   Eigen::SparseLU<Eigen::SparseMatrix<T>> solver;
-  solver.analyzePattern(A);
-  solver.factorize(A);
+  solver.analyzePattern(A_sparse);
+  solver.factorize(A_sparse);
 
   return solver.solve(b);
 }
@@ -285,26 +310,10 @@ static Eigen::VectorX<T> EigenLUAlgorithm(Eigen::SparseMatrix<T> &A,
 // b to the solution vector
 // implementation of Thomas Algorithm
 template <class T>
-static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
+static Eigen::VectorX<T> ThomasAlgorithm(Diagonals<T> &A,
                                          Eigen::VectorX<T> &b) {
   Eigen::Index n = b.size();
-
-  Eigen::VectorX<T> a_diag(n);
-  Eigen::VectorX<T> b_diag(n);
-  Eigen::VectorX<T> c_diag(n);
   Eigen::VectorX<T> x_vec = b;
-
-  // Fill diagonals vectors
-  b_diag[0] = A.coeff(0, 0);
-  c_diag[0] = A.coeff(0, 1);
-
-  for (Eigen::Index i = 1; i < n - 1; i++) {
-    a_diag[i] = A.coeff(i, i - 1);
-    b_diag[i] = A.coeff(i, i);
-    c_diag[i] = A.coeff(i, i + 1);
-  }
-  a_diag[n - 1] = A.coeff(n - 1, n - 2);
-  b_diag[n - 1] = A.coeff(n - 1, n - 1);
 
   // HACK: write CSV to file
 #ifdef WRITE_THOMAS_CSV
@@ -331,20 +340,20 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
 
   // start solving - c_diag and x_vec are overwritten
   n--;
-  c_diag[0] /= b_diag[0];
-  x_vec[0] /= b_diag[0];
+  A.right[0] /= A.center[0];
+  x_vec[0] /= A.center[0];
 
   for (Eigen::Index i = 1; i < n; i++) {
-    c_diag[i] /= b_diag[i] - a_diag[i] * c_diag[i - 1];
-    x_vec[i] = (x_vec[i] - a_diag[i] * x_vec[i - 1]) /
-               (b_diag[i] - a_diag[i] * c_diag[i - 1]);
+    A.right[i] /= A.center[i] - A.left[i] * A.right[i - 1];
+    x_vec[i] = (x_vec[i] - A.left[i] * x_vec[i - 1]) /
+               (A.center[i] - A.left[i] * A.right[i - 1]);
   }
 
-  x_vec[n] = (x_vec[n] - a_diag[n] * x_vec[n - 1]) /
-             (b_diag[n] - a_diag[n] * c_diag[n - 1]);
+  x_vec[n] = (x_vec[n] - A.left[n] * x_vec[n - 1]) /
+             (A.center[n] - A.left[n] * A.right[n - 1]);
 
   for (Eigen::Index i = n; i-- > 0;) {
-    x_vec[i] -= c_diag[i] * x_vec[i + 1];
+    x_vec[i] -= A.right[i] * x_vec[i + 1];
   }
 
   return x_vec;
@@ -353,14 +362,14 @@ static Eigen::VectorX<T> ThomasAlgorithm(Eigen::SparseMatrix<T> &A,
 // BTCS solution for 1D grid
 template <class T>
 static void BTCS_1D(SimulationInput<T> &input,
-                    Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
+                    Eigen::VectorX<T> (*solverFunc)(Diagonals<T> &A,
                                                     Eigen::VectorX<T> &b)) {
   const std::size_t &length = input.colMax;
   T sx = input.timestep / (input.deltaCol * input.deltaCol);
 
   Eigen::VectorX<T> concentrations_t1(length);
 
-  Eigen::SparseMatrix<T> A;
+  Diagonals<T> A;
   Eigen::VectorX<T> b(length);
 
   const auto &alpha = input.alphaX;
@@ -389,18 +398,12 @@ static void BTCS_1D(SimulationInput<T> &input,
   }
 
   concentrations = solverFunc(A, b);
-
-  // for (int j = 0; j < length; j++) {
-  //   concentrations(0, j) = concentrations_t1(j);
-  // }
-
-  // grid.setConcentrations(concentrations);
 }
 
 // BTCS solution for 2D grid
 template <class T>
 static void BTCS_2D(SimulationInput<T> &input,
-                    Eigen::VectorX<T> (*solverFunc)(Eigen::SparseMatrix<T> &A,
+                    Eigen::VectorX<T> (*solverFunc)(Diagonals<T> &A,
                                                     Eigen::VectorX<T> &b),
                     int numThreads) {
   const std::size_t &rowMax = input.rowMax;
@@ -410,7 +413,7 @@ static void BTCS_2D(SimulationInput<T> &input,
 
   RowMajMat<T> concentrations_t1(rowMax, colMax);
 
-  Eigen::SparseMatrix<T> A;
+  Diagonals<T> A;
   Eigen::VectorX<T> b;
 
   const RowMajMat<T> &alphaX = input.alphaX;
@@ -461,7 +464,7 @@ template <class T> void BTCS_LU(SimulationInput<T> &input, int numThreads) {
   if (input.dim == 1) {
     BTCS_1D(input, EigenLUAlgorithm);
   } else {
-    BTCS_2D(input.dim, EigenLUAlgorithm, numThreads);
+    BTCS_2D(input, EigenLUAlgorithm, numThreads);
   }
 }
 
