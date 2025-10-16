@@ -20,9 +20,10 @@ using namespace tug;
 constexpr int row = 11;
 constexpr int col = 11;
 
-template <tug::APPROACH approach>
-Diffusion<double, approach> setupSimulation(RowMajMat<double> &concentrations,
-                                            double timestep, int iterations) {
+template <tug::APPROACH approach, tug::SOLVER solver>
+Diffusion<double, approach, solver>
+setupSimulation(RowMajMat<double> &concentrations, double timestep,
+                int iterations) {
   int domain_row = 10;
   int domain_col = 10;
 
@@ -30,7 +31,7 @@ Diffusion<double, approach> setupSimulation(RowMajMat<double> &concentrations,
   // RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
   concentrations(5, 5) = 1;
 
-  Diffusion<double, approach> diffusiongrid(concentrations);
+  Diffusion<double, approach, solver> diffusiongrid(concentrations);
 
   diffusiongrid.getConcentrationMatrix() = concentrations;
   diffusiongrid.setDomain(domain_row, domain_col);
@@ -72,8 +73,9 @@ DIFFUSION_TEST(EqualityFTCS) {
 
   RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
 
-  Diffusion<double, tug::FTCS_APPROACH> sim =
-      setupSimulation<tug::FTCS_APPROACH>(concentrations, timestep, iterations);
+  Diffusion<double, tug::FTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER> sim =
+      setupSimulation<tug::FTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER>(
+          concentrations, timestep, iterations);
 
   // Boundary bc = Boundary(grid);
 
@@ -97,9 +99,36 @@ DIFFUSION_TEST(EqualityBTCS) {
 
   RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
 
-  Diffusion<double, tug::BTCS_APPROACH> sim =
-      setupSimulation<tug::BTCS_APPROACH>(concentrations, timestep,
-                                          iterations); // Boundary
+  Diffusion<double, tug::BTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER> sim =
+      setupSimulation<tug::BTCS_APPROACH, tug::THOMAS_ALGORITHM_SOLVER>(
+          concentrations, timestep,
+          iterations); // Boundary
+
+  // Boundary bc = Boundary(grid);
+
+  // Simulation
+  // Diffusion<double, tug::FTCS_APPROACH> sim(grid, bc);
+  // sim.setOutputConsole(CONSOLE_OUTPUT_ON);
+  // sim.setTimestep(timestep);
+  // sim.setIterations(iterations);
+  sim.run();
+
+  cout << endl;
+  EXPECT_TRUE(checkSimilarityV2(reference, sim.getConcentrationMatrix(), 0.01));
+}
+
+DIFFUSION_TEST(EqualityEigenLU) {
+  // set string from the header file
+  string test_path = testSimulationCSVDir;
+  RowMajMat<double> reference = CSV2Eigen(test_path);
+  cout << "BTCS Test: " << endl;
+
+  RowMajMat<double> concentrations = MatrixXd::Constant(row, col, 0);
+
+  Diffusion<double, tug::BTCS_APPROACH, tug::EIGEN_LU_SOLVER> sim =
+      setupSimulation<tug::BTCS_APPROACH, tug::EIGEN_LU_SOLVER>(
+          concentrations, timestep,
+          iterations); // Boundary
 
   // Boundary bc = Boundary(grid);
 
