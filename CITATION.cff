@@ -1,27 +1,30 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
 cff-version: 1.2.0
-title: tug: Transport on Uniform Grids
+title: 'tug: Transport on Uniform Grids'
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
 authors:
-- given-names: Marco
+  - given-names: Marco
     family-names: De Lucia
     email: delucia@gfz.de
     orcid: 'https://orcid.org/0009-0000-3058-8472'
-- given-names: Max
+  - given-names: Max
     family-names: Lübke
-    email: max.luebke@uni-potsdam.de
+    email: mluebke@uni-potsdam.de
     orcid: 'https://orcid.org/0009-0008-9773-3038'
-- given-names: Bettina
+  - given-names: Bettina
     family-names: Schnor
     email: schnor@cs.uni-potsdam.de
     orcid: 'https://orcid.org/0000-0001-7369-8057'
-- given-names: Hannes
+  - given-names: Hannes
     family-names: Signer
     email: signer@uni-potsdam.de
     orcid: 'https://orcid.org/0009-0000-3058-8472'
-- given-names: Philipp
+  - given-names: Philipp
     family-names: Ungrund
     email: ungrund@uni-potsdam.de
     orcid: 'https://orcid.org/0009-0007-0182-4051'
