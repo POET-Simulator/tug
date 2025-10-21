@@ -64,6 +64,18 @@ private:
   T delta_col;
   T delta_row;
 
+protected:
+  void applyInnerBoundaries() {
+    const auto &inner_bc = boundaryConditions.getInnerBoundaries();
+    if (inner_bc.empty()) {
+      return;
+    }
+
+    for (const auto &[rowcol, value] : inner_bc) {
+      concentrationMatrix(rowcol.first, rowcol.second) = value;
+    }
+  }
+
 public:
   /**
    * @brief Constructs a BaseSimulationGrid from a given RowMajMat object.
