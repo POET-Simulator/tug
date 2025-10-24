@@ -25,7 +25,7 @@ grid with constant alpha for all grid cells can be solved reliably.
 # Requirements
 
 - C++17 compliant compiler
-- [CMake](https://cmake.org/) >= 3.18
+- [CMake](https://cmake.org/) >= 3.20
 - [Eigen](https://eigen.tuxfamily.org/) >= 3.4.0
 
 # Getting started
