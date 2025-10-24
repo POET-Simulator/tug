@@ -1,12 +1,12 @@
 # debian stable (currently bullseye)
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 
 project(
   tug
   VERSION 0.4
   LANGUAGES CXX)
 
-find_package(Eigen3 3.4 REQUIRED NO_MODULE)
+find_package(Eigen3 3.4...5 REQUIRED NO_MODULE)
 find_package(OpenMP)
 
 include(GNUInstallDirs)
