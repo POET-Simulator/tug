@@ -20,7 +20,7 @@ option(
 
 option(TUG_ENABLE_TESTING "Run tests after succesfull compilation" OFF)
 
-option(TUG_HANNESPHILIPP_EXAMPLES "Compile example applications" OFF)
+option(TUG_EXAMPLES "Compile example applications" OFF)
 
 option(TUG_NAAICE_EXAMPLE "Enables NAAICE examples with export of CSV files"
        OFF)
@@ -77,7 +77,7 @@ enable_testing()
   add_subdirectory(test)
 endif()
 
-if(TUG_HANNESPHILIPP_EXAMPLES)
+if(TUG_EXAMPLES)
   add_subdirectory(examples)
 endif()
 

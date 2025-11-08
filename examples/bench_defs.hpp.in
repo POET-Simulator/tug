@@ -1,0 +1,132 @@
+#ifndef _BENCH_DEFS_HPP
+#define _BENCH_DEFS_HPP
+
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct init_boundary {
+  const std::vector<int> north_const;
+  const std::vector<int> south_const;
+  const std::vector<int> east_const;
+  const std::vector<int> west_const;
+
+  const std::vector<double> values;
+};
+
+struct bench_input {
+  // const std::string csv_file_init;
+  const char *csv_file_init;
+  // const std::string csv_alpha_x;
+  const char *csv_alpha_x;
+  // const std::string csv_alpha_y;
+  const char *csv_alpha_y;
+
+  const std::size_t ncols;
+  const std::size_t nrows;
+
+  const double s_x;
+  const double s_y;
+
+  const init_boundary boundary;
+
+  const double timestep;
+  const int iterations;
+};
+
+static const std::vector<int> gen_vec(int elems) {
+  std::vector<int> vec(elems);
+  for (int i = 0; i < elems; i++) {
+    vec[i] = i;
+  }
+
+  return vec;
+}
+
+static const std::vector<int> gen_vec_rev(int from, int to) {
+  int size = to - from + 1;
+  std::vector<int> vec(size);
+  for (int i = from; i < to; i++) {
+    vec[i] = i;
+    std::cout << "i: " << i << "\n";
+  }
+
+  return vec;
+}
+
+enum tug_benchmark {
+  BENCHMARK_BARITE_200,
+  BENCHMARK_BARITE_LARGE,
+  BENCHMARK_SURFEX
+};
+
+static const bench_input barite_200_input = {
+    .csv_file_init = "@TUG_DATA_PATH@/barite_200_data/barite_200_init.csv",
+    .csv_alpha_x = "@TUG_DATA_PATH@/barite_200_data/alpha_x.csv",
+    .csv_alpha_y = "@TUG_DATA_PATH@/barite_200_data/alpha_y.csv",
+    .ncols = 200,
+    .nrows = 200,
+    .s_x = 1,
+    .s_y = 1,
+    .boundary = {.north_const = {0, 1, 2, 3, 4},
+                 .south_const = {},
+                 .east_const = {},
+                 .west_const = {0, 1, 2, 3, 4},
+                 .values = {111.0124, 55.50622, -3.336970273297e-08, 0.1, 0.2,
+                            .0, .0}},
+    .timestep = 1000,
+    .iterations = 50};
+
+static const bench_input barite_large_input = {
+    .csv_file_init = "@TUG_DATA_PATH@/barite_large_data/barite_large_init.csv",
+    .csv_alpha_x = "@TUG_DATA_PATH@/barite_large_alpha.csv",
+    .csv_alpha_y = "@TUG_DATA_PATH@/barite_large_alpha.csv",
+    .ncols = 1000,
+    .nrows = 1000,
+    .s_x = 10,
+    .s_y = 10,
+    .boundary = {.north_const = {},
+                 .south_const = {},
+                 .east_const = {},
+                 .west_const = {},
+                 .values = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}},
+    .timestep = 100,
+    .iterations = 5};
+
+static const bench_input surfex_input = {
+    .csv_file_init = "@TUG_DATA_PATH@/surfex_data/surfex_init.csv",
+    .csv_alpha_x = "@TUG_DATA_PATH@/surfex_data/surfex_alpha.csv",
+    .csv_alpha_y = "@TUG_DATA_PATH@/surfex_data/surfex_alpha.csv",
+    .ncols = 200,
+    .nrows = 100,
+    .s_x = 0.02,
+    .s_y = 0.01,
+    .boundary = {.north_const = gen_vec(200),
+                 .south_const = gen_vec(200),
+                 .east_const = gen_vec(100),
+                 .west_const = gen_vec(100),
+                 .values = {120.0,     // H
+                            55.1,      // O
+                            8.0e-17,   // Charge
+                            2.0e-15,   // CH4
+                            0.2,       // C
+                            0.03,      // Ca
+                            0.5,       // Cl
+                            0.0002,    // Fe2
+                            2.0e-08,   // Fe3
+                            2.0e-11,   // H0
+                            1.0e-05,   // K
+                            0.2,       // Mg
+                            0.3,       // Na
+                            0,         // HS2
+                            8.3e-12,   // S2
+                            5.1e-14,   // S4
+                            0.026,     // S6
+                            0.045,     // Sr
+                            2.5e-08,   // U4
+                            1.6e-10,   // U5
+                            1.0e-05}}, // U6
+    .timestep = 3600,
+    .iterations = 20};
+
+#endif // _BENCH_DEFS_HPP
