@@ -212,6 +212,23 @@ public:
       }
     } else {
       this->timestep = timestep;
+
+      if (this->getDim() == 2) {
+        const T deltaColSquare = this->deltaCol() * this->deltaCol();
+        const T deltaRowSquare = this->deltaRow() * this->deltaRow();
+        const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
+        const T maxAlpha =
+            std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
+        const T cfl = minDeltaSquare / (4 * maxAlpha);
+        const std::string dim = std::to_string(this->getDim()) + "D";
+        const std::string &approachPrefix = this->approach_names[approach];
+        std::cout << approachPrefix << "_" << dim
+                  << " :: FTCS stability condition timestep (CFL): " << cfl
+                  << std::endl;
+        std::cout << approachPrefix << "_" << dim
+                  << " :: BTCS selected dt=" << timestep
+                  << " (ratio to CFL: " << timestep / cfl << ")" << std::endl;
+      }
     }
   }
 

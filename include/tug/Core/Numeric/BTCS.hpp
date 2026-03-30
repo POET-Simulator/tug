@@ -149,22 +149,25 @@ createCoeffMatrix(const RowMajMat<T> &alpha,
 // calculates explicit concentration at boundary in closed case
 template <typename T>
 constexpr T calcExplicitConcentrationsBoundaryClosed(T conc_center,
-                                                     T alpha_center,
-                                                     T alpha_neigbor, T sy) {
-  return sy * calcAlphaIntercell(alpha_center, alpha_neigbor) * conc_center +
-         (1 - sy * (calcAlphaIntercell(alpha_center, alpha_neigbor))) *
-             conc_center;
+                                                      T conc_neighbor,
+                                                      T alpha_center,
+                                                      T alpha_neighbor, T sy) {
+  const T inter_cell = calcAlphaIntercell(alpha_center, alpha_neighbor);
+  return (1 - sy * inter_cell) * conc_center +
+         sy * inter_cell * conc_neighbor;
 }
 
-// calculates explicity concentration at boundary in constant case
+// calculates explicit concentration at boundary in constant case
 template <typename T>
-constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center, T conc_bc,
-                                                       T alpha_center,
-                                                       T alpha_neighbor, T sy) {
+constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center,
+                                                        T conc_neighbor,
+                                                        T conc_bc,
+                                                        T alpha_center,
+                                                        T alpha_neighbor, T sy) {
   const T inter_cell = calcAlphaIntercell(alpha_center, alpha_neighbor);
-  return sy * inter_cell * conc_center +
-         (1 - sy * (inter_cell + alpha_center)) * conc_center +
-         sy * alpha_center * conc_bc;
+  return (1 - sy * (inter_cell + 2 * alpha_center)) * conc_center +
+         sy * inter_cell * conc_neighbor +
+         2 * sy * alpha_center * conc_bc;
 }
 
 // creates a solution vector for next time step from the current state of
@@ -215,14 +218,15 @@ createSolutionVector(const EigenType &concentrations,
       switch (bcTop[i].getType()) {
       case BC_TYPE_CONSTANT: {
         sv(i) = calcExplicitConcentrationsBoundaryConstant(
-            concentrations(rowIndex, i), bcTop[i].getValue(),
-            alphaY(rowIndex, i), alphaY(rowIndex + 1, i), sy);
+            concentrations(rowIndex, i), concentrations(rowIndex + 1, i),
+            bcTop[i].getValue(), alphaY(rowIndex, i), alphaY(rowIndex + 1, i),
+            sy);
         break;
       }
       case BC_TYPE_CLOSED: {
         sv(i) = calcExplicitConcentrationsBoundaryClosed(
-            concentrations(rowIndex, i), alphaY(rowIndex, i),
-            alphaY(rowIndex + 1, i), sy);
+            concentrations(rowIndex, i), concentrations(rowIndex + 1, i),
+            alphaY(rowIndex, i), alphaY(rowIndex + 1, i), sy);
         break;
       }
       default:
@@ -242,14 +246,15 @@ createSolutionVector(const EigenType &concentrations,
       switch (bcBottom[i].getType()) {
       case BC_TYPE_CONSTANT: {
         sv(i) = calcExplicitConcentrationsBoundaryConstant(
-            concentrations(rowIndex, i), bcBottom[i].getValue(),
-            alphaY(rowIndex, i), alphaY(rowIndex - 1, i), sy);
+            concentrations(rowIndex, i), concentrations(rowIndex - 1, i),
+            bcBottom[i].getValue(), alphaY(rowIndex, i),
+            alphaY(rowIndex - 1, i), sy);
         break;
       }
       case BC_TYPE_CLOSED: {
         sv(i) = calcExplicitConcentrationsBoundaryClosed(
-            concentrations(rowIndex, i), alphaY(rowIndex, i),
-            alphaY(rowIndex - 1, i), sy);
+            concentrations(rowIndex, i), concentrations(rowIndex - 1, i),
+            alphaY(rowIndex, i), alphaY(rowIndex - 1, i), sy);
         break;
       }
       default:
