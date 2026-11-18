@@ -282,3 +282,196 @@ ADVECTION_TEST(InnerBoundarySource) {
   EXPECT_GT(conc(2, 3), 0.0);
   EXPECT_GT(conc(2, 4), 0.0);
 }
+
+ADVECTION_TEST(FreeStreamPreservationHeterogeneousK) {
+  constexpr std::size_t rows = 10;
+  constexpr std::size_t cols = 10;
+  constexpr double c0 = 2.5;
+
+  tug::RowMajMat<double> heads =
+      tug::RowMajMat<double>::Constant(rows, cols, 5.0);
+  // Start with a uniform concentration field c0 everywhere
+  tug::RowMajMat<double> conc =
+      tug::RowMajMat<double>::Constant(rows, cols, c0);
+
+  // Create a heterogeneous permeability field with a low-permeability obstacle
+  tug::RowMajMat<double> permK =
+      tug::RowMajMat<double>::Constant(rows, cols, 1E-2);
+  for (std::size_t i = 3; i <= 6; i++) {
+    for (std::size_t j = 3; j <= 6; j++) {
+      permK(i, j) = 1E-5;
+    }
+  }
+
+  tug::Velocities<double, tug::HYDRAULIC_MODE::STEADY_STATE,
+                  tug::HYDRAULIC_RESOLVE::IMPLICIT>
+      velo(heads);
+  velo.setDomain(10.0, 10.0);
+  velo.setPermKX(permK);
+  velo.setPermKY(permK);
+  velo.setEpsilon(1E-11);
+
+  auto &bcH = velo.getBoundaryConditions();
+  bcH.setBoundarySideConstant(tug::BC_SIDE_LEFT, 10.0);
+  bcH.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 0.0);
+
+  tug::Advection adv(conc, velo);
+  adv.setPorosity(0.25);
+  adv.setTimestep(50.0);
+  adv.setIterations(15);
+
+  auto &bcC = adv.getBoundaryConditions();
+  bcC.setBoundarySideConstant(tug::BC_SIDE_LEFT, c0);
+  bcC.setBoundarySideConstant(tug::BC_SIDE_RIGHT, c0);
+
+  adv.run();
+
+  // Uniform concentration field must remain preserved everywhere
+  for (std::size_t i = 0; i < rows; i++) {
+    for (std::size_t j = 0; j < cols; j++) {
+      EXPECT_NEAR(conc(i, j), c0, 1E-5);
+    }
+  }
+}
+
+ADVECTION_TEST(HeterogeneousPorosity2D) {
+  constexpr std::size_t rows = 4;
+  constexpr std::size_t cols = 8;
+  constexpr double qx = 0.2;
+
+  tug::RowMajMat<double> heads = tug::RowMajMat<double>::Zero(rows, cols);
+  tug::RowMajMat<double> conc = tug::RowMajMat<double>::Zero(rows, cols);
+
+  tug::Velocities<double> velo(heads);
+  velo.setDomain(4.0, 8.0); // dx = dy = 1.0
+  velo.setVelocitiesX(tug::RowMajMat<double>::Constant(rows, cols + 1, qx));
+  velo.setVelocitiesY(tug::RowMajMat<double>::Zero(rows + 1, cols));
+
+  // Top rows have porosity 0.5, bottom rows have porosity 0.25
+  tug::RowMajMat<double> porosity(rows, cols);
+  for (std::size_t i = 0; i < rows; i++) {
+    for (std::size_t j = 0; j < cols; j++) {
+      porosity(i, j) = (i < 2) ? 0.5 : 0.25;
+    }
+  }
+
+  tug::Advection adv(conc, velo);
+  adv.setPorosity(porosity);
+  // cfl = min(porosity) / (qx / dx) = 0.25 / 0.2 = 1.25 s
+  adv.setTimestep(1.25);
+  adv.setIterations(2);
+
+  auto &bcC = adv.getBoundaryConditions();
+  bcC.setBoundarySideConstant(tug::BC_SIDE_LEFT, 1.0);
+  bcC.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 0.0);
+
+  adv.run();
+
+  // Bottom layer (porosity 0.25, local Courant = 1.0) has moved 2 full cells
+  EXPECT_NEAR(conc(2, 0), 1.0, 1E-12);
+  EXPECT_NEAR(conc(2, 1), 1.0, 1E-12);
+  EXPECT_NEAR(conc(2, 2), 0.0, 1E-12);
+
+  // Top layer (porosity 0.5, local Courant = 0.5) has half the total mass of
+  // the bottom layer
+  const double topRowSum = conc.row(0).sum();
+  const double bottomRowSum = conc.row(2).sum();
+  EXPECT_NEAR(bottomRowSum, 2.0 * topRowSum, 1E-12);
+}
+
+ADVECTION_TEST(TransientCoupledAdvection) {
+  constexpr std::size_t cols = 10;
+  // Since Velocities solves dh/dt = div(K grad h) with unit specific storage
+  // (S_s = 1 m^-1), the hydraulic diffusion timescale is L^2 / K while the
+  // advection timescale is (phi * L^2) / (K * delta_h). For physical
+  // quasi-incompressible transient groundwater flow (T_diff << T_adv), we
+  // require delta_h << phi.
+  constexpr double hLeft = 0.02;
+  constexpr double hRight = 0.0;
+  constexpr double porosity = 0.2;
+
+  tug::RowMajMat<double> heads(1, cols);
+  for (std::size_t j = 0; j < cols; j++) {
+    heads(0, j) = 0.01 * (1.0 - (static_cast<double>(j) + 0.5) / cols);
+  }
+  tug::RowMajMat<double> conc = tug::RowMajMat<double>::Zero(1, cols);
+  tug::RowMajMat<double> permK =
+      tug::RowMajMat<double>::Constant(1, cols, 1E-2);
+
+  tug::Velocities<double, tug::HYDRAULIC_MODE::TRANSIENT,
+                  tug::HYDRAULIC_RESOLVE::IMPLICIT>
+      velo(heads);
+  velo.setDomain(10.0);
+  velo.setPermKX(permK);
+
+  auto &bcH = velo.getBoundaryConditions();
+  bcH.setBoundarySideConstant(tug::BC_SIDE_LEFT, hLeft);
+  bcH.setBoundarySideConstant(tug::BC_SIDE_RIGHT, hRight);
+
+  tug::Advection<double, tug::HYDRAULIC_MODE::TRANSIENT,
+                 tug::HYDRAULIC_RESOLVE::IMPLICIT>
+      adv(conc, velo);
+  adv.setPorosity(porosity);
+  adv.setTimestep(2000.0);
+  adv.setIterations(5);
+
+  auto &bcC = adv.getBoundaryConditions();
+  bcC.setBoundarySideConstant(tug::BC_SIDE_LEFT, 1.0);
+  bcC.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 0.0);
+
+  const double initialHead0 = heads(0, 0);
+  adv.run();
+
+  // Hydraulic head and concentrations must have increased and propagated
+  // monotonically from left to right
+  EXPECT_GT(heads(0, 0), initialHead0);
+  EXPECT_GT(heads(0, 0), heads(0, cols - 1));
+  EXPECT_GT(conc(0, 0), 0.0);
+  for (std::size_t j = 0; j < cols - 1; j++) {
+    EXPECT_GE(conc(0, j), conc(0, j + 1));
+  }
+}
+
+ADVECTION_TEST(OpenBoundaryMassBalance1D) {
+  constexpr std::size_t cols = 8;
+  constexpr double domainL = 16.0; // dx = 2.0
+  constexpr double dx = domainL / cols;
+  constexpr double qx = 0.1;
+  constexpr double cLeft = 1.5;
+  constexpr double cInit = 0.2;
+
+  tug::RowMajMat<double> heads = tug::RowMajMat<double>::Zero(1, cols);
+  tug::RowMajMat<double> conc =
+      tug::RowMajMat<double>::Constant(1, cols, cInit);
+
+  tug::RowMajMat<double> porosity(1, cols);
+  for (std::size_t j = 0; j < cols; j++) {
+    porosity(0, j) = 0.2 + 0.05 * static_cast<double>(j);
+  }
+
+  tug::Velocities<double> velo(heads);
+  velo.setDomain(domainL);
+  velo.setVelocitiesX(tug::RowMajMat<double>::Constant(1, cols + 1, qx));
+
+  // Choose dt <= cfl so 1 outer step == 1 inner step
+  // cfl = min(porosity) / (qx / dx) = 0.2 / (0.1 / 2.0) = 4.0 s
+  constexpr double dt = 2.0;
+
+  const double initialMass = (porosity.cwiseProduct(conc) * dx).sum();
+
+  tug::Advection adv(conc, velo);
+  adv.setPorosity(porosity);
+  adv.setTimestep(dt);
+  adv.setIterations(1);
+
+  auto &bcC = adv.getBoundaryConditions();
+  bcC.setBoundarySideConstant(tug::BC_SIDE_LEFT, cLeft);
+  bcC.setBoundarySideConstant(tug::BC_SIDE_RIGHT, 0.0);
+
+  adv.run();
+
+  const double finalMass = (porosity.cwiseProduct(conc) * dx).sum();
+  const double expectedNetMassInflow = dt * (qx * cLeft - qx * cInit);
+
+  EXPECT_NEAR(finalMass - initialMass, expectedNetMassInflow, 1E-12);
+}
