@@ -126,7 +126,7 @@ public:
    */
   RowMajMat<T> &getAlphaY() {
     tug_assert(
-        this->getDim(),
+        this->getDim() == 2,
         "Grid is not two dimensional, there is no domain in y-direction!");
 
     return alphaY;
@@ -146,7 +146,7 @@ public:
    */
   void setAlphaY(const RowMajMat<T> &alphaY) {
     tug_assert(
-        this->getDim(),
+        this->getDim() == 2,
         "Grid is not two dimensional, there is no domain in y-direction!");
 
     this->alphaY = alphaY;
@@ -368,17 +368,18 @@ public:
 
     this->applyInnerBoundaries();
 
-    SimulationInput<T> sim_input = {.concentrations =
-                                        this->getConcentrationMatrix(),
-                                    .alphaX = this->getAlphaX(),
-                                    .alphaY = this->getAlphaY(),
-                                    .boundaries = this->getBoundaryConditions(),
-                                    .dim = this->getDim(),
-                                    .timestep = this->getTimestep(),
-                                    .rowMax = this->rows(),
-                                    .colMax = this->cols(),
-                                    .deltaRow = this->deltaRow(),
-                                    .deltaCol = this->deltaCol()};
+    SimulationInput<T> sim_input = {
+        .concentrations = this->getConcentrationMatrix(),
+        .alphaX = this->alphaX,
+        .alphaY = this->alphaY,
+        .boundaries = this->getBoundaryConditions(),
+        .dim = this->getDim(),
+        .timestep = this->getTimestep(),
+        .rowMax = this->rows(),
+        .colMax = this->cols(),
+        .deltaRow =
+            (this->getDim() == 2) ? this->deltaRow() : static_cast<T>(0),
+        .deltaCol = this->deltaCol()};
 
     if constexpr (approach == FTCS_APPROACH) { // FTCS case
       const std::size_t totalIterations =
@@ -448,7 +449,7 @@ public:
         }
 
         concentrations = this->getConcentrationMatrix();
-        FTCS(this->grid, this->bc, this->timestep, this->numThreads);
+        FTCS(sim_input, this->numThreads);
         concentrationsFTCS = this->getConcentrationMatrix();
         this->getConcentrationMatrix() = concentrations;
         BTCS_Thomas(sim_input, this->numThreads);
