@@ -331,7 +331,7 @@ static Eigen::VectorX<T> ThomasAlgorithm(Diagonals<T> &A,
 
   // iterate through all elements
   for (std::size_t i = 0; i < n; i++) {
-    out_file << a_diag[i] << ", " << b_diag[i] << ", " << c_diag[i] << ", "
+    out_file << A.left[i] << ", " << A.center[i] << ", " << A.right[i] << ", "
              << b[i] << "\n";
   }
 
