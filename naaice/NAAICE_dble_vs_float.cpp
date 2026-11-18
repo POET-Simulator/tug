@@ -118,30 +118,29 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
 
   // (optional) set the domain, e.g.:
 
-  Eigen::MatrixX<T> initConc64 = Eigen::MatrixX<T>::Constant(ngrid, ngrid, 0);
+  RowMajMat<T> initConc64 = RowMajMat<T>::Constant(ngrid, ngrid, 0);
   initConc64(50, 50) = 1E-6;
-  Grid<T> grid(initConc64);
-  grid.setDomain(0.1, 0.1);
+
+  Diffusion<T, app> Sim(initConc64);
+  Sim.setDomain(0.1, 0.1);
 
   const T sum_init64 = initConc64.sum();
 
   constexpr T alphax_val = 5e-10;
-  Eigen::MatrixX<T> alphax =
-      Eigen::MatrixX<T>::Constant(ngrid, ngrid, alphax_val); // row,col,value
+  RowMajMat<T> alphax =
+      RowMajMat<T>::Constant(ngrid, ngrid, alphax_val); // row,col,value
   constexpr T alphay_val = 1e-10;
-  Eigen::MatrixX<T> alphay =
-      Eigen::MatrixX<T>::Constant(ngrid, ngrid, alphay_val); // row,col,value
-  grid.setAlpha(alphax, alphay);
+  RowMajMat<T> alphay =
+      RowMajMat<T>::Constant(ngrid, ngrid, alphay_val); // row,col,value
+  Sim.setAlphaX(alphax);
+  Sim.setAlphaY(alphay);
 
   // create a boundary with constant values
-  Boundary bc = Boundary(grid);
+  auto &bc = Sim.getBoundaryConditions();
   bc.setBoundarySideClosed(BC_SIDE_LEFT);
   bc.setBoundarySideClosed(BC_SIDE_RIGHT);
   bc.setBoundarySideClosed(BC_SIDE_TOP);
   bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
-
-  // set up a simulation environment
-  Diffusion Sim(grid, bc); // grid_64,boundary,simulation-approach
 
   // Sim64.setSolver(THOMAS_ALGORITHM_SOLVER);
 
@@ -153,10 +152,10 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
 
   // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
   // CSV_OUTPUT_VERBOSE]
-  Sim.setOutputCSV(CSV_OUTPUT_ON);
+  Sim.setOutputCSV(CSV_OUTPUT::ON);
 
   // set output to the console to 'ON'
-  Sim.setOutputConsole(CONSOLE_OUTPUT_OFF);
+  Sim.setOutputConsole(CONSOLE_OUTPUT::OFF);
 
   // // **** RUN SIM64 ****
   auto begin_t = std::chrono::high_resolution_clock::now();
@@ -167,7 +166,7 @@ template <class T, tug::APPROACH app> int doWork(int ngrid) {
   auto ms_t =
       std::chrono::duration_cast<std::chrono::milliseconds>(end_t - begin_t);
 
-  const double sum_after64 = grid.getConcentrations().sum();
+  const double sum_after64 = Sim.getConcentrationMatrix().sum();
 
   std::cout << "Sum of init field:      " << std::setprecision(15) << sum_init64
             << "\nSum after 2 iterations: " << sum_after64

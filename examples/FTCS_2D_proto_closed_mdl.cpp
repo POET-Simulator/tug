@@ -38,38 +38,37 @@ int main(int argc, char *argv[]) {
   // (optional) set the concentrations, e.g.:
   // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); //
   // #row,#col,value
-  MatrixXd concentrations = MatrixXd::Constant(row, col, 0);
+  RowMajMat<double> concentrations = RowMajMat<double>::Constant(row, col, 0);
   concentrations(n2, n2) = 1;
   concentrations(n2, n2 + 1) = 1;
   concentrations(n2 + 1, n2) = 1;
   concentrations(n2 + 1, n2 + 1) = 1;
-  Grid64 grid(concentrations);
-
-  // (optional) set alphas of the grid, e.g.:
-  MatrixXd alphax = MatrixXd::Constant(row, col, 1E-4); // row,col,value
-  MatrixXd alphay = MatrixXd::Constant(row, col, 1E-6); // row,col,value
-  grid.setAlpha(alphax, alphay);
-
-  // ******************
-  // **** BOUNDARY ****
-  // ******************
-
-  // create a boundary with constant values
-  Boundary bc = Boundary(grid);
-
-  // (optional) set boundary condition values for one side, e.g.:
-  bc.setBoundarySideClosed(BC_SIDE_LEFT); // side,values
-  bc.setBoundarySideClosed(BC_SIDE_RIGHT);
-  bc.setBoundarySideClosed(BC_SIDE_TOP);
-  bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
 
   // ************************
   // **** SIMULATION ENV ****
   // ************************
 
   // set up a simulation environment
-  Diffusion<double, FTCS_APPROACH> simulation(
-      grid, bc); // grid,boundary,simulation-approach
+  Diffusion<double, FTCS_APPROACH> simulation(concentrations);
+
+  // (optional) set alphas of the grid, e.g.:
+  RowMajMat<double> alphax = RowMajMat<double>::Constant(row, col, 1E-4); // row,col,value
+  RowMajMat<double> alphay = RowMajMat<double>::Constant(row, col, 1E-6); // row,col,value
+  simulation.setAlphaX(alphax);
+  simulation.setAlphaY(alphay);
+
+  // ******************
+  // **** BOUNDARY ****
+  // ******************
+
+  // create a boundary with constant values
+  auto &bc = simulation.getBoundaryConditions();
+
+  // (optional) set boundary condition values for one side, e.g.:
+  bc.setBoundarySideClosed(BC_SIDE_LEFT); // side,values
+  bc.setBoundarySideClosed(BC_SIDE_RIGHT);
+  bc.setBoundarySideClosed(BC_SIDE_TOP);
+  bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
 
   // set the timestep of the simulation
   simulation.setTimestep(10000); // timestep
@@ -79,7 +78,7 @@ int main(int argc, char *argv[]) {
 
   // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
   // CSV_OUTPUT_VERBOSE]
-  simulation.setOutputCSV(CSV_OUTPUT_VERBOSE);
+  simulation.setOutputCSV(CSV_OUTPUT::VERBOSE);
 
   // **** RUN SIMULATION ****
 
