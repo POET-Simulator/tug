@@ -3,7 +3,7 @@
 #include "gtest/gtest.h"
 #include <gtest/gtest.h>
 #include <stdexcept>
-#include <tug/Diffusion.hpp>
+#include <tug/Diffusion/Diffusion.hpp>
 
 #include <Eigen/src/Core/Matrix.h>
 #include <string>
@@ -242,4 +242,48 @@ DIFFUSION_TEST(ConstantInnerCell) {
   EXPECT_FALSE((concentrations_result.array() > 1.0).any());
 
   EXPECT_FALSE((concentrations_result.array() < 0.0).any());
+}
+
+DIFFUSION_TEST(Symmetry) {
+  // Arrange
+  constexpr std::size_t rows = 25;
+  constexpr std::size_t cols = 25;
+
+  constexpr std::size_t center_row = rows / 2;
+  constexpr std::size_t center_col = cols / 2;
+
+  tug::RowMajMat<double> concentrations =
+      tug::RowMajMat<double>::Constant(rows, cols, 1);
+
+  tug::RowMajMat<double> alpha =
+      tug::RowMajMat<double>::Constant(rows, cols, 1E-2);
+
+  tug::Diffusion<double, tug::FTCS_APPROACH> sim(concentrations);
+
+  sim.setDomain(100, 100);
+  sim.setAlphaX(alpha);
+  sim.setAlphaY(alpha);
+  // choose a high number of iterations, which lead to small changes in ULP
+  // between symmetric cells
+  sim.setIterations(10000);
+  sim.setTimestep(10);
+
+  tug::Boundary<double> &bcH = sim.getBoundaryConditions();
+
+  bcH.setInnerBoundary(center_row, center_col, 10);
+
+  sim.run();
+
+  // check symmetry
+  for (std::size_t i_rows = 0; i_rows <= center_row; i_rows++) {
+    for (std::size_t i_cols = 0; i_cols <= center_col; i_cols++) {
+      if (i_rows == center_row && i_cols == center_col) {
+        continue;
+      }
+      // to avoid floating point errors, we check with ASSERT_DOUBLE_EQ with a
+      // precision of ULP(4), see https://stackoverflow.com/a/4149599
+      ASSERT_DOUBLE_EQ(concentrations(i_rows, i_cols),
+                       concentrations(rows - i_rows - 1, cols - i_cols - 1));
+    }
+  }
 }

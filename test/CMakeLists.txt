@@ -12,6 +12,8 @@ FetchContent_MakeAvailable(googletest)
 add_executable(testTug 
 setup.cpp
 testDiffusion.cpp 
+testVelocities.cpp
+testAdvection.cpp
 testFTCS.cpp 
 testBoundary.cpp
 )
