@@ -2,7 +2,9 @@
 
 `tug` implements different numerical approaches for transport
 problems, notably diffusion with implicit BTCS (Backward Time, Central
-Space) Euler and parallel 2D ADI (Alternating Direction Implicit).
+Space) Euler and parallel 2D ADI (Alternating Direction Implicit), as well
+as conservative advective solute transport driven by Darcy flow velocities
+on staggered cell edges.
 
 # About
 
@@ -19,8 +21,9 @@ problem, as long a pointer to continuous memory can be provided. We also
 provide parallelization using [OpenMP](https://www.openmp.org/), which
 can be easily turned on/off at compile time.
 
-At the current state, both 1D and 2D diffusion problems on a regular
-grid with constant alpha for all grid cells can be solved reliably.
+At the current state, both 1D and 2D diffusion and advection problems on
+regular grids with heterogeneous parameters (diffusion coefficients, hydraulic
+conductivities, porosity) can be solved reliably.
 
 # Requirements
 
