@@ -661,6 +661,174 @@ BTCS methods, which have a temporal truncation error of
 :math:`\mathcal{O}(\Delta t^2)` has an advantage and should be preferred
 for time-accurate solutions.
 
+Advection and Darcy Flow
+------------------------
+
+In addition to pure diffusive transport, solute transport in fluid-saturated
+porous media (such as aquifers, filters, or soil columns) is predominantly driven
+by advection (or convection) — the bulk macroscopic movement of the carrier fluid. [BEAR72]_ [FREEZE79]_
+The theoretical formulation in TUG couples Darcy's law for fluid motion with
+conservative mass transport using an upwind finite-volume discretization.
+
+Governing Equations
+^^^^^^^^^^^^^^^^^^^
+
+Consider a representative elementary volume (REV) in a porous medium characterized
+by volumetric porosity :math:`\phi \in (0, 1]`. By applying the law of conservation
+of mass to a solute dissolved in the flowing fluid phase, the temporal rate of solute
+mass change in the fluid must balance the net advective flux entering through the boundaries: [BEAR72]_
+
+.. _`advection mass conservation`:
+
+.. math::
+
+   \phi \frac{\partial C}{\partial t} + \nabla \cdot (\mathbf{q} C) = 0
+
+where :math:`C` denotes the solute concentration (mass per unit fluid volume) and
+:math:`\mathbf{q} = (q_x, q_y)^T` represents the Darcy flux vector (specific discharge,
+having physical dimensions of volume per area per unit time, :math:`\frac{\text{m}}{\text{s}}`).
+In two Cartesian dimensions, the conservative advective transport equation expands to:
+
+.. math::
+
+   \phi \frac{\partial C}{\partial t} + \frac{\partial (q_x C)}{\partial x} + \frac{\partial (q_y C)}{\partial y} = 0.
+
+Darcy's Law and Hydraulic Head
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The Darcy flux :math:`\mathbf{q}` is related to the gradient of the piezometric
+hydraulic head :math:`h` via Darcy's empirical law: [FREEZE79]_
+
+.. math::
+
+   \mathbf{q} = -\mathbf{K} \nabla h
+
+where :math:`\mathbf{K}` is the hydraulic conductivity tensor (diagonal with components
+:math:`K_x` and :math:`K_y`).
+In a saturated porous formation, fluid flow itself obeys the groundwater flow equation: [BEAR72]_ [FREEZE79]_
+
+.. math::
+
+   S_s \frac{\partial h}{\partial t} = \nabla \cdot (\mathbf{K} \nabla h)
+
+where :math:`S_s` is the specific storage coefficient.
+In TUG, the hydraulic head field :math:`h` can be resolved in two simulation modes:
+
+1. **Steady-state hydraulic equilibrium** (:math:`\frac{\partial h}{\partial t} = 0`):
+   The governing elliptic equation :math:`\nabla \cdot (\mathbf{K} \nabla h) = 0`
+   is solved iteratively using pseudo-time-stepping until the maximum relative head change
+   drops below a prescribed threshold :math:`\varepsilon`:
+
+   .. math::
+
+      \max_{i,j} \frac{|h_{i,j}^{k+1} - h_{i,j}^k|}{|h_{i,j}^k| + \varepsilon} < \varepsilon.
+
+2. **Transient hydraulic flow**:
+   The parabolic diffusion-type head equation is stepped forward synchronously in time
+   using either explicit FTCS or implicit BTCS (with Thomas solver / ADI).
+
+Alternatively, user-defined Darcy velocity fields can be prescribed directly via `setVelocitiesX()`
+and `setVelocitiesY()`, bypassing the numerical solution of hydraulic heads.
+
+Staggered Grid and Darcy Flux Discretization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To preserve exact conservative mass balance and prevent unphysical decoupling,
+Darcy velocities are evaluated on a **staggered MAC-type grid** at cell faces:
+
+- Horizontal velocities :math:`q_{x, i, j}` are defined at the vertical interface between cell :math:`(i, j-1)` and cell :math:`(i, j)`.
+- Vertical velocities :math:`q_{y, i, j}` are defined at the horizontal interface between cell :math:`(i-1, j)` and cell :math:`(i, j)`.
+
+For heterogeneous media where hydraulic conductivities vary between adjacent cells,
+the effective interface conductivity is obtained via the **harmonic mean**, which represents
+the exact analytical solution for one-dimensional continuity of fluid flux across material discontinuities:
+
+.. math::
+
+   K_{x, \text{face}} = \frac{2 K_{x, 1} K_{x, 2}}{K_{x, 1} + K_{x, 2}}.
+
+Using this effective conductivity, the interior interface Darcy flux is calculated by centered differences:
+
+.. math::
+
+   q_{x, i, j} = - K_{x, \text{face}} \cdot \frac{h_{i, j} - h_{i, j-1}}{\Delta x}.
+
+At domain boundaries where Dirichlet conditions prescribe an external head :math:`h_{\text{bc}}`,
+half-cell differences are employed:
+
+.. math::
+
+   q_{x, \text{boundary}} = - K_{x, \text{cell}} \cdot \frac{h_{\text{cell}} - h_{\text{bc}}}{\Delta x / 2}.
+
+Finite-Volume Upwind Scheme
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To discretize the hyperbolic advection equation, TUG employs a conservative
+first-order **upwind finite-volume scheme**. [LEVEQUE02]_
+For cell :math:`(i, j)` with spatial grid increments :math:`\Delta x \times \Delta y`,
+integrating the conservation law over the cell control volume yields:
+
+.. math::
+
+   \Delta V_{\text{pore}} \frac{C_{i,j}^{n+1} - C_{i,j}^n}{\Delta t} + \left( F^x_{i, j+1} - F^x_{i, j} \right) + \left( F^y_{i+1, j} - F^y_{i, j} \right) = 0
+
+where :math:`\Delta V_{\text{pore}} = \phi_{i,j} \Delta x \Delta y` is the fluid pore volume in cell :math:`(i, j)`.
+The advective mass flow rates :math:`F^x` and :math:`F^y` across cell faces (mass per unit time)
+are determined by donor-cell concentrations chosen according to the flow direction:
+
+.. math::
+
+   F^x_{i, j} = \Delta y \cdot q_{x, i, j} \cdot C_{x, i, j}^*
+
+where the face concentration :math:`C_{x, i, j}^*` is taken from the upstream direction:
+
+.. math::
+
+   C_{x, i, j}^* = \begin{cases}
+   C_{i, j-1} & \text{if } q_{x, i, j} > 0, \\
+   C_{i, j}   & \text{if } q_{x, i, j} < 0.
+   \end{cases}
+
+Similarly, for vertical cell faces:
+
+.. math::
+
+   F^y_{i, j} = \Delta x \cdot q_{y, i, j} \cdot C_{y, i, j}^*
+
+with:
+
+.. math::
+
+   C_{y, i, j}^* = \begin{cases}
+   C_{i-1, j} & \text{if } q_{y, i, j} > 0, \\
+   C_{i, j}   & \text{if } q_{y, i, j} < 0.
+   \end{cases}
+
+At open domain boundaries, inflow faces adopt prescribed Dirichlet concentrations or ghost values,
+whereas outflow faces carry the local cell concentration, ensuring strict conservation of total mass.
+
+CFL Stability Condition and Substepping
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Because the upwind finite-volume formulation is explicit in time, numerical stability
+and monotonicity are governed by the **Courant-Friedrichs-Lewy (CFL) condition**. [LEVEQUE02]_
+In a porous medium with porosity :math:`\phi`, the maximum admissible stable timestep is:
+
+.. math::
+
+   \Delta t_{\text{CFL}} \le \min_{i,j} \frac{\phi_{i,j}}{\dfrac{|q_{x, i, j}|}{\Delta x} + \dfrac{|q_{y, i, j}|}{\Delta y}}.
+
+Whenever the requested user simulation timestep :math:`\Delta t_{\text{user}}` exceeds :math:`\Delta t_{\text{CFL}}`,
+TUG automatically calculates the minimum required integer sub-steps:
+
+.. math::
+
+   N_{\text{sub}} = \left\lceil \frac{\Delta t_{\text{user}}}{\Delta t_{\text{CFL}}} \right\rceil, \qquad \Delta t_{\text{sub}} = \frac{\Delta t_{\text{user}}}{N_{\text{sub}}}
+
+and executes :math:`N_{\text{sub}}` inner advective updates per global timestep. This guarantees that
+the numerical solution remains strictly stable, bounded, and mass-conservative without
+requiring manual timestep tuning from the user.
+
 .. [LOGAN15] Logan, J. David. Applied Partial Differential Equations.
              Undergraduate Texts in Mathematics. Cham: Springer International
              Publishing, 2015. https://doi.org/10.1007/978-3-319-12493-3.
@@ -673,7 +841,6 @@ for time-accurate solutions.
 .. [CHAPRA15] Chapra, Steven C., and Raymond P. Canale. Numerical Methods for
               Engineers, 2015.
 
-
 .. [BAEHR19] Baehr, Hans Dieter, and Karl Stephan. Wärme- Und Stoffübertragung.
              Berlin, Heidelberg: Springer Berlin Heidelberg, 2019.
              https://doi.org/10.1007/978-3-662-58441-5.
@@ -681,6 +848,16 @@ for time-accurate solutions.
 .. [FROLKOVIC1990] Frolkovič, Peter. “Numerical Recipes: The Art of Scientific
                    Computing.” Acta Applicandae Mathematicae 19, no. 3 (June
                    1990): 297–99. https://doi.org/10.1007/BF01321860.
+
+.. [BEAR72] Bear, Jacob. Dynamics of Fluids in Porous Media.
+            New York: American Elsevier Publishing Company, 1972.
+
+.. [FREEZE79] Freeze, R. Allan, and John A. Cherry. Groundwater.
+              Englewood Cliffs, N.J: Prentice-Hall, 1979.
+
+.. [LEVEQUE02] LeVeque, Randall J. Finite Volume Methods for Hyperbolic Problems.
+               Cambridge Texts in Applied Mathematics. Cambridge University Press, 2002.
+               https://doi.org/10.1017/CBO9780511791253.
 
 .. [1]
    The minus sign ensures that the direction of the flux follows the
