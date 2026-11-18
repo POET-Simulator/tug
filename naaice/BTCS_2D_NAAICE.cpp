@@ -67,24 +67,24 @@ std::vector<std::vector<T>> CSVToVector(const char *filename) {
 
 /**
  * Converts a 2D STL vector, where values are stored row-major into a
- * column-major Eigen::Matrix.
+ * RowMajMat.
  */
 template <typename T>
-Eigen::MatrixXd rmVecTocmMatrix(const std::vector<std::vector<T>> &vec,
-                                std::uint32_t exp_rows,
-                                std::uint32_t exp_cols) {
+RowMajMat<T> rmVecToMatrix(const std::vector<std::vector<T>> &vec,
+                           std::uint32_t exp_rows,
+                           std::uint32_t exp_cols) {
   if (exp_rows != vec.size()) {
     throw std::runtime_error(
-        "Mismatch in y dimension while converting to Eigen::Matrix.");
+        "Mismatch in y dimension while converting to Matrix.");
   }
 
-  Eigen::MatrixXd out_mat(exp_rows, exp_cols);
+  RowMajMat<T> out_mat(exp_rows, exp_cols);
 
   for (std::uint32_t ri = 0; ri < exp_rows; ri++) {
     const auto &vec_row = vec[ri];
     if (vec[ri].size() != exp_cols) {
       throw std::runtime_error(
-          "Mismatch in x dimension while converting to Eigen::Matrix.");
+          "Mismatch in x dimension while converting to Matrix.");
     }
     for (std::uint32_t cj = 0; cj < exp_cols; cj++) {
       out_mat(ri, cj) = vec_row[cj];
@@ -105,41 +105,40 @@ int main(int argc, char *argv[]) {
   constexpr int row = 5;
   constexpr int col = 10;
 
-  // (optional) set the domain, e.g.:
-
   const auto init_values_vec = CSVToVector<double>(INPUT_CONC_FILE);
-  Eigen::MatrixXd concentrations = rmVecTocmMatrix(init_values_vec, row, col);
-  Grid64 grid(concentrations);
+  RowMajMat<double> concentrations = rmVecToMatrix(init_values_vec, row, col);
 
-  grid.setDomain(0.005, 0.01);
   const double sum_init = concentrations.sum();
 
-  // // (optional) set alphas of the grid, e.g.:
+  // ************************
+  // **** SIMULATION ENV ****
+  // ************************
+
+  // set up a simulation environment
+  Diffusion simulation(concentrations);
+
+  simulation.setDomain(0.005, 0.01);
+
+  // (optional) set alphas of the grid, e.g.:
   const auto alphax_vec = CSVToVector<double>(INPUT_ALPHAX_FILE);
-  Eigen::MatrixXd alphax = rmVecTocmMatrix(alphax_vec, row, col);
+  RowMajMat<double> alphax = rmVecToMatrix(alphax_vec, row, col);
 
   constexpr double alphay_val = 5e-10;
-  Eigen::MatrixXd alphay =
-      Eigen::MatrixXd::Constant(row, col, alphay_val); // row,col,value
-  grid.setAlpha(alphax, alphay);
+  RowMajMat<double> alphay =
+      RowMajMat<double>::Constant(row, col, alphay_val); // row,col,value
+  simulation.setAlphaX(alphax);
+  simulation.setAlphaY(alphay);
 
-  // // ******************
-  // // **** BOUNDARY ****
-  // // ******************
+  // ******************
+  // **** BOUNDARY ****
+  // ******************
 
   // create a boundary with constant values
-  Boundary bc = Boundary(grid);
+  auto &bc = simulation.getBoundaryConditions();
   bc.setBoundarySideClosed(BC_SIDE_LEFT);
   bc.setBoundarySideClosed(BC_SIDE_RIGHT);
   bc.setBoundarySideClosed(BC_SIDE_TOP);
   bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
-
-  // // ************************
-  // // **** SIMULATION ENV ****
-  // // ************************
-
-  // set up a simulation environment
-  Diffusion simulation(grid, bc); // grid,boundary
 
   // set the timestep of the simulation
   simulation.setTimestep(360); // timestep
@@ -149,15 +148,15 @@ int main(int argc, char *argv[]) {
 
   // set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
   // CSV_OUTPUT_VERBOSE]
-  simulation.setOutputCSV(CSV_OUTPUT_ON);
+  simulation.setOutputCSV(CSV_OUTPUT::ON);
 
   // set output to the console to 'ON'
-  simulation.setOutputConsole(CONSOLE_OUTPUT_ON);
+  simulation.setOutputConsole(CONSOLE_OUTPUT::ON);
 
-  // // **** RUN SIMULATION ****
+  // **** RUN SIMULATION ****
   simulation.run();
 
-  const double sum_after = grid.getConcentrations().sum();
+  const double sum_after = simulation.getConcentrationMatrix().sum();
 
   std::cout << "Sum of init field: " << std::to_string(sum_init)
             << "\nSum after iteration: " << std::to_string(sum_after)
