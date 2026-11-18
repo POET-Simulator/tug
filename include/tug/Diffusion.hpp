@@ -13,6 +13,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -64,7 +65,7 @@ template <class T, APPROACH approach = BTCS_APPROACH,
 class Diffusion : public BaseSimulationGrid<T> {
 private:
   T timestep{-1};
-  int innerIterations{1};
+  std::size_t innerIterations{1};
   int numThreads{omp_get_num_procs()};
 
   RowMajMat<T> alphaX;
@@ -165,7 +166,7 @@ public:
       T cfl;
       if (this->getDim() == 1) {
 
-        const T deltaSquare = this->deltaCol();
+        const T deltaSquare = this->deltaCol() * this->deltaCol();
         const T maxAlpha = this->alphaX.maxCoeff();
 
         // Courant-Friedrichs-Lewy condition
@@ -191,7 +192,8 @@ public:
 
       if (timestep > cfl) {
 
-        this->innerIterations = (int)ceil(timestep / cfl);
+        this->innerIterations =
+            static_cast<std::size_t>(std::ceil(timestep / cfl));
         this->timestep = timestep / (double)innerIterations;
 
         std::cerr << "Warning :: Timestep was adjusted, because of stability "
@@ -212,6 +214,23 @@ public:
       }
     } else {
       this->timestep = timestep;
+
+      if (this->getDim() == 2) {
+        const T deltaColSquare = this->deltaCol() * this->deltaCol();
+        const T deltaRowSquare = this->deltaRow() * this->deltaRow();
+        const T minDeltaSquare = std::min(deltaColSquare, deltaRowSquare);
+        const T maxAlpha =
+            std::max(this->alphaX.maxCoeff(), this->alphaY.maxCoeff());
+        const T cfl = minDeltaSquare / (4 * maxAlpha);
+        const std::string dim = std::to_string(this->getDim()) + "D";
+        const std::string &approachPrefix = this->approach_names[approach];
+        std::cout << approachPrefix << "_" << dim
+                  << " :: FTCS stability condition timestep (CFL): " << cfl
+                  << std::endl;
+        std::cout << approachPrefix << "_" << dim
+                  << " :: BTCS selected dt=" << timestep
+                  << " (ratio to CFL: " << timestep / cfl << ")" << std::endl;
+      }
     }
   }
 
@@ -360,7 +379,9 @@ public:
                                     .deltaCol = this->deltaCol()};
 
     if constexpr (approach == FTCS_APPROACH) { // FTCS case
-      for (int i = 0; i < this->getIterations() * innerIterations; i++) {
+      const std::size_t totalIterations =
+          static_cast<std::size_t>(this->getIterations()) * innerIterations;
+      for (std::size_t i = 0; i < totalIterations; i++) {
         if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
           printConcentrationsConsole();
         }
@@ -414,7 +435,9 @@ public:
       RowMajMat<T> concentrations;
       RowMajMat<T> concentrationsFTCS;
       RowMajMat<T> concentrationsResult;
-      for (int i = 0; i < this->getIterations() * innerIterations; i++) {
+      const std::size_t totalIter =
+          static_cast<std::size_t>(this->getIterations()) * innerIterations;
+      for (std::size_t i = 0; i < totalIter; i++) {
         if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
           printConcentrationsConsole();
         }
