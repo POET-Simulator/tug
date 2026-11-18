@@ -26,6 +26,19 @@
 
 namespace tug {
 
+/**
+ * @brief Class for conservative solute transport simulation via advection.
+ *
+ * Simulates one- and two-dimensional solute advection on regular grids using an
+ * explicit finite-volume upwind formulation on cell faces. Accounts for medium
+ * porosity and staggered face-centered Darcy velocities provided by a Velocities object.
+ * Automatically enforces Courant-Friedrichs-Lewy (CFL) stability through adaptive
+ * internal substepping.
+ *
+ * @tparam T Floating-point data type for grid values, concentrations, and timesteps.
+ * @tparam hyd_mode Hydraulic simulation mode inherited from the underlying Velocities object.
+ * @tparam hyd_resolve Numerical resolution scheme inherited from the underlying Velocities object.
+ */
 template <class T, HYDRAULIC_MODE hyd_mode = HYDRAULIC_MODE::STEADY_STATE,
           HYDRAULIC_RESOLVE hyd_resolve = HYDRAULIC_RESOLVE::IMPLICIT>
 class Advection : public BaseSimulationGrid<T> {

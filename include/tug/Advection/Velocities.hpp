@@ -32,9 +32,34 @@
 
 namespace tug {
 
-enum class HYDRAULIC_MODE { TRANSIENT, STEADY_STATE };
-enum class HYDRAULIC_RESOLVE { EXPLICIT, IMPLICIT };
+/**
+ * @brief Simulation mode for hydraulic head calculations.
+ */
+enum class HYDRAULIC_MODE {
+  TRANSIENT,   /*!< Time-dependent transient hydraulic head simulation */
+  STEADY_STATE /*!< Iterative simulation until steady-state hydraulic equilibrium */
+};
 
+/**
+ * @brief Numerical scheme used to resolve hydraulic heads.
+ */
+enum class HYDRAULIC_RESOLVE {
+  EXPLICIT, /*!< Explicit Forward Time-Centered Space (FTCS) */
+  IMPLICIT  /*!< Implicit Backward Time-Centered Space (BTCS) with Thomas algorithm */
+};
+
+/**
+ * @brief Class for calculating hydraulic heads and staggered Darcy flux velocities.
+ *
+ * Simulates hydraulic head distributions across 1D and 2D regular grids under steady-state
+ * or transient flow conditions using explicit or implicit finite difference schemes.
+ * Calculates face-centered Darcy flow velocities via Darcy's law with harmonic averaging
+ * of hydraulic conductivities. Alternatively allows directly prescribing custom velocity fields.
+ *
+ * @tparam T Floating-point data type for grid values, permeabilities, and timesteps.
+ * @tparam hyd_mode Hydraulic simulation mode (STEADY_STATE or TRANSIENT).
+ * @tparam hyd_resolve Numerical resolution scheme (IMPLICIT or EXPLICIT).
+ */
 template <class T, HYDRAULIC_MODE hyd_mode = HYDRAULIC_MODE::STEADY_STATE,
           HYDRAULIC_RESOLVE hyd_resolve = HYDRAULIC_RESOLVE::IMPLICIT>
 class Velocities : public BaseSimulationGrid<T> {
@@ -118,6 +143,11 @@ public:
    */
   RowMajMat<T> &getPermKX() { return permKX; }
 
+  /**
+   * @brief Get the permeability matrix in x-direction (const overload).
+   *
+   * @return const RowMajMat<T>& Const reference to the permKX matrix.
+   */
   const RowMajMat<T> &getPermKX() const { return permKX; }
 
   /**
@@ -133,6 +163,11 @@ public:
     return permKY;
   }
 
+  /**
+   * @brief Get the permeability matrix in y-direction (2D only, const overload).
+   *
+   * @return const RowMajMat<T>& Const reference to the permKY matrix.
+   */
   const RowMajMat<T> &getPermKY() const {
     tug_assert(
         this->getDim() == 2,
@@ -204,6 +239,12 @@ public:
     this->steady = true;
   }
 
+  /**
+   * @brief Returns whether hydraulic heads have reached steady state.
+   *
+   * @return true If steady state has been reached or custom velocities were supplied.
+   * @return false Otherwise.
+   */
   bool isSteady() const { return steady; }
 
   /**
