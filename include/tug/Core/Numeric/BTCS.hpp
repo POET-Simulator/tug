@@ -149,9 +149,9 @@ createCoeffMatrix(const RowMajMat<T> &alpha,
 // calculates explicit concentration at boundary in closed case
 template <typename T>
 constexpr T calcExplicitConcentrationsBoundaryClosed(T conc_center,
-                                                      T conc_neighbor,
-                                                      T alpha_center,
-                                                      T alpha_neighbor, T sy) {
+                                                     T conc_neighbor,
+                                                     T alpha_center,
+                                                     T alpha_neighbor, T sy) {
   const T inter_cell = calcAlphaIntercell(alpha_center, alpha_neighbor);
   return (1 - sy * inter_cell) * conc_center +
          sy * inter_cell * conc_neighbor;
@@ -160,10 +160,10 @@ constexpr T calcExplicitConcentrationsBoundaryClosed(T conc_center,
 // calculates explicit concentration at boundary in constant case
 template <typename T>
 constexpr T calcExplicitConcentrationsBoundaryConstant(T conc_center,
-                                                        T conc_neighbor,
-                                                        T conc_bc,
-                                                        T alpha_center,
-                                                        T alpha_neighbor, T sy) {
+                                                       T conc_neighbor,
+                                                       T conc_bc,
+                                                       T alpha_center,
+                                                       T alpha_neighbor, T sy) {
   const T inter_cell = calcAlphaIntercell(alpha_center, alpha_neighbor);
   return (1 - sy * (inter_cell + 2 * alpha_center)) * conc_center +
          sy * inter_cell * conc_neighbor +
@@ -402,7 +402,7 @@ static void BTCS_1D(SimulationInput<T> &input,
     b(length - 1) += 2 * sx * alpha(0, length - 1) * bcRight[0].getValue();
   }
 
-  concentrations = solverFunc(A, b);
+  concentrations.row(0) = solverFunc(A, b);
 }
 
 // BTCS solution for 2D grid
