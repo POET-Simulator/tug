@@ -261,13 +261,14 @@ public:
     if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
       velocities.run();
     } else {
-      if (velocities.getTimestep() <= 0) {
-        velocities.setTimestep(this->timestep);
-      }
+      velocities.setTimestep(this->timestep);
     }
 
     for (int i = 0; i < this->getIterations(); i++) {
       if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
+        std::cout << "ADV_" << static_cast<int>(this->getDim())
+                  << "D :: Iteration " << i << "/" << this->getIterations()
+                  << ":\n";
         printConcentrationsConsole();
       }
       if (this->getOutputCSV() >= CSV_OUTPUT::VERBOSE) {
@@ -277,7 +278,7 @@ public:
       if constexpr (hyd_mode == HYDRAULIC_MODE::TRANSIENT) {
         velocities.run();
       }
-      startAdvection();
+      startAdvection(i);
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -302,7 +303,7 @@ private:
    * @brief Calculates material transport for one timestep using a finite-volume
    * first-order upwind scheme with automatic CFL substepping.
    */
-  void startAdvection() {
+  void startAdvection(int iterationIndex = 0) {
     const std::size_t rows = this->rows();
     const std::size_t cols = this->cols();
     const T dx = this->deltaCol();
@@ -330,10 +331,15 @@ private:
         static_cast<int>(std::ceil(this->timestep / cfl));
     const T innerTimestep = this->timestep / static_cast<T>(innerSteps);
 
-    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
-      std::cout << "CFL (adv) timestep: " << cfl << std::endl;
-      std::cout << "Inner iterations (adv): " << innerSteps << std::endl;
-      std::cout << "Inner timestep (adv): " << innerTimestep << std::endl;
+    const bool shouldPrintCfl =
+        (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE) ||
+        (this->getOutputConsole() == CONSOLE_OUTPUT::ON &&
+         (iterationIndex == 0 || hyd_mode == HYDRAULIC_MODE::TRANSIENT));
+    if (shouldPrintCfl) {
+      std::cout << "ADV_" << static_cast<int>(this->getDim())
+                << "D :: CFL timestep: " << cfl
+                << " | Inner iterations: " << innerSteps
+                << " | Inner dt: " << innerTimestep << std::endl;
     }
 
     RowMajMat<T> fluxX(rows, cols + 1);

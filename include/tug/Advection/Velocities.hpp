@@ -8,6 +8,7 @@
 #pragma once
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
@@ -293,13 +294,45 @@ public:
   }
 
   /**
+   * @brief Outputs the current hydraulic heads of the grid on the console.
+   */
+  void printHeadsConsole() const {
+    std::cout << "Hydraulic Heads (" << this->rows() << "x" << this->cols()
+              << "):\n"
+              << this->getConcentrationMatrix() << "\n\n";
+  }
+
+  /**
+   * @brief Outputs the calculated Darcy velocities on the console.
+   */
+  void printVelocitiesConsole() const {
+    std::cout << "Velocities X (" << this->velocitiesX.rows() << "x"
+              << this->velocitiesX.cols() << "):\n"
+              << this->velocitiesX << "\n\n";
+    if (this->getDim() == 2) {
+      std::cout << "Velocities Y (" << this->velocitiesY.rows() << "x"
+                << this->velocitiesY.cols() << "):\n"
+                << this->velocitiesY << "\n\n";
+    }
+  }
+
+  /**
    * @brief Simulation of hydraulic charge either until convergence,
    * or for a number of selected timesteps. Calculation of Darcy-velocities.
    */
   void run() override {
     if (this->customVelocities) {
+      if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+        printVelocitiesConsole();
+      }
       return;
     }
+
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+      printHeadsConsole();
+    }
+
+    auto begin = std::chrono::high_resolution_clock::now();
 
     this->applyInnerBoundaries();
 
@@ -333,17 +366,35 @@ public:
 
       const T cflTimestep = minDeltaSquare / (4 * maxK);
       if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
-        std::cout << "CFL (hydHead) timestep: " << cflTimestep << std::endl;
+        std::cout << "VELO_STEADY_" << static_cast<int>(this->getDim())
+                  << "D :: CFL (hydHead) timestep: " << cflTimestep
+                  << std::endl;
       }
 
       setTimestep(cflTimestep);
       input.timestep = this->timestep;
 
+      std::size_t convergenceIterations = 0;
       RowMajMat<T> oldConcentrations;
       do {
         oldConcentrations = this->getConcentrationMatrix();
         calculate_hydraulic_flow(input);
+        convergenceIterations++;
+        if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE) {
+          std::cout << "VELO_STEADY_" << static_cast<int>(this->getDim())
+                    << "D :: Iteration " << convergenceIterations
+                    << " (max rel_err = "
+                    << computeMaxRelativeError(oldConcentrations) << "):\n";
+          printHeadsConsole();
+        }
       } while (!checkConvergence(oldConcentrations));
+
+      if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+        std::cout << "VELO_STEADY_" << static_cast<int>(this->getDim())
+                  << "D :: Converged after " << convergenceIterations
+                  << " iterations (epsilon = " << this->epsilon << ")."
+                  << std::endl;
+      }
 
       steady = true;
 
@@ -353,10 +404,37 @@ public:
       }
       for (int i = 0; i < innerIterations; i++) {
         calculate_hydraulic_flow(input);
+        if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE &&
+            innerIterations > 1) {
+          std::cout << "VELO_TRANSIENT_" << static_cast<int>(this->getDim())
+                    << "D :: Inner iteration " << (i + 1) << "/"
+                    << innerIterations << ":\n";
+          printHeadsConsole();
+        }
       }
     }
 
     computeFluidVelocities();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto milliseconds =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+      printHeadsConsole();
+      printVelocitiesConsole();
+    }
+    if (this->getTimeMeasure() > TIME_MEASURE::OFF) {
+      const std::string modeStr =
+          (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) ? "STEADY" : "TRANSIENT";
+      const std::string resolveStr =
+          (hyd_resolve == HYDRAULIC_RESOLVE::EXPLICIT) ? "EXPLICIT"
+                                                       : "IMPLICIT";
+      const std::string dimStr = std::to_string(this->getDim()) + "D";
+      std::cout << "VELO_" << modeStr << "_" << resolveStr << "_" << dimStr
+                << ":: run() finished in " << milliseconds.count() << "ms"
+                << std::endl;
+    }
   }
 
 private:
@@ -372,6 +450,17 @@ private:
   }
 
   /**
+   * @brief Computes the maximum relative error between old and current
+   * hydraulic heads.
+   */
+  T computeMaxRelativeError(const RowMajMat<T> &oldHeads) const {
+    const auto &newHeads = this->getConcentrationMatrix();
+    const auto abs_err = (oldHeads - newHeads).cwiseAbs();
+    const auto denom = newHeads.cwiseAbs().cwiseMax(epsilon);
+    return abs_err.cwiseQuotient(denom).maxCoeff();
+  }
+
+  /**
    * @brief Checks if the matrix of Hydraulic Heads has converged.
    *
    * @return bool True if for all corresponding cells of the matrices,
@@ -379,12 +468,7 @@ private:
    * selected Epsilon.
    */
   bool checkConvergence(const RowMajMat<T> &oldHeads) const {
-    const auto &newHeads = this->getConcentrationMatrix();
-    const auto abs_err = (oldHeads - newHeads).cwiseAbs();
-    const auto denom = newHeads.cwiseAbs().cwiseMax(epsilon);
-    const auto rel_err = abs_err.cwiseQuotient(denom);
-
-    return rel_err.maxCoeff() < epsilon;
+    return computeMaxRelativeError(oldHeads) < epsilon;
   }
 
   /**
