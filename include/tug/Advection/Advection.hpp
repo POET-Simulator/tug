@@ -1,35 +1,33 @@
 /**
  * @file Advection.hpp
  * @brief API of Advection class, holding information for a simulation of
- * advection. Holds a predifined Grid object, Boundary object and Velocities
- * object
+ * advection in 1D and 2D grids.
  */
 
 #pragma once
 
-#include "tug/Core/Matrix.hpp"
-#include <Eigen/src/Core/Array.h>
-#include <Eigen/src/Core/AssignEvaluator.h>
-#include <Eigen/src/Core/Matrix.h>
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <stdexcept>
-#include <stdlib.h>
 #include <string>
-#include <tug/Boundary.hpp>
 
-#include <Eigen/Eigen>
-#include <tug/Core/Numeric/BTCS.hpp>
-#include <tug/Core/Numeric/FTCS.hpp>
-#include <tug/Core/TugUtils.hpp>
-#include <tug/Diffusion/Diffusion.hpp>
-
+#include <Eigen/Core>
 #include <tug/Advection/Velocities.hpp>
+#include <tug/Boundary.hpp>
+#include <tug/Core/BaseSimulation.hpp>
+#include <tug/Core/Matrix.hpp>
+#include <tug/Core/TugUtils.hpp>
 
-using namespace Eigen;
 namespace tug {
-template <class T, HYDRAULIC_MODE hyd_mode, HYDRAULIC_RESOLVE hyd_resolve>
+
+template <class T, HYDRAULIC_MODE hyd_mode = HYDRAULIC_MODE::STEADY_STATE,
+          HYDRAULIC_RESOLVE hyd_resolve = HYDRAULIC_RESOLVE::IMPLICIT>
 class Advection : public BaseSimulationGrid<T> {
 private:
   T timestep{-1};
@@ -38,70 +36,110 @@ private:
   Velocities<T, hyd_mode, hyd_resolve> &velocities;
   RowMajMat<T> porosity;
 
+  void init_advection() {
+    tug_assert(this->rows() == velocities.rows() &&
+                   this->cols() == velocities.cols(),
+               "Advection grid and Velocities must have the same dimensions");
+    this->porosity =
+        RowMajMat<T>::Constant(this->rows(), this->cols(), static_cast<T>(1));
+  }
+
 public:
   /**
-   * @brief Construct a new Advection object, used to calculate material
-   * transport. A timestep and number of iterations must be set. A transient
-   * case can be selected by initializing Steady=false. With each timestep the
-   * Velocities object will also be updated.
-   * A steady case can be selected by initializing Steady=true. The velocities
-   * object will not be updated. Velocities can be simulated to convergence
-   * beforehand. Porosity can be set, the default is 1. CSV Output is off by
-   * default.
+   * @brief Construct a new Advection object from an Eigen RowMajMat (1D or 2D).
    *
-   * @param grid Valid grid object
-   * @param bc Valid Boundary object
-   * @param Steady Used to choose between Steady and Transient case. Either true
-   * or false
+   * @param origin Concentration matrix.
+   * @param _velocities Velocities simulation object of matching dimensions.
    */
   Advection(RowMajMat<T> &origin,
             Velocities<T, hyd_mode, hyd_resolve> &_velocities)
       : BaseSimulationGrid<T>(origin), velocities(_velocities) {
-    tug_assert(origin.rows() == velocities.getConcentrationMatrix().rows() &&
-                   origin.cols() == velocities.getConcentrationMatrix().cols(),
-               "Advection grid and Velocities must have the same dimensions");
-  };
+    init_advection();
+  }
 
+  /**
+   * @brief Construct a new 2D Advection object from a raw data pointer.
+   *
+   * @param data Pointer to concentration array.
+   * @param rows Number of rows.
+   * @param cols Number of columns.
+   * @param _velocities Velocities simulation object of matching dimensions.
+   */
   Advection(T *data, std::size_t rows, std::size_t cols,
             Velocities<T, hyd_mode, hyd_resolve> &_velocities)
       : BaseSimulationGrid<T>(data, rows, cols), velocities(_velocities) {
-    tug_assert(rows == velocities.getConcentrationMatrix().rows() &&
-                   cols == velocities.getConcentrationMatrix().cols(),
-               "Advection grid and Velocities must have the same dimensions");
-  };
+    init_advection();
+  }
 
   /**
-   * @brief Sets the porosity of the medium
+   * @brief Construct a new 1D Advection object from a raw data pointer.
    *
-   * @param porosity new porosity value
+   * @param data Pointer to concentration array.
+   * @param length Length of the 1D grid.
+   * @param _velocities Velocities simulation object of matching dimensions.
+   */
+  Advection(T *data, std::size_t length,
+            Velocities<T, hyd_mode, hyd_resolve> &_velocities)
+      : BaseSimulationGrid<T>(data, 1, length), velocities(_velocities) {
+    init_advection();
+  }
+
+  /**
+   * @brief Sets the porosity matrix of the medium.
+   *
+   * @param porosity New porosity matrix with values in (0, 1].
    */
   void setPorosity(const RowMajMat<T> &porosity) {
     tug_assert(porosity.rows() == this->rows() &&
                    porosity.cols() == this->cols(),
                "Porosity matrix must have the same dimensions as the grid");
-    tug_assert(porosity.minCoeff() >= 0 && porosity.maxCoeff() <= 1,
-               "Porosity must be a value between 0 and 1 (inclusive)");
+    tug_assert(porosity.minCoeff() > 0 && porosity.maxCoeff() <= 1,
+               "Porosity must be greater than 0 and at most 1");
 
     this->porosity = porosity;
   }
 
   /**
-   * @brief Set the size of the timestep. Must be greater than zero
+   * @brief Sets a uniform scalar porosity across the entire grid.
    *
-   * @param timestep Size of the timestep
+   * @param constantPorosity Scalar porosity value in (0, 1].
    */
-  void setTimestep(T timestep) {
+  void setPorosity(T constantPorosity) {
+    tug_assert(constantPorosity > 0 && constantPorosity <= 1,
+               "Porosity must be greater than 0 and at most 1");
+
+    this->porosity =
+        RowMajMat<T>::Constant(this->rows(), this->cols(), constantPorosity);
+  }
+
+  /**
+   * @brief Returns the porosity matrix.
+   *
+   * @return const RowMajMat<T>& Reference to the porosity matrix.
+   */
+  const RowMajMat<T> &getPorosity() const { return this->porosity; }
+
+  /**
+   * @brief Set the size of the timestep. Must be greater than zero.
+   *
+   * @param timestep Size of the timestep.
+   */
+  void setTimestep(T timestep) override {
     tug_assert(timestep > 0, "Timestep must be greater than zero");
     this->timestep = timestep;
   }
 
   /**
-   * @brief Set the number of desired openMP Threads.
+   * @brief Returns the currently configured timestep.
    *
-   * @param num_threads Number of desired threads. Must have a value between
-   *                    1 and the maximum available number of processors. The
-   * maximum number of processors is set as the default case during Advection
-   * construction.
+   * @return T Current timestep.
+   */
+  T getTimestep() const { return this->timestep; }
+
+  /**
+   * @brief Set the number of desired OpenMP threads.
+   *
+   * @param num_threads Number of desired threads (1 .. omp_get_num_procs()).
    */
   void setNumberThreads(int num_threads) {
     if (num_threads > 0 && num_threads <= omp_get_num_procs()) {
@@ -118,290 +156,287 @@ public:
     }
   }
 
-  void run() {
-    this->setDomain(velocities.domainX(), velocities.domainY());
+  /**
+   * @brief Outputs the current concentrations of the grid on the console.
+   */
+  void printConcentrationsConsole() const {
+    std::cout << this->getConcentrationMatrix() << std::endl;
+    std::cout << std::endl;
+  }
+
+  /**
+   * @brief Creates a CSV file with a name containing the current simulation
+   * parameters.
+   *
+   * @return std::string Filename with configured simulation parameters.
+   */
+  std::string createCSVfile() const {
+    std::ofstream file;
+    int appendIdent = 0;
+
+    std::string row = std::to_string(this->rows());
+    std::string col = std::to_string(this->cols());
+    std::string numIterations = std::to_string(this->getIterations());
+
+    std::string filename =
+        "ADV_" + row + "_" + col + "_" + numIterations + ".csv";
+
+    while (std::filesystem::exists(filename)) {
+      appendIdent += 1;
+      filename = "ADV_" + row + "_" + col + "_" + numIterations + "-" +
+                 std::to_string(appendIdent) + ".csv";
+    }
+
+    file.open(filename);
+    if (!file) {
+      throw std::runtime_error("Failed to open file: " + filename);
+    }
+
+    if (this->getOutputCSV() == CSV_OUTPUT::XTREME) {
+      const auto &bc = this->getBoundaryConditions();
+      Eigen::IOFormat one_row(Eigen::StreamPrecision, Eigen::DontAlignCols, "",
+                              " ");
+      file << bc.getBoundarySideValues(BC_SIDE_LEFT).format(one_row)
+           << std::endl;
+      file << bc.getBoundarySideValues(BC_SIDE_RIGHT).format(one_row)
+           << std::endl;
+      if (this->getDim() == 2) {
+        file << bc.getBoundarySideValues(BC_SIDE_TOP).format(one_row)
+             << std::endl;
+        file << bc.getBoundarySideValues(BC_SIDE_BOTTOM).format(one_row)
+             << std::endl;
+      }
+      file << std::endl << std::endl;
+    }
+
+    file.close();
+    return filename;
+  }
+
+  /**
+   * @brief Writes the currently calculated concentration values of the grid
+   * into the CSV file with the passed filename.
+   *
+   * @param filename Name of the file to which the concentration values are
+   * written.
+   */
+  void printConcentrationsCSV(const std::string &filename) const {
+    std::ofstream file;
+    file.open(filename, std::ios_base::app);
+    if (!file) {
+      throw std::runtime_error("Failed to open file: " + filename);
+    }
+
+    Eigen::IOFormat do_not_align(Eigen::StreamPrecision, Eigen::DontAlignCols);
+    file << this->getConcentrationMatrix().format(do_not_align) << std::endl;
+    file << std::endl << std::endl;
+    file.close();
+  }
+
+  /**
+   * @brief Starts the advection simulation with the configured parameters.
+   */
+  void run() override {
+    tug_assert(this->getTimestep() > 0, "Timestep is not set!");
+    tug_assert(this->getIterations() > 0, "Number of iterations are not set!");
+
+    if (this->getDim() == 1) {
+      this->setDomain(velocities.domainX());
+    } else {
+      this->setDomain(velocities.domainY(), velocities.domainX());
+    }
+
+    std::string filename;
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+      printConcentrationsConsole();
+    }
+    if (this->getOutputCSV() > CSV_OUTPUT::OFF) {
+      filename = createCSVfile();
+    }
+
+    auto begin = std::chrono::high_resolution_clock::now();
 
     this->applyInnerBoundaries();
 
     if constexpr (hyd_mode == HYDRAULIC_MODE::STEADY_STATE) {
       velocities.run();
+    } else {
+      if (velocities.getTimestep() <= 0) {
+        velocities.setTimestep(this->timestep);
+      }
     }
 
     for (int i = 0; i < this->getIterations(); i++) {
+      if (this->getOutputConsole() == CONSOLE_OUTPUT::VERBOSE && i > 0) {
+        printConcentrationsConsole();
+      }
+      if (this->getOutputCSV() >= CSV_OUTPUT::VERBOSE) {
+        printConcentrationsCSV(filename);
+      }
+
       if constexpr (hyd_mode == HYDRAULIC_MODE::TRANSIENT) {
         velocities.run();
       }
       startAdvection();
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto milliseconds =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+      printConcentrationsConsole();
+    }
+    if (this->getOutputCSV() > CSV_OUTPUT::OFF) {
+      printConcentrationsCSV(filename);
+    }
+    if (this->getTimeMeasure() > TIME_MEASURE::OFF) {
+      const std::string dimString = std::to_string(this->getDim()) + "D";
+      std::cout << "ADV" << dimString << ":: run() finished in "
+                << milliseconds.count() << "ms" << std::endl;
+    }
   }
 
 private:
   /**
-   * @brief function calculating material transport for one timestep
+   * @brief Calculates material transport for one timestep using a finite-volume
+   * first-order upwind scheme with automatic CFL substepping.
    */
   void startAdvection() {
     const std::size_t rows = this->rows();
     const std::size_t cols = this->cols();
     const T dx = this->deltaCol();
-    const T dy = this->deltaRow();
-    const T volume = this->deltaCol() * this->deltaRow();
+    const T dy = (this->getDim() == 2) ? this->deltaRow() : static_cast<T>(1);
 
     RowMajMatMap<T> &newConcentrations = this->getConcentrationMatrix();
-
-    RowMajMat<T> veloX = this->velocities.getVelocitiesX();
-    RowMajMat<T> veloY = this->velocities.getVelocitiesY();
+    const RowMajMat<T> &veloX = this->velocities.getVelocitiesX();
     const Boundary<T> &bc = this->getBoundaryConditions();
 
-    // Calculate Courant-Levy-Frederich condition
-    const T maxFx = std::max(abs(veloX.maxCoeff()), abs(veloX.minCoeff()));
-    const T maxFy = std::max(abs(veloY.maxCoeff()), abs(veloY.minCoeff()));
-    const T maxFlux = std::max(maxFx, maxFy);
+    // Calculate Courant-Friedrichs-Lewy condition
+    const T maxVx = veloX.cwiseAbs().maxCoeff() / dx;
+    T maxRate = maxVx;
+    if (this->getDim() == 2) {
+      const RowMajMat<T> &veloY = this->velocities.getVelocitiesY();
+      const T maxVy = veloY.cwiseAbs().maxCoeff() / dy;
+      maxRate += maxVy;
+    }
 
-    tug_assert(maxFlux != 0, "Division by zero: maxF is zero.");
+    if (maxRate == 0) {
+      return;
+    }
 
-    // TODO: sustitute 1 by porisity
-    const RowMajMat<T> porevolume =
-        RowMajMat<T>::Constant(rows, cols, volume) * 1;
+    const T cfl = this->porosity.minCoeff() / maxRate;
+    const int innerSteps =
+        static_cast<int>(std::ceil(this->timestep / cfl));
+    const T innerTimestep = this->timestep / static_cast<T>(innerSteps);
 
-    const T cfl = (porevolume / maxFlux).minCoeff();
-    const int innerSteps = (int)ceil(timestep / cfl);
-    const T innerTimestep = timestep / innerSteps;
-
-    std::cout << "CFL (adv) timestep: " << cfl << std::endl;
-    std::cout << "Inner iterations (adv): " << innerSteps << std::endl;
-    std::cout << "Inner timestep (adv): " << innerTimestep << std::endl;
-
-    // const RowMajMat<T> multiplier = porevolume * (1 / innerTimestep);
+    if (this->getOutputConsole() > CONSOLE_OUTPUT::OFF) {
+      std::cout << "CFL (adv) timestep: " << cfl << std::endl;
+      std::cout << "Inner iterations (adv): " << innerSteps << std::endl;
+      std::cout << "Inner timestep (adv): " << innerTimestep << std::endl;
+    }
 
     RowMajMat<T> fluxX(rows, cols + 1);
-    RowMajMat<T> fluxY(rows + 1, cols);
+    RowMajMat<T> fluxY;
+    if (this->getDim() == 2) {
+      fluxY.resize(rows + 1, cols);
+    }
 
-    for (std::size_t k = 0; k < innerSteps; k++) {
+    for (int k = 0; k < innerSteps; k++) {
       const RowMajMat<T> oldConcentrations = newConcentrations;
 
       // Update flux with concentrations in x-direction
-      for (std::size_t row_i = 0; row_i < fluxX.rows(); row_i++) {
-        for (std::size_t col_i = 0; col_i < fluxX.cols(); col_i++) {
+#pragma omp parallel for num_threads(numThreads)
+      for (std::size_t row_i = 0; row_i < rows; row_i++) {
+        for (std::size_t col_i = 0; col_i <= cols; col_i++) {
           T &currentFlux = fluxX(row_i, col_i);
-          const T &currentVelo = veloX(row_i, col_i);
-          const std::int32_t cellIndex = (currentVelo > 0) ? col_i - 1 : col_i;
+          const T currentVelo = veloX(row_i, col_i);
 
-          if (cellIndex < 0 || cellIndex >= cols) {
-            const auto bcElement = bc.getBoundaryElement(
-                cellIndex < 0 ? BC_SIDE_LEFT : BC_SIDE_RIGHT, row_i);
-            // if we have a constant boundary, we use the value of the boundary
-            if (bcElement.getType() == BC_TYPE_CONSTANT) {
-              currentFlux = currentVelo * bcElement.getValue();
-              continue;
+          if (col_i == 0) {
+            const auto bcLeft = bc.getBoundaryElement(BC_SIDE_LEFT, row_i);
+            if (bcLeft.getType() == BC_TYPE_CLOSED) {
+              currentFlux = 0;
+            } else if (currentVelo > 0) {
+              currentFlux = currentVelo * bcLeft.getValue();
+            } else {
+              currentFlux = currentVelo * oldConcentrations(row_i, 0);
             }
-
-            // otherwise it is a closed boundary
-            currentFlux = 0;
-            continue;
+          } else if (col_i == cols) {
+            const auto bcRight = bc.getBoundaryElement(BC_SIDE_RIGHT, row_i);
+            if (bcRight.getType() == BC_TYPE_CLOSED) {
+              currentFlux = 0;
+            } else if (currentVelo > 0) {
+              currentFlux = currentVelo * oldConcentrations(row_i, cols - 1);
+            } else {
+              currentFlux = currentVelo * bcRight.getValue();
+            }
+          } else {
+            const std::size_t cellIndex =
+                (currentVelo > 0) ? (col_i - 1) : col_i;
+            currentFlux = currentVelo * oldConcentrations(row_i, cellIndex);
           }
-          // otherwise we use the concentration of the inflow/outflow cell,
-          // multiplied by the velocity
-          currentFlux = currentVelo * oldConcentrations(row_i, cellIndex);
         }
       }
 
-      // Update flux with concentrations in y-direction
-      for (std::size_t row_i = 0; row_i < fluxY.rows(); row_i++) {
-        for (std::size_t col_i = 0; col_i < fluxY.cols(); col_i++) {
-          T &currentFlux = fluxY(row_i, col_i);
-          const T &currentVelo = veloY(row_i, col_i);
-          const std::int32_t cellIndex = (currentVelo > 0) ? row_i - 1 : row_i;
+      // Update flux with concentrations in y-direction (2D only)
+      if (this->getDim() == 2) {
+        const RowMajMat<T> &veloY = this->velocities.getVelocitiesY();
+#pragma omp parallel for num_threads(numThreads)
+        for (std::size_t row_i = 0; row_i <= rows; row_i++) {
+          for (std::size_t col_i = 0; col_i < cols; col_i++) {
+            T &currentFlux = fluxY(row_i, col_i);
+            const T currentVelo = veloY(row_i, col_i);
 
-          if (cellIndex < 0 || cellIndex >= rows) {
-            const auto bcElement = bc.getBoundaryElement(
-                cellIndex < 0 ? BC_SIDE_TOP : BC_SIDE_BOTTOM, col_i);
-            // if we have a constant boundary, we use the value of the
-            // boundary
-            if (bcElement.getType() == BC_TYPE_CONSTANT) {
-              currentFlux = currentVelo * bcElement.getValue();
-              continue;
+            if (row_i == 0) {
+              const auto bcTop = bc.getBoundaryElement(BC_SIDE_TOP, col_i);
+              if (bcTop.getType() == BC_TYPE_CLOSED) {
+                currentFlux = 0;
+              } else if (currentVelo > 0) {
+                currentFlux = currentVelo * bcTop.getValue();
+              } else {
+                currentFlux = currentVelo * oldConcentrations(0, col_i);
+              }
+            } else if (row_i == rows) {
+              const auto bcBottom =
+                  bc.getBoundaryElement(BC_SIDE_BOTTOM, col_i);
+              if (bcBottom.getType() == BC_TYPE_CLOSED) {
+                currentFlux = 0;
+              } else if (currentVelo > 0) {
+                currentFlux = currentVelo * oldConcentrations(rows - 1, col_i);
+              } else {
+                currentFlux = currentVelo * bcBottom.getValue();
+              }
+            } else {
+              const std::size_t cellIndex =
+                  (currentVelo > 0) ? (row_i - 1) : row_i;
+              currentFlux = currentVelo * oldConcentrations(cellIndex, col_i);
             }
-
-            // otherwise it is a closed boundary
-            currentFlux = 0;
-            continue;
           }
-          // otherwise we use the concentration of the inflow/outflow cell,
-          // multiplied by the velocity
-          currentFlux = currentVelo * oldConcentrations(cellIndex, col_i);
         }
       }
 
       // Update concentrations
+#pragma omp parallel for num_threads(numThreads)
       for (std::size_t row_i = 0; row_i < rows; row_i++) {
         for (std::size_t col_i = 0; col_i < cols; col_i++) {
-          const T horizontalFlux =
-              fluxX(row_i, col_i) - fluxX(row_i, col_i + 1);
-          const T verticalFlux = fluxY(row_i, col_i) - fluxY(row_i + 1, col_i);
-          newConcentrations(row_i, col_i) = oldConcentrations(row_i, col_i) +
-                                            innerTimestep /
-                                                porevolume(row_i, col_i) *
-                                                (horizontalFlux + verticalFlux);
+          const bool isInnerBC =
+              (this->getDim() == 1)
+                  ? bc.getInnerBoundary(col_i).first
+                  : bc.getInnerBoundary(row_i, col_i).first;
+          if (isInnerBC) {
+            continue;
+          }
+
+          T totalRate = (fluxX(row_i, col_i) - fluxX(row_i, col_i + 1)) / dx;
+          if (this->getDim() == 2) {
+            totalRate += (fluxY(row_i, col_i) - fluxY(row_i + 1, col_i)) / dy;
+          }
+
+          newConcentrations(row_i, col_i) =
+              oldConcentrations(row_i, col_i) +
+              (innerTimestep / this->porosity(row_i, col_i)) * totalRate;
         }
       }
-
-      // const Boundary<T> leftCorner = bc.getBoundaryElement(BC_SIDE_LEFT, 0);
-      // newConcentrations(0, 0) = oldConcentrations(0, 0) + ;
-      //
-      // for (std::size_t col_i = 0; col_i < cols; col_i++) {
-      //   T horizontalFlux = oldConcentrations(0, col_i);
-      //   if (col_i == 0) {
-      //     switch (bc.getBoundaryElementType(BC_SIDE_LEFT, 0)) {
-      //     case BC_TYPE_CLOSED: {
-      //       break;
-      //     }
-      //     case BC_TYPE_CONSTANT: {
-      //       newConcentrations(0, 0) =
-      //           oldConcentrations(0, 0) +
-      //           (bc.getBoundaryElementValue(BC_SIDE_LEFT, 0) * veloX(0, 0)) *
-      //               (2 * innerTimestep) / dx;
-      //       newConcentrations(rows - 1, 0) =
-      //           oldConcentrations(rows - 1, 0) +
-      //           (bc.getBoundaryElementValue(BC_SIDE_LEFT, 0) *
-      //            veloX(rows - 1, 0)) *
-      //               (2 * innerTimestep) / dx;
-      //       break;
-      //     }
-      //     }
-      //     newConcentrations(0, 0) -=
-      //         veloX(0, 1) * oldConcentrations(0, 1) * innerTimestep / dx;
-      //   }
-      // }
-      //
-      // for (std::size_t row_i = 1; row_i < rows - 1; row_i++) {
-      //   for (std::size_t col_i = 1; col_i < cols - 1; col_i++) {
-      //     const T fluxHorizontal =
-      //         veloX(row_i, col_i) * oldConcentrations(row_i, col_i - 1) -
-      //         veloX(row_i, col_i + 1) * oldConcentrations(row_i, col_i);
-      //     const T fluxVertical =
-      //         veloY(row_i, col_i) * oldConcentrations(row_i - 1, col_i) -
-      //         veloY(row_i + 1, col_i) * oldConcentrations(row_i, col_i);
-      //     newConcentrations(row_i, col_i) =
-      //         oldConcentrations(row_i, col_i) +
-      //         (fluxHorizontal / dx + fluxVertical / dy) * innerTimestep;
-      //   }
-      // }
-
-      // Calculate sum of incoming/outgoing Flow*Concentration in x-direction in
-      // each cell #pragma omp parallel for num_threads(numThreads)
-      //       for (int i = 0; i < rows; i++) {
-      //         for (int j = 0; j < cols + 1; j++) {
-      //           if (j == 0) {
-      //             if (bc.getBoundaryElementType(BC_SIDE_LEFT, i) !=
-      //             BC_TYPE_CLOSED) {
-      //               if (veloX(i, j) > 0) {
-      //                 // outx positive -> flow from border to cell i,j
-      //                 newConcentrations(i, j) +=
-      //                     veloX(i, j) *
-      //                     bc.getBoundaryElementValue(BC_SIDE_LEFT, i);
-      //               } else if (veloX(i, j) < 0) {
-      //                 // outx negative -> flow from i,j towards border
-      //                 newConcentrations(i, j) += veloX(i, j) *
-      //                 oldConcentrations(i, j);
-      //               }
-      //             }
-      //           } else if (j == cols) {
-      //             if (bc.getBoundaryElementType(BC_SIDE_RIGHT, i) !=
-      //             BC_TYPE_CLOSED) {
-      //               if (veloX(i, j) > 0) {
-      //                 // outx positive-> flow from i,j-1 towards border
-      //                 newConcentrations(i, j - 1) -=
-      //                     veloX(i, j) * oldConcentrations(i, j - 1);
-      //               } else if (veloX(i, j) < 0) {
-      //                 // outx negative -> flow from border to cell i,j-1
-      //                 newConcentrations(i, j - 1) -=
-      //                     veloX(i, j) *
-      //                     bc.getBoundaryElementValue(BC_SIDE_LEFT, i);
-      //               }
-      //             }
-      //           }
-      //           // flow between inner cells
-      //           else {
-      //             // outx positive -> flow from cell i,j-1 towards cell i,j
-      //             if (veloX(i, j) > 0) {
-      //               newConcentrations(i, j - 1) -=
-      //                   veloX(i, j) * oldConcentrations(i, j - 1);
-      //               newConcentrations(i, j) +=
-      //                   veloX(i, j) * oldConcentrations(i, j - 1);
-      //             }
-      //             // outx negative -> flow from cell i,j toward cell i,j-1
-      //             else if (veloX(i, j) < 0) {
-      //               newConcentrations(i, j - 1) +=
-      //                   veloX(i, j) * oldConcentrations(i, j);
-      //               newConcentrations(i, j) += veloX(i, j) *
-      //               oldConcentrations(i, j);
-      //             }
-      //           }
-      //         }
-      //       }
-      // // calculate sum in y-direction
-      // // parallelize outer loop over columns to ensure thread-safety, each
-      // thread only
-      // // modifies cells within its column
-      // #pragma omp parallel for num_threads(numThreads)
-      //       for (int j = 0; j < cols; j++) {
-      //         for (int i = 0; i < rows + 1; i++) {
-      //           if (i == 0) {
-      //             if (bc.getBoundaryElementType(BC_SIDE_TOP, j) !=
-      //             BC_TYPE_CLOSED) {
-      //               if (veloY(i, j) > 0) {
-      //                 // outy positive -> flow from border to cell i,j
-      //                 newConcentrations(i, j) +=
-      //                     veloY(i, j) *
-      //                     bc.getBoundaryElementValue(BC_SIDE_TOP, j);
-      //               } else if (veloY(i, j) < 0) {
-      //                 // outy negative -> flow from i,j towards border
-      //                 newConcentrations(i, j) += veloY(i, j) *
-      //                 oldConcentrations(i, j);
-      //               }
-      //             }
-      //           } else if (i == rows) {
-      //             if (bc.getBoundaryElementType(BC_SIDE_BOTTOM, j) !=
-      //                 BC_TYPE_CLOSED) {
-      //               if (veloY(i, j) > 0) {
-      //                 // outy positive-> flow from i-1,j towards border
-      //                 newConcentrations(i - 1, j) -=
-      //                     veloY(i, j) * oldConcentrations(i - 1, j);
-      //               } else if (veloY(i, j) < 0) {
-      //                 // outy negative -> flow from border to cell i,j-1
-      //                 newConcentrations(i - 1, j) -=
-      //                     veloY(i, j) *
-      //                     bc.getBoundaryElementValue(BC_SIDE_BOTTOM, j);
-      //               }
-      //             }
-      //           }
-      //           // flow between inner cells
-      //           else {
-      //             // outy positive -> flow from cell i-1,j towards cell i,j
-      //             if (veloY(i, j) > 0) {
-      //               newConcentrations(i - 1, j) -=
-      //                   veloY(i, j) * oldConcentrations(i - 1, j);
-      //               newConcentrations(i, j) +=
-      //                   veloY(i, j) * oldConcentrations(i - 1, j);
-      //             }
-      //             // outy negative -> flow from cell i,j toward cell i-1,j
-      //             else if (veloY(i, j) < 0) {
-      //               newConcentrations(i - 1, j) -=
-      //                   veloY(i, j) * oldConcentrations(i, j);
-      //               newConcentrations(i, j) += veloY(i, j) *
-      //               oldConcentrations(i, j);
-      //             }
-      //           }
-      //         }
-      //       }
-
-      // for (std::size_t row_i = 0; row_i < rows; row_i++) {
-      //   for (std::size_t col_i = 0; col_i < cols; col_i++) {
-      //     newConcentrations(row_i, col_i) =
-      //         oldConcentrations(row_i, col_i) +
-      //         newConcentrations(row_i, col_i) * multiplier(row_i, col_i);
-      //   }
-      // }
     }
   }
 };
