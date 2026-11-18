@@ -28,16 +28,8 @@ int main(int argc, char *argv[]) {
   // **************
   // **** GRID ****
   // **************
-
-  // create a grid with a 20 x 20 field
   int n2 = row / 2 - 1;
 
-  // (optional) set the domain, e.g.:
-  // grid.setDomain(20, 20);
-
-  // (optional) set the concentrations, e.g.:
-  // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); //
-  // #row,#col,value
   RowMajMat<double> concentrations = RowMajMat<double>::Constant(row, col, 0);
   concentrations(n2, n2) = 1;
   concentrations(n2, n2 + 1) = 1;
@@ -47,42 +39,33 @@ int main(int argc, char *argv[]) {
   // ************************
   // **** SIMULATION ENV ****
   // ************************
-
-  // set up a simulation environment
   Diffusion<double, FTCS_APPROACH> simulation(concentrations);
 
-  // (optional) set alphas of the grid, e.g.:
-  RowMajMat<double> alphax = RowMajMat<double>::Constant(row, col, 1E-4); // row,col,value
-  RowMajMat<double> alphay = RowMajMat<double>::Constant(row, col, 1E-6); // row,col,value
+  RowMajMat<double> alphax = RowMajMat<double>::Constant(row, col, 1E-4);
+  RowMajMat<double> alphay = RowMajMat<double>::Constant(row, col, 1E-6);
   simulation.setAlphaX(alphax);
   simulation.setAlphaY(alphay);
 
   // ******************
   // **** BOUNDARY ****
   // ******************
-
-  // create a boundary with constant values
-  auto &bc = simulation.getBoundaryConditions();
-
-  // (optional) set boundary condition values for one side, e.g.:
-  bc.setBoundarySideClosed(BC_SIDE_LEFT); // side,values
+  Boundary<double> &bc = simulation.getBoundaryConditions();
+  bc.setBoundarySideClosed(BC_SIDE_LEFT);
   bc.setBoundarySideClosed(BC_SIDE_RIGHT);
   bc.setBoundarySideClosed(BC_SIDE_TOP);
   bc.setBoundarySideClosed(BC_SIDE_BOTTOM);
 
   // set the timestep of the simulation
-  simulation.setTimestep(10000); // timestep
+  simulation.setTimestep(10000);
 
   // set the number of iterations
   simulation.setIterations(100);
 
-  // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
-  // CSV_OUTPUT_VERBOSE]
+  // (optional) set kind of output [CSV_OUTPUT::OFF (default), CSV_OUTPUT::ON,
+  // CSV_OUTPUT::VERBOSE]
   simulation.setOutputCSV(CSV_OUTPUT::VERBOSE);
 
   // **** RUN SIMULATION ****
-
-  // run the simulation
   simulation.run();
 
   return 0;

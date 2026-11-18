@@ -1,5 +1,5 @@
 /**
- * @file FTCS_2D_proto_example.cpp
+ * @file FTCS_2D_proto_example_mdl.cpp
  * @author Hannes Signer, Philipp Ungrund
  * @brief Creates a prototypical standard TUG simulation in 2D with FTCS
  * approach and constant boundary condition
@@ -17,18 +17,10 @@ int main(int argc, char *argv[]) {
   // **************
   // **** GRID ****
   // **************
-
-  // create a grid with a 20 x 20 field
   int row = 64;
   int col = 64;
   int n2 = row / 2 - 1;
 
-  // (optional) set the domain, e.g.:
-  // grid.setDomain(20, 20);
-
-  // (optional) set the concentrations, e.g.:
-  // MatrixXd concentrations = MatrixXd::Constant(20,20,1000); //
-  // #row,#col,value
   RowMajMat<double> concentrations = RowMajMat<double>::Constant(row, col, 0);
   concentrations(n2, n2) = 1;
   concentrations(n2, n2 + 1) = 1;
@@ -38,42 +30,33 @@ int main(int argc, char *argv[]) {
   // ************************
   // **** SIMULATION ENV ****
   // ************************
-
-  // set up a simulation environment
   Diffusion<double, tug::FTCS_APPROACH> simulation(concentrations);
 
-  // (optional) set alphas of the grid, e.g.:
-  RowMajMat<double> alphax = RowMajMat<double>::Constant(row, col, 1E-4); // row,col,value
-  RowMajMat<double> alphay = RowMajMat<double>::Constant(row, col, 1E-6); // row,col,value
+  RowMajMat<double> alphax = RowMajMat<double>::Constant(row, col, 1E-4);
+  RowMajMat<double> alphay = RowMajMat<double>::Constant(row, col, 1E-6);
   simulation.setAlphaX(alphax);
   simulation.setAlphaY(alphay);
 
   // ******************
   // **** BOUNDARY ****
   // ******************
-
-  // create a boundary with constant values
-  auto &bc = simulation.getBoundaryConditions();
-
-  // (optional) set boundary condition values for one side, e.g.:
-  bc.setBoundarySideConstant(BC_SIDE_LEFT, 0); // side,values
+  Boundary<double> &bc = simulation.getBoundaryConditions();
+  bc.setBoundarySideConstant(BC_SIDE_LEFT, 0);
   bc.setBoundarySideConstant(BC_SIDE_RIGHT, 0);
   bc.setBoundarySideConstant(BC_SIDE_TOP, 0);
   bc.setBoundarySideConstant(BC_SIDE_BOTTOM, 0);
 
   // (optional) set the timestep of the simulation
-  simulation.setTimestep(1000); // timestep
+  simulation.setTimestep(1000);
 
   // (optional) set the number of iterations
   simulation.setIterations(5);
 
-  // (optional) set kind of output [CSV_OUTPUT_OFF (default), CSV_OUTPUT_ON,
-  // CSV_OUTPUT_VERBOSE]
+  // (optional) set kind of output [CSV_OUTPUT::OFF (default), CSV_OUTPUT::ON,
+  // CSV_OUTPUT::VERBOSE]
   simulation.setOutputCSV(CSV_OUTPUT::OFF);
 
   // **** RUN SIMULATION ****
-
-  // run the simulation
   simulation.run();
 
   return 0;
