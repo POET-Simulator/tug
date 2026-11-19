@@ -18,6 +18,7 @@ testFTCS.cpp
 testBoundary.cpp
 )
 target_link_libraries(testTug tug GTest::gtest)
+target_compile_options(testTug PRIVATE -UNDEBUG)
   
 include(GoogleTest)
 gtest_discover_tests(testTug)
